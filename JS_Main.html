@@ -1,0 +1,585 @@
+<script>
+  const g = google.script.run;
+  let isDeleted = false;
+  let isEdited = false;
+  let currentDelType = 'data';
+  let currentEditType = 'data';
+  let currentWorkList = []; // 전체 업무 데이터를 임시 보관
+  let currentViewMode = 'date'; 
+  
+  // 시청각실 및 마법사 관련 변수들
+  let calDate = new Date();
+  let calendarMode = 'apply';
+  let tempBookings = {};
+  
+  let wzCalDate = new Date();
+  let wzStartD = '', wzEndD = '', wzClickCount = 0;
+  let currentWzTimeType = 'period';
+
+  const el = {
+    y: () => document.getElementById('ySel'),
+    m: () => document.getElementById('mSel'),
+    w: () => document.getElementById('wSel')
+  };
+
+  // 1. 초기 세팅 (페이지 로드 시 호출)
+  window.onload = () => {
+    initSelects();
+    loadAll();
+  };
+
+  function initSelects() {
+    const d = new Date(), y = serverData.currentYear, m = serverData.currentMonth;
+    let yH = '', mH = '';
+    for(let i=y-2; i<=y+2; i++) yH += `<option value="${i}" ${i===y?'selected':''}>${i}년</option>`;
+    for(let i=1; i<=12; i++) mH += `<option value="${i}" ${i===m?'selected':''}>${i}월</option>`;
+    el.y().innerHTML = yH; el.m().innerHTML = mH;
+    upWeeks();
+  }
+
+  function upWeeks() {
+    const d = new Date();
+    const y = parseInt(el.y().value), m = parseInt(el.m().value);
+    const l = new Date(y, m, 0);
+    
+    let wCount = 0;
+    let currentWeekNum = 1; // 기본값 1주차
+    let weeksMap = [];
+    
+    // 오늘 날짜가 몇 주차에 속하는지 동적으로 계산합니다.
+    for (let i = 1; i <= l.getDate(); i++) {
+      const cur = new Date(y, m-1, i);
+      if (i === 1 || cur.getDay() === 1) {
+        wCount++;
+        weeksMap.push(wCount);
+      }
+      if (y === d.getFullYear() && m === (d.getMonth() + 1) && i === d.getDate()) {
+        currentWeekNum = wCount;
+      }
+    }
+    
+    let html = '';
+    weeksMap.forEach(w => {
+      html += `<option value="${w}" ${w === currentWeekNum ? 'selected' : ''}>${w}주차</option>`;
+    });
+    el.w().innerHTML = html;
+  }
+
+  // 2. 데이터 조회 및 가로 막대(Gantt) 시간표 렌더링
+  let currentWeekSchedule = []; // 현재 주차 날짜 데이터 보관
+  let currentWeekWorkList = []; // 현재 주차 업무 데이터 보관
+  let currentWeekSTime = 0;
+  let selectedDatesForFilter = []; // 유저가 클릭한 날짜의 인덱스 보관
+  let activeFilterIndices = [0, 1, 2, 3, 4]; // 현재 화면에 그려지고 있는 날짜 인덱스 (기본: 월~금 5일)
+
+  function loadAll() {
+    const y = el.y().value, m = el.m().value, w = el.w().value;
+    toggleLoading(true, "조회 중...");
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      currentWeekSchedule = res.schedule;
+      currentWeekWorkList = res.list;
+      currentWeekSTime = res.sTime;
+      
+      // 주차가 바뀌면 필터 초기화
+      selectedDatesForFilter = [];
+      activeFilterIndices = [0, 1, 2, 3, 4]; 
+      
+      document.getElementById('noticeTxt').innerHTML = res.notice;
+      document.getElementById('printTitle').innerText = `${y}년 ${m}월 ${w}주차 주간 계획서`;
+      
+      renderFilteredWeek(activeFilterIndices);
+    }).getCombinedData(y, m, w);
+  }
+
+  // 부서명 포맷팅 헬퍼 함수
+  function formatDeptName(name) {
+    const map = {
+      '교무기획부': '교무부', '교육과정부': '교육<br>과정부', '교육연구부': '교육<br>연구부',
+      '학생안전부': '학생<br>안전부', '체육인성부': '체육<br>인성부', '융합과학정보부': '융합<br>과학<br>정보부',
+      '방과후활동부': '방과후<br>활동부', '진로상담부': '진로<br>상담부', '보건실': '보건실',
+      '1학년부': '1학년', '2학년부': '2학년', '3학년부': '3학년', '행정실': '행정실'
+    };
+    return map[name] || name;
+  }
+
+  // 선택된 날짜 인덱스(예: [0, 2, 4] -> 월, 수, 금)만 화면에 그려주는 핵심 렌더러
+  function renderFilteredWeek(indices) {
+    if(!indices || indices.length === 0) indices = [0, 1, 2, 3, 4];
+    
+    // 1. 날짜 개수에 따른 폰트 스케일 계산 (5일: 1.0배, 4일: 1.07배, 3일: 1.14배, 2일: 1.21배, 1일: 1.28배)
+    const fontScale = 1.0 + (5 - indices.length) * 0.07;
+    const fsStyle = `font-size: ${fontScale}em;`;
+    
+    // 부서 칸 넓이 계산 (기본 80px로 넉넉하게 잡고 스케일업). max-width를 제거하여 어긋남 방지
+    const deptWidth = Math.round(80 * fontScale);
+    
+    // 표 라인(테두리)이 상/하 완벽하게 일치하도록 동일한 스타일 변수 사용
+    const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
+
+    // 2-1. 연간 행사 렌더링
+    const daysName = ['월', '화', '수', '목', '금'];
+    document.getElementById('dateHead').innerHTML = `<tr style="${fsStyle}">` + indices.map(i => `<th style="${fsStyle}">${daysName[i]}</th>`).join('') + `</tr>`;
+    
+    let dRowHtml = `<tr class="date-row" style="${fsStyle}">` + indices.map(i => `<td style="${fsStyle}">${currentWeekSchedule[i].date}</td>`).join('') + `</tr>`;
+    dRowHtml += `<tr class="content-row" style="${fsStyle}">` + indices.map(i => `<td style="${fsStyle}">${currentWeekSchedule[i].content || ''}</td>`).join('') + `</tr>`;
+    document.getElementById('dateBody').innerHTML = dRowHtml;
+
+    // 2-2. 부서별 업무 헤더 렌더링 (날짜 및 부서 텍스트에 스케일 적용)
+    let headHtml = `<tr style="${fsStyle}">
+      <th style="${deptCellStyle} background:#fdfdfd; border-bottom:1px solid #cbd5e1;">
+        부서
+      </th>`;
+    
+    indices.forEach(idx => {
+      let isSelected = selectedDatesForFilter.includes(idx);
+      let bg = isSelected ? '#dbeafe' : 'transparent';
+      let border = isSelected ? '2px solid #3b82f6' : '1px solid transparent';
+      
+      headHtml += `<th style="${fsStyle} border-bottom:1px solid #cbd5e1;">
+        <div onclick="toggleDateFilter(${idx})" style="cursor:pointer; padding:6px; border-radius:6px; background:${bg}; border:${border}; transition:all 0.2s ease; display:inline-block;">
+          ${currentWeekSchedule[idx].date} <span style="font-size:0.8em; font-weight:normal; color:#666;">(클릭)</span>
+        </div>
+      </th>`;
+    });
+    headHtml += `</tr>`;
+    document.getElementById('workHead').innerHTML = headHtml;
+
+    // 2-3. 부서별 업무 본문 렌더링
+    if (!currentWeekWorkList || currentWeekWorkList.length === 0) {
+      document.getElementById('workBody').innerHTML = `<tr style="${fsStyle}"><td colspan="${indices.length + 1}" style="padding:40px; color:#999; text-align:center; ${fsStyle}">데이터 없음</td></tr>`;
+    } else {
+      let bodyHtml = '';
+      currentWeekWorkList.forEach(dept => {
+        let displayDept = formatDeptName(dept.name);
+        
+        bodyHtml += `<tr style="page-break-inside: avoid; break-inside: avoid; border-bottom:1px solid #e2e8f0;">
+          <td class="dept-name-cell" style="${deptCellStyle}">${displayDept}</td>
+          <td colspan="${indices.length}" style="padding:0; vertical-align:top; border:none;">`;
+        
+        bodyHtml += `<div style="display:grid; grid-template-columns: repeat(${indices.length}, minmax(0, 1fr)); gap:6px; padding:10px; height:100%; box-sizing:border-box;">`;
+        
+        dept.items.forEach(item => {
+          const globalStartIdx = Math.max(0, Math.round((item.st - currentWeekSTime) / 86400000));
+          const globalEndIdx = Math.min(4, Math.round((item.et - currentWeekSTime) / 86400000));
+          
+          let mappedIndices = [];
+          for(let i = globalStartIdx; i <= globalEndIdx; i++) {
+            let pos = indices.indexOf(i);
+            if(pos !== -1) mappedIndices.push(pos);
+          }
+          
+          if (mappedIndices.length > 0) {
+            const gridStart = Math.min(...mappedIndices) + 1; 
+            const span = Math.max(...mappedIndices) - Math.min(...mappedIndices) + 1;
+            
+            // [핵심] white-space: pre-wrap; 을 적용하여 작성된 글의 Enter(줄바꿈)를 그대로 화면에 표시합니다.
+            bodyHtml += `<div class="event-bar" style="grid-column: ${gridStart} / span ${span}; ${fsStyle} white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;">${item.text}</div>`;
+          }
+        });
+        bodyHtml += `</div></td></tr>`;
+      });
+      document.getElementById('workBody').innerHTML = bodyHtml;
+    }
+  }
+
+  // 날짜 클릭 시 선택/해제 토글
+  function toggleDateFilter(idx) {
+    const pos = selectedDatesForFilter.indexOf(idx);
+    if (pos > -1) {
+      selectedDatesForFilter.splice(pos, 1);
+    } else {
+      selectedDatesForFilter.push(idx);
+    }
+    renderFilteredWeek(activeFilterIndices); // 화면 테두리 업데이트 (열 개수 유지)
+  }
+
+  // 선택확대 버튼 클릭 시
+  function applyDateFilter() {
+    if (selectedDatesForFilter.length === 0) {
+      showAlert("먼저 표 상단의 날짜(7/13(월) 등)를 클릭하여 볼 날짜를 선택해주세요.");
+      return;
+    }
+    // 월화수목금 순서가 꼬이지 않게 오름차순 정렬
+    activeFilterIndices = [...selectedDatesForFilter].sort((a, b) => a - b);
+    selectedDatesForFilter = []; // 선택 내역 리셋
+    renderFilteredWeek(activeFilterIndices); // 선택된 열만 새롭게 렌더링
+  }
+
+  // 원래대로 버튼 클릭 시
+  function resetDateFilter() {
+    selectedDatesForFilter = [];
+    activeFilterIndices = [0, 1, 2, 3, 4];
+    renderFilteredWeek(activeFilterIndices);
+  }
+
+  // 3. UI 유틸리티 (로딩, 모달, 알림창)
+  function toggleLoading(s, t) {
+    document.getElementById('loadingOverlay').style.display = s ? 'flex' : 'none';
+    if (s) document.getElementById('loadingText').innerText = t || '로딩 중...';
+  }
+  
+  function openMod(id) { document.getElementById(id).style.display = 'flex'; }
+  function closeMod(id) { document.getElementById(id).style.display = 'none'; }
+  
+  function showAlert(msg) {
+    const alertMod = document.getElementById('customAlertMod');
+    if (alertMod) alertMod.style.zIndex = '10010';
+    document.getElementById('alertMsg').innerText = msg;
+    document.getElementById('alertCancelBtn').style.display = 'none';
+    document.getElementById('alertOkBtn').onclick = () => closeMod('customAlertMod');
+    openMod('customAlertMod');
+  }
+
+  function showConfirm(msg, callback) {
+    const alertMod = document.getElementById('customAlertMod');
+    if (alertMod) alertMod.style.zIndex = '10010';
+    document.getElementById('alertMsg').innerText = msg;
+    const cancelBtn = document.getElementById('alertCancelBtn');
+    const okBtn = document.getElementById('alertOkBtn');
+    
+    cancelBtn.style.display = 'block'; 
+    
+    okBtn.onclick = () => {
+      closeMod('customAlertMod');
+      cancelBtn.style.display = 'none';
+      if (callback) callback(); 
+    };
+    
+    cancelBtn.onclick = () => {
+      closeMod('customAlertMod');
+      cancelBtn.style.display = 'none';
+    };
+    
+    openMod('customAlertMod');
+  }
+
+  // --- 인쇄 및 복사 제어 로직 ---
+  function addActionButtons() {
+    let actionDiv = document.getElementById('timetableActionBtns');
+    if (!actionDiv) {
+      actionDiv = document.createElement('div');
+      actionDiv.id = 'timetableActionBtns';
+      actionDiv.style.textAlign = 'right';
+      actionDiv.style.marginBottom = '10px';
+      actionDiv.innerHTML = `
+        <button onclick="copyTimetable()" style="padding:8px 16px; background:#10b981; color:#fff; border:none; border-radius:5px; cursor:pointer; margin-right:8px; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📋 표 복사하기</button>
+        <button onclick="printTimetable()" style="padding:8px 16px; background:#3b82f6; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🖨️ 인쇄하기</button>
+      `;
+      const viewEl = document.getElementById('viewTimetable');
+      const targetEl = viewEl.tagName === 'TBODY' ? viewEl.parentNode : viewEl;
+      targetEl.parentNode.insertBefore(actionDiv, targetEl);
+    }
+  }
+
+  function copyTimetable() {
+    const viewEl = document.getElementById('viewTimetable');
+    let targetTable = viewEl.querySelector('table') || (viewEl.tagName === 'TABLE' || viewEl.tagName === 'TBODY' ? viewEl : viewEl);
+    
+    const range = document.createRange();
+    range.selectNode(targetTable);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    try {
+      document.execCommand('copy');
+      showAlert("시간표 표가 복사되었습니다.\n엑셀이나 한글 문서에 바로 붙여넣기(Ctrl+V) 하세요!");
+    } catch (err) {
+      showAlert("복사 실패: 사용 중인 브라우저 환경을 확인해주세요.");
+    }
+    window.getSelection().removeAllRanges();
+  }
+
+  function printTimetable() {
+    const viewEl = document.getElementById('viewTimetable');
+    let targetTable = viewEl.querySelector('table') || viewEl;
+    const title = document.getElementById('zoomLabel').innerText;
+    
+    const win = window.open('', '_blank', 'width=1000,height=800');
+    win.document.write('<html><head><title>' + title + '</title>');
+    win.document.write('<style>');
+    win.document.write('body { font-family: "Malgun Gothic", sans-serif; padding: 20px; }');
+    win.document.write('table { border-collapse: collapse; text-align: center; width: 100%; margin: 0 auto; font-size: 14px; }');
+    win.document.write('th, td { border: 1px solid #cbd5e1; padding: 10px; }');
+    win.document.write('th { background: #f1f5f9 !important; font-weight: bold; }');
+    win.document.write('</style></head><body>');
+    win.document.write('<h2 style="text-align:center; color:#333;">' + title + '</h2>');
+    
+    if (targetTable.tagName === 'TBODY') {
+      win.document.write('<table>' + targetTable.innerHTML + '</table>');
+    } else {
+      win.document.write(targetTable.outerHTML);
+    }
+    
+    win.document.write('</body></html>');
+    win.document.close();
+    win.onload = function() {
+      win.focus();
+      win.print();
+      win.close();
+    };
+  }
+
+  // --- 전체 시간표 모달 및 확대/축소 제어 로직 ---
+  let timetableZoom = 1.0;
+  let fullTimetableData = [];
+  let fullTimetableBgs = [];
+
+  function openTimetableModal() {
+    toggleLoading(true, "전체 시간표 및 배경색 로딩 중...");
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      
+      if (!res || !res.values || res.values.length === 0) {
+        document.getElementById('viewTimetable').innerHTML = '<tr><td style="padding:40px; color:#999; text-align:center;">시간표 데이터 또는 "전체시간표" 시트를 찾을 수 없습니다.</td></tr>';
+      } else {
+        fullTimetableData = res.values;
+        fullTimetableBgs = res.backgrounds;
+        renderFullTimetable();
+      }
+      document.getElementById('searchTeacherName').value = '';
+      
+      addActionButtons(); 
+      
+      openMod('timetableMod');
+    }).getTimetableFromSheet();
+  }
+
+  function renderFullTimetable() {
+    let html = '';
+    fullTimetableData.forEach((row, rIdx) => {
+      html += '<tr>';
+      row.forEach((cell, cIdx) => {
+        let originalBg = fullTimetableBgs[rIdx][cIdx];
+        let displayCell = cell || '';
+
+        if (rIdx >= 2 && cIdx >= 2 && displayCell) {
+          displayCell = String(displayCell).trim().replace(/\s+/g, '<br>');
+        }
+
+        let extraStyle = '';
+        if (cIdx === 0 || cIdx === 1) {
+          extraStyle = 'width:30px; padding:4px; font-size:13px; line-height:1.2; white-space:normal;';
+        } else {
+          extraStyle = 'min-width:50px; padding:6px; font-size:14px; line-height:1.4; white-space:normal;';
+        }
+
+        if (rIdx === 0) {
+          let thBg = (originalBg && originalBg !== '#ffffff') ? originalBg : '#f1f5f9';
+          html += `<th style="background: ${thBg}; ${extraStyle}">${displayCell}</th>`;
+        } else {
+          let tdBg = (originalBg && originalBg !== '#ffffff') ? originalBg : '#ffffff';
+          if (!displayCell && tdBg === '#ffffff') tdBg = '#f8fafc';
+          html += `<td style="background: ${tdBg}; ${extraStyle}">${displayCell}</td>`;
+        }
+      });
+      html += '</tr>';
+    });
+    document.getElementById('viewTimetable').innerHTML = html;
+    resetZoomTimetable();
+
+    const modalBox = document.querySelector('#timetableMod .modal-content');
+    if (modalBox) {
+      modalBox.style.width = '95vw'; 
+      modalBox.style.height = '90vh';
+    }
+  }
+
+  function searchMyTimetable() {
+    const inputName = document.getElementById('searchTeacherName').value.trim();
+    if (!inputName) { showAlert("검색할 선생님 성함을 입력해주세요.\n(시간표에 적힌 글자 그대로 입력, 예: 박정1)"); return; }
+
+    let schedule = { '1':{}, '2':{}, '3':{}, '4':{}, '5':{}, '6':{}, '7':{}, '8':{} };
+    const days = ['월', '화', '수', '목', '금'];
+    let foundCount = 0;
+
+    let gradeRowIdx = -1;
+    for (let i = 0; i < 10; i++) {
+      if (fullTimetableData[i] && fullTimetableData[i].some(v => String(v).includes('1학년'))) {
+        gradeRowIdx = i; break;
+      }
+    }
+    let classRowIdx = gradeRowIdx !== -1 ? gradeRowIdx + 1 : -1;
+
+    let grades = [];
+    let classes = [];
+    let currentGrade = "";
+    
+    if (gradeRowIdx !== -1 && classRowIdx !== -1) {
+      for (let c = 2; c < fullTimetableData[gradeRowIdx].length; c++) {
+        let gVal = String(fullTimetableData[gradeRowIdx][c] || '').trim();
+        if (gVal.includes('학년')) currentGrade = gVal;
+        grades[c] = currentGrade;
+        
+        let cVal = String(fullTimetableData[classRowIdx][c] || '').trim();
+        classes[c] = (cVal && !isNaN(cVal)) ? cVal + '반' : cVal;
+      }
+    }
+
+    let currentDay = "";
+    let startRow = classRowIdx !== -1 ? classRowIdx + 1 : 4;
+
+    for (let r = startRow; r < fullTimetableData.length; r++) {
+      let rowDay = String(fullTimetableData[r][0] || '').trim();
+      if (rowDay && days.includes(rowDay)) currentDay = rowDay;
+      
+      let periodStr = String(fullTimetableData[r][1] || '').trim();
+      let pMatch = periodStr.match(/([1-8])/);
+      if (!pMatch) continue; 
+      let pNum = pMatch[1];
+
+      if (!currentDay) continue;
+
+      for (let c = 2; c < fullTimetableData[r].length; c++) {
+        let cellVal = String(fullTimetableData[r][c] || '').trim();
+        
+        if (cellVal && cellVal.includes(inputName)) {
+          foundCount++;
+          let locationInfo = ((grades[c] || '') + ' ' + (classes[c] || '')).trim() || '장소 미상';
+          if (!schedule[pNum]) schedule[pNum] = {};
+          
+          let existing = schedule[pNum][currentDay] ? schedule[pNum][currentDay] + "<br><hr style='margin:4px 0; border:0; border-top:1px dashed #cbd5e1;'>" : "";
+          let formattedCell = cellVal.replace(/\n/g, ' ').replace(/_x000D_/g, ''); 
+          
+          schedule[pNum][currentDay] = existing + `<b style="color:#e11d48; font-size:14px;">${locationInfo}</b><br><span style="font-size:15px; color:#1e293b; font-weight:600;">${formattedCell}</span>`;
+        }
+      }
+    }
+
+    if (foundCount === 0) {
+      showAlert(`'${inputName}' 선생님의 수업 일정을 찾을 수 없습니다.`); return;
+    }
+
+    renderCompactTimetable(schedule, `${inputName} 시간표`);
+  }
+
+  function searchClassTimetable() {
+    const selectedGrade = document.getElementById('searchGrade').value; 
+    const selectedClass = document.getElementById('searchClass').value; 
+
+    let schedule = { '1':{}, '2':{}, '3':{}, '4':{}, '5':{}, '6':{}, '7':{}, '8':{} };
+    const days = ['월', '화', '수', '목', '금'];
+
+    let gradeRowIdx = -1;
+    for (let i = 0; i < 10; i++) {
+      if (fullTimetableData[i] && fullTimetableData[i].some(v => String(v).includes('1학년'))) {
+        gradeRowIdx = i; break;
+      }
+    }
+    let classRowIdx = gradeRowIdx !== -1 ? gradeRowIdx + 1 : -1;
+
+    let targetColIndex = -1;
+    let currentGrade = "";
+
+    if (gradeRowIdx !== -1 && classRowIdx !== -1) {
+      for (let c = 2; c < fullTimetableData[gradeRowIdx].length; c++) {
+        let gVal = String(fullTimetableData[gradeRowIdx][c] || '').trim();
+        if (gVal.includes('학년')) currentGrade = gVal;
+        
+        let cVal = String(fullTimetableData[classRowIdx][c] || '').trim();
+        let formattedClass = (cVal && !isNaN(cVal)) ? cVal + '반' : cVal;
+
+        if (currentGrade === selectedGrade && formattedClass === selectedClass) {
+          targetColIndex = c;
+          break;
+        }
+      }
+    }
+
+    if (targetColIndex === -1) {
+      showAlert(`${selectedGrade} ${selectedClass} 시간표 열을 찾을 수 없습니다.`); return;
+    }
+
+    let currentDay = "";
+    let startRow = classRowIdx !== -1 ? classRowIdx + 1 : 4;
+
+    for (let r = startRow; r < fullTimetableData.length; r++) {
+      let rowDay = String(fullTimetableData[r][0] || '').trim();
+      if (rowDay && days.includes(rowDay)) currentDay = rowDay;
+      
+      let periodStr = String(fullTimetableData[r][1] || '').trim();
+      let pMatch = periodStr.match(/([1-8])/);
+      if (!pMatch) continue; 
+      let pNum = pMatch[1];
+
+      if (!currentDay) continue;
+
+      let cellVal = String(fullTimetableData[r][targetColIndex] || '').trim();
+      if (cellVal) {
+        if (!schedule[pNum]) schedule[pNum] = {};
+        let formattedCell = cellVal.replace(/\n/g, ' ').replace(/_x000D_/g, '');
+        schedule[pNum][currentDay] = `<span style="font-size:13px; color:#1e293b; font-weight:600;">${formattedCell}</span>`;
+      }
+    }
+
+    renderCompactTimetable(schedule, `${selectedGrade} ${selectedClass} 시간표`);
+  }
+
+  function renderCompactTimetable(schedule, title) {
+    const days = ['월', '화', '수', '목', '금'];
+    
+    let myHtml = `<table style="width:max-content; margin: 0 auto; border-collapse: collapse; text-align:center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); background:#fff;">`;
+    
+    myHtml += `<tr>
+                 <th style="background:#f1f5f9; padding:10px 15px; border:1px solid #cbd5e1; font-size:13px; white-space:nowrap;">교시</th>
+                 <th style="background:#f1f5f9; padding:10px 15px; border:1px solid #cbd5e1; font-size:13px; white-space:nowrap;">월</th>
+                 <th style="background:#f1f5f9; padding:10px 15px; border:1px solid #cbd5e1; font-size:13px; white-space:nowrap;">화</th>
+                 <th style="background:#f1f5f9; padding:10px 15px; border:1px solid #cbd5e1; font-size:13px; white-space:nowrap;">수</th>
+                 <th style="background:#f1f5f9; padding:10px 15px; border:1px solid #cbd5e1; font-size:13px; white-space:nowrap;">목</th>
+                 <th style="background:#f1f5f9; padding:10px 15px; border:1px solid #cbd5e1; font-size:13px; white-space:nowrap;">금</th>
+               </tr>`;
+
+    for (let p = 1; p <= 8; p++) {
+      let hasClassInPeriod = days.some(d => schedule[p] && schedule[p][d]);
+      if (p === 8 && !hasClassInPeriod) continue; 
+
+      myHtml += `<tr><td style="background:#f8fafc; font-weight:bold; border:1px solid #e2e8f0; padding:10px 15px; color:#64748b; font-size:12px; white-space:nowrap;">${p}</td>`;
+      days.forEach(d => {
+        let content = (schedule[p] && schedule[p][d]) ? schedule[p][d] : '';
+        let bg = content ? '#eff6ff' : '#ffffff'; 
+        
+        myHtml += `<td style="background:${bg}; border:1px solid #e2e8f0; padding:10px 15px; line-height:1.4; vertical-align:middle; white-space:nowrap;">${content}</td>`;
+      });
+      myHtml += `</tr>`;
+    }
+    myHtml += `</table>`;
+
+    document.getElementById('viewTimetable').innerHTML = myHtml;
+    document.getElementById('zoomLabel').innerText = title;
+    
+    const modalBox = document.querySelector('#timetableMod .modal-content');
+    if (modalBox) {
+      modalBox.style.width = '910px';   
+      modalBox.style.height = '910px';  
+    }
+    
+    timetableZoom = 1.0;
+    applyTimetableZoom();
+  }
+
+  function resetTimetable() {
+    document.getElementById('searchTeacherName').value = '';
+    
+    if(document.getElementById('searchGrade')) {
+      document.getElementById('searchGrade').selectedIndex = 0;
+      document.getElementById('searchClass').selectedIndex = 0;
+    }
+    
+    renderFullTimetable();
+  }
+
+  function zoomTimetable(amount) {
+    timetableZoom = Math.max(0.5, Math.min(2.0, timetableZoom + amount));
+    applyTimetableZoom();
+  }
+
+  function resetZoomTimetable() {
+    timetableZoom = 1.0;
+    applyTimetableZoom();
+  }
+
+  function applyTimetableZoom() {
+    const table = document.getElementById('viewTimetable');
+    table.style.zoom = timetableZoom;
+    document.getElementById('zoomLabel').innerText = Math.round(timetableZoom * 100) + '%';
+  }
+</script>

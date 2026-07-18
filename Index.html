@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <?!= include('CSS'); ?>
+  </head>
+  <body>
+    <div id="loadingOverlay">
+      <div class="spinner"></div>
+      <div id="loadingText" class="loading-text">데이터 처리 중...</div>
+    </div>
+    
+    <div id="customAlertMod" class="modal">
+      <div class="modal-content" style="text-align: center; max-width: 320px;">
+        <h3 id="alertTitle" style="margin-top:0">알림</h3>
+        <p id="alertMsg" style="margin-bottom: 20px; font-weight: bold; white-space: pre-wrap;"></p>
+        <div style="display:flex; gap:10px;">
+          <button id="alertOkBtn" class="btn-search" style="flex:1; width:100%">확인</button>
+          <button id="alertCancelBtn" class="btn-cancel" style="flex:1; margin-top:0; display:none;">취소</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-area">
+      <h2>주간 계획서</h2>
+      
+      <div class="btn-group" style="display: flex; width: 100%; justify-content: center; gap: 0; flex-wrap: nowrap;">
+        
+        <div style="display: flex; flex: 1; justify-content: flex-end; gap: 15px; padding-right: 7.5px;">
+          <div class="card-btn" onclick="openMod('choiceMod')" style="border-color: var(--primary); width: 100px; flex: none;">
+            <i class="fas fa-edit" style="color:var(--primary)"></i>등록
+          </div>
+          <div class="card-btn" onclick="openEditMod()" style="border-color: var(--edit); width: 100px; flex: none;">
+            <i class="fas fa-pen" style="color:var(--edit)"></i>수정
+          </div>
+        </div>
+
+        <div style="display: flex; flex: 1; justify-content: flex-start; gap: 15px; padding-left: 7.5px;">
+          <div class="card-btn" onclick="openDeleteMod()" style="border-color: var(--danger); width: 100px; flex: none;">
+            <i class="fas fa-trash-alt" style="color:var(--danger)"></i>삭제
+          </div>
+          <div class="card-btn" onclick="window.print()" style="border-color: #666; width: 100px; flex: none;">
+            <i class="fas fa-print" style="color:#666"></i>인쇄
+          </div>
+          
+          <!-- 첫 번째 열: 전체 시간표 (위) / 방과후 신청 (아래) -->
+          <div class="stacked-btn-wrapper" style="width: max-content; flex: none;">
+            <button class="stacked-btn" onclick="openTimetableModal()" style="border-color: #e11d48; color: #e11d48; padding: 0 15px;">
+              <i class="fas fa-table" style="margin-right: 6px;"></i>전체 시간표
+            </button>
+            <button class="stacked-btn" onclick="window.open('https://script.google.com/macros/s/AKfycbw3g841N66dD-v82Rsufi7o3c91oeNpyu8_WBlv-OqnY9FysMMHclA-uj-Jht_P0xT3jg/exec', '_blank')" style="border-color: #f97316; color: #f97316; padding: 0 15px;">
+              <i class="fas fa-chalkboard-teacher" style="margin-right: 6px;"></i>방과후 신청
+            </button>
+          </div>
+
+          <!-- 두 번째 열: 시청각실 예약 (위) / 자기평가서 작성 (아래) -->
+          <div class="stacked-btn-wrapper" style="width: 155px; flex: none;">
+            <button class="stacked-btn" onclick="openAudiWeekly()" style="border-color: #9c27b0; color: #9c27b0; width: 100%; box-sizing: border-box; white-space: nowrap;">
+              <i class="fas fa-video" style="margin-right: 6px;"></i>시청각실 예약
+            </button>
+            <button class="stacked-btn" onclick="window.open('https://script.google.com/macros/s/AKfycbxzVAsMPUkxFxoRQ7CQaVJnVlkdITq8Epl-DV7gMaePOPYLWkZvKDLpAXJgxCUDdTpu/exec', '_blank')" style="border-color: #10b981; color: #10b981; width: 100%; box-sizing: border-box; white-space: nowrap;">
+              <i class="fas fa-file-signature" style="margin-right: 6px;"></i>자기평가서 작성
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 시청각실 주간 시간표 및 예약 시스템 모듈 연결 -->
+    <?!= HtmlService.createHtmlOutputFromFile('Audi_System').getContent(); ?>
+
+    <div class="search-box">
+      <select id="ySel" onchange="upWeeks()"></select> 
+      <select id="mSel" onchange="upWeeks()"></select> 
+      <select id="wSel"></select>
+      <button class="btn-search" onclick="loadAll()">조회</button>
+    </div>
+
+    <div id="printTitle" class="print-only-title"></div>
+
+    <div class="mobile-scroll-wrapper">
+      <div class="unified-content">
+
+        <div class="notice-container">
+          <div class="notice-badge">전달사항</div>
+          <div id="noticeTxt" class="notice-content">조회 버튼을 눌러주세요.</div>
+        </div>
+
+        <h3 class="table-title">연간 행사</h3>
+        <table id="dateTable">
+          <thead id="dateHead"></thead> 
+          <tbody id="dateBody">
+            <tr>
+              <td style="padding:40px; color:#999; text-align:center;">
+                상단에서 주차 선택 후 [조회] 버튼을 눌러주세요.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div id="rangeInfo" style="text-align:right; font-size:11px; color:#999; margin-bottom:15px;"></div>
+        
+        <!-- 제목은 중앙에 고정, 버튼은 우측에 띄우는 레이아웃 -->
+        <div style="position: relative; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; min-height: 40px;">
+          <h3 class="table-title" style="margin: 0;">부서별 업무</h3>
+          <div style="position: absolute; right: 0; display: flex; gap: 8px;">
+            <button onclick="applyDateFilter()" class="btn-search" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #3b82f6; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔍 선택확대</button>
+            <button onclick="resetDateFilter()" class="btn-cancel" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #94a3b8; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔄 원래대로</button>
+          </div>
+        </div>
+        
+        <table id="workTable">
+          <thead id="workHead"></thead> 
+          <tbody id="workBody">
+            <tr>
+              <td style="padding:40px; color:#999; text-align:center;">
+                상단에서 주차 선택 후 [조회] 버튼을 눌러주세요.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+
+    <div id="timetableMod" class="modal">
+      <div class="modal-content" style="max-width: 95vw; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 20px;">
+        <h3 style="text-align: center; color: #e11d48; margin-top: 0; margin-bottom: 10px;">전체 시간표 조회</h3>
+        
+        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+          <input type="text" id="searchTeacherName" placeholder="선생님 성함 (예: 박정1)" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; width: 160px;">
+          <button class="btn-search" style="padding: 8px 16px; margin: 0; background: var(--primary);" onclick="searchMyTimetable()">교사 검색</button>
+          
+          <span style="color:#cbd5e1; margin: 0 5px;">|</span>
+
+          <select id="searchGrade" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; cursor:pointer;">
+            <option value="1학년">1학년</option>
+            <option value="2학년">2학년</option>
+            <option value="3학년">3학년</option>
+          </select>
+          <select id="searchClass" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; cursor:pointer;">
+            <option value="1반">1반</option><option value="2반">2반</option><option value="3반">3반</option>
+            <option value="4반">4반</option><option value="5반">5반</option><option value="6반">6반</option>
+            <option value="7반">7반</option><option value="8반">8반</option><option value="9반">9반</option>
+          </select>
+          <button class="btn-search" style="padding: 8px 16px; margin: 0; background: #0ea5e9;" onclick="searchClassTimetable()">반 검색</button>
+
+          <span style="color:#cbd5e1; margin: 0 5px;">|</span>
+
+          <button class="btn-search" style="padding: 8px 16px; margin: 0; background: #94a3b8;" onclick="resetTimetable()">전체 보기</button>
+        </div>
+
+        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <button class="btn-search" style="padding: 6px 14px; background: #64748b; font-size: 13px; margin: 0; width: auto;" onclick="zoomTimetable(-0.1)"><i class="fas fa-search-minus"></i> 축소</button>
+          <span id="zoomLabel" style="font-weight: bold; font-size: 14px; min-width: 60px; text-align: center;">100%</span>
+          <button class="btn-search" style="padding: 6px 14px; background: #64748b; font-size: 13px; margin: 0; width: auto;" onclick="zoomTimetable(0.1)"><i class="fas fa-search-plus"></i> 확대</button>
+          <button class="btn-search" style="padding: 6px 14px; background: #94a3b8; font-size: 13px; color: white; margin: 0; width: auto;" onclick="resetZoomTimetable()">원래대로</button>
+        </div>
+        
+        <div id="timetableWrapper" style="flex: 1; overflow: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; padding: 10px; position: relative;">
+          <table id="viewTimetable" style="border-collapse: collapse; background: white; transform-origin: top left;">
+            </table>
+        </div>
+        
+        <button class="btn-cancel" style="margin-top: 15px; max-width: 150px; margin-left: auto; margin-right: auto;" onclick="closeMod('timetableMod')">닫기</button>
+      </div>
+    </div>
+
+    <?!= include('Modals_Task'); ?>
+    <?!= include('Modals_Audi'); ?>
+
+    <script>
+      const serverData = <?!= JSON.stringify(initialData) ?>;
+    </script>    
+    <?!= include('JS_Main'); ?>
+  </body>
+</html>

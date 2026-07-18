@@ -1,0 +1,294 @@
+<!-- 시청각실 주간 현황 모달 -->
+<div id="audiWeeklyMod" class="modal" style="z-index: 9999;">
+  <div class="modal-content" style="max-width: 900px; padding: 25px; position: relative;">
+    <h3 style="text-align:center; color:#9c27b0; margin-bottom: 20px;">🎬 시청각실 주간 현황 및 예약</h3>
+    
+    <!-- 우측 상단 다중 등록 및 삭제 버튼 -->
+    <div style="position:absolute; top:25px; right:25px; display:flex; gap:10px;">
+      <button onclick="openMultiAudiApplyForm()" style="padding:8px 16px; background:#3b82f6; color:#fff; border:none; border-radius:5px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1);">선택 항목 등록</button>
+      <button onclick="promptMultiAudiDelete()" style="padding:8px 16px; background:#e11d48; color:#fff; border:none; border-radius:5px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1);">선택 항목 삭제</button>
+    </div>
+
+    <!-- 주차 선택 컨트롤 -->
+    <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; align-items:center;">
+      <select id="audiYearSel" onchange="loadAudiWeekly()" style="padding:6px; border-radius:5px; border:1px solid #ccc;"></select>
+      <select id="audiMonthSel" onchange="updateAudiWeeksAndLoad()" style="padding:6px; border-radius:5px; border:1px solid #ccc;"></select>
+      <select id="audiWeekSel" onchange="loadAudiWeekly()" style="padding:6px; border-radius:5px; border:1px solid #ccc;"></select>
+      <button class="btn-search" style="margin:0; padding:8px 15px; background:#9c27b0; border:none; border-radius:5px; color:#fff; cursor:pointer;" onclick="loadAudiWeekly()">조회</button>
+    </div>
+
+    <!-- 시간표 그리드 출력 영역 -->
+    <div id="audiTableContainer" style="overflow-x:auto;"></div>
+
+    <div style="text-align:center; margin-top:20px;">
+      <button class="btn-cancel" onclick="closeMod('audiWeeklyMod')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 개별 예약 입력 모달 -->
+<div id="audiApplyMod" class="modal" style="z-index: 10010;">
+  <div class="modal-content" style="max-width: 400px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+    <h3 style="color:#9c27b0; text-align:center; margin-top:0;">📝 시청각실 예약 신청</h3>
+    <div id="audiApplyInfo" style="text-align:center; background:#f3e8ff; color:#7e22ce; font-weight:bold; padding:10px; border-radius:8px; margin-bottom:15px;"></div>
+    
+    <input type="hidden" id="audiApplyDate">
+    <input type="hidden" id="audiApplyPeriod">
+
+    <div class="field" style="margin-bottom:15px;">
+      <label style="font-weight:bold; display:block; margin-bottom:5px;">사용 용도</label>
+      <input type="text" id="audiApplyPurpose" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:5px;" placeholder="예) 학부모 연수, 교직원 회의 등">
+    </div>
+    <div class="field" style="margin-bottom:15px;">
+      <label style="font-weight:bold; display:block; margin-bottom:5px;">담당 부서 또는 교사명</label>
+      <input type="text" id="audiApplyManager" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:5px;" placeholder="예) 교무기획부 박정환">
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:25px;">
+      <button class="btn-search" style="flex:2; background:#9c27b0; margin:0;" onclick="submitAudiApply()">✅ 신청하기</button>
+      <button class="btn-cancel" style="flex:1; margin:0;" onclick="closeMod('audiApplyMod')">취소</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openAudiWeekly() {
+    initAudiSelects();
+    openMod('audiWeeklyMod');
+  }
+
+  function initAudiSelects() {
+    const d = new Date();
+    let y = d.getFullYear(), m = d.getMonth() + 1;
+    let yH = '', mH = '';
+    for(let i = y - 2; i <= y + 2; i++) yH += `<option value="${i}" ${i === y ? 'selected' : ''}>${i}년</option>`;
+    for(let i = 1; i <= 12; i++) mH += `<option value="${i}" ${i === m ? 'selected' : ''}>${i}월</option>`;
+    
+    document.getElementById('audiYearSel').innerHTML = yH;
+    document.getElementById('audiMonthSel').innerHTML = mH;
+    updateAudiWeeksAndLoad();
+  }
+
+  function updateAudiWeeksAndLoad() {
+    const y = parseInt(document.getElementById('audiYearSel').value);
+    const m = parseInt(document.getElementById('audiMonthSel').value);
+    const d = new Date();
+    const l = new Date(y, m, 0).getDate();
+    
+    let wCount = 0;
+    let currentWeekNum = 1;
+    let weeksMap = [];
+    
+    for (let i = 1; i <= l; i++) {
+      const cur = new Date(y, m - 1, i);
+      if (i === 1 || cur.getDay() === 1) { wCount++; weeksMap.push(wCount); }
+      if (y === d.getFullYear() && m === (d.getMonth() + 1) && i === d.getDate()) currentWeekNum = wCount;
+    }
+    
+    let wH = '';
+    weeksMap.forEach(w => {
+      wH += `<option value="${w}" ${w === currentWeekNum ? 'selected' : ''}>${w}주차</option>`;
+    });
+    document.getElementById('audiWeekSel').innerHTML = wH;
+    loadAudiWeekly();
+  }
+
+  function calculateAudiDates() {
+    const y = parseInt(document.getElementById('audiYearSel').value);
+    const m = parseInt(document.getElementById('audiMonthSel').value);
+    const targetW = parseInt(document.getElementById('audiWeekSel').value);
+    const l = new Date(y, m, 0).getDate();
+    
+    let wCount = 0;
+    let dates = [];
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+
+    for (let i = 1; i <= l; i++) {
+      const cur = new Date(y, m - 1, i);
+      if (i === 1 || cur.getDay() === 1) wCount++;
+      
+      if (wCount === targetW && cur.getDay() >= 1 && cur.getDay() <= 5) {
+        let dStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+        dates.push({ full: dStr, short: `${cur.getMonth() + 1}/${cur.getDate()}`, day: days[cur.getDay()] });
+      }
+    }
+    return dates;
+  }
+
+  let selectedAudiSlots = []; // 등록용 다중 선택 보관 배열
+  let selectedAudiDeletes = []; // 삭제용 다중 선택 보관 배열
+
+  function loadAudiWeekly() {
+    selectedAudiSlots = []; // 조회할 때마다 등록 선택 초기화
+    selectedAudiDeletes = []; // 조회할 때마다 삭제 선택 초기화
+    const dates = calculateAudiDates();
+    if (dates.length === 0) {
+      document.getElementById('audiTableContainer').innerHTML = "<p style='text-align:center;'>해당 주차의 평일(월~금)이 없습니다.</p>";
+      return;
+    }
+    
+    const dateStrings = dates.map(d => d.full);
+    toggleLoading(true, "시청각실 현황 조회 중...");
+    g.withSuccessHandler(bookings => {
+      toggleLoading(false);
+      renderAudiTable(dates, bookings);
+    }).getAudiBookings(dateStrings);
+  }
+
+  function renderAudiTable(dates, bookings) {
+    const periods = ['1교시', '2교시', '3교시', '4교시', '점심시간<br><span style="font-size:11px;">(12:40~14:00)</span>', '5교시', '6교시', '7교시'];
+    const pKeys = ['1교시', '2교시', '3교시', '4교시', '점심시간', '5교시', '6교시', '7교시'];
+
+    let html = `<table style="width:100%; border-collapse:collapse; text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.05); min-width:700px;">`;
+    
+    html += `<tr><th style="background:#f3e8ff; color:#7e22ce; padding:12px; border:1px solid #e2e8f0; width:120px;">교시 / 날짜</th>`;
+    dates.forEach(d => {
+      html += `<th style="background:#f8fafc; padding:12px; border:1px solid #e2e8f0;">${d.short} (${d.day})</th>`;
+    });
+    html += `</tr>`;
+
+    periods.forEach((periodLabel, pIdx) => {
+      let pKey = pKeys[pIdx];
+      html += `<tr><td style="background:#f8fafc; font-weight:bold; border:1px solid #e2e8f0; padding:12px;">${periodLabel}</td>`;
+      
+      dates.forEach(d => {
+        let b = bookings.find(x => x.date === d.full && x.period === pKey);
+        let slotId = `${d.full}|${pKey}|${d.day}`;
+        
+        if (b) {
+          // 이미 예약된 항목: 클릭 시 삭제 대상 다중 선택 토글로 변경
+          html += `<td id="del_cell_${slotId}" style="background:#fee2e2; border:1px solid #e2e8f0; padding:12px; line-height:1.4; cursor:pointer; transition:0.2s;" 
+                       onclick="toggleAudiDeleteSlot('${d.full}', '${pKey}', '${d.day}', '${b.purpose}', '${b.manager}')" title="클릭하여 삭제할 대상 선택">
+                     <strong style="color:#e11d48; font-size:14px;">${b.purpose}</strong><br>
+                     <span style="color:#475569; font-size:13px;">${b.manager}</span>
+                   </td>`;
+        } else {
+          // 빈 칸: 클릭 시 등록 대상 선택 토글
+          html += `<td id="cell_${slotId}" style="background:#ffffff; border:1px solid #e2e8f0; padding:12px; cursor:pointer; color:#10b981; font-weight:bold; font-size:13px; transition:0.2s;" 
+                       onclick="toggleAudiSlot('${d.full}', '${pKey}', '${d.day}')">
+                     + 선택
+                   </td>`;
+        }
+      });
+      html += `</tr>`;
+    });
+    html += `</table>`;
+    document.getElementById('audiTableContainer').innerHTML = html;
+  }
+
+  // [등록] 선택 칸을 껐다 켰다 하는 함수
+  function toggleAudiSlot(dateFull, periodKey, dayName) {
+    if (selectedAudiDeletes.length > 0) {
+      showAlert("현재 '삭제'할 항목을 선택 중입니다.\n혼선을 방지하기 위해 먼저 선택 항목을 삭제하시거나, 삭제 선택을 모두 해제해주세요.");
+      return;
+    }
+
+    const slotId = `${dateFull}|${periodKey}|${dayName}`;
+    const cell = document.getElementById(`cell_${slotId}`);
+    const idx = selectedAudiSlots.findIndex(s => s.id === slotId);
+    
+    if (idx > -1) {
+      selectedAudiSlots.splice(idx, 1);
+      cell.style.background = '#ffffff';
+      cell.innerText = '+ 선택';
+    } else {
+      selectedAudiSlots.push({ id: slotId, date: dateFull, period: periodKey, day: dayName });
+      cell.style.background = '#d1fae5';
+      cell.innerText = '✔️ 선택됨';
+    }
+  }
+
+  // [삭제] 예약된 칸을 삭제 목적으로 다중 선택하는 함수
+  function toggleAudiDeleteSlot(dateFull, periodKey, dayName, purpose, manager) {
+    if (selectedAudiSlots.length > 0) {
+      showAlert("현재 새로운 예약을 '등록'하기 위해 빈칸을 선택 중입니다.\n혼선을 방지하기 위해 등록을 먼저 완료하시거나, 선택을 모두 해제해주세요.");
+      return;
+    }
+
+    const slotId = `${dateFull}|${periodKey}|${dayName}`;
+    const cell = document.getElementById(`del_cell_${slotId}`);
+    const idx = selectedAudiDeletes.findIndex(s => s.id === slotId);
+    
+    if (idx > -1) {
+      // 선택 해제
+      selectedAudiDeletes.splice(idx, 1);
+      cell.style.background = '#fee2e2'; // 원래 연한 빨강으로 복구
+      cell.style.border = '1px solid #e2e8f0';
+    } else {
+      // 선택 추가
+      selectedAudiDeletes.push({ id: slotId, date: dateFull, period: periodKey, purpose: purpose, manager: manager, day: dayName });
+      cell.style.background = '#fca5a5'; // 선택되었을 때 진한 빨강으로 시각적 표시
+      cell.style.border = '2px solid #ef4444';
+    }
+  }
+
+  // 다중 선택 후 우측 상단 '등록' 버튼을 눌렀을 때
+  function openMultiAudiApplyForm() {
+    if (selectedAudiSlots.length === 0) {
+      showAlert("예약할 교시를 빈칸에서 클릭하여 먼저 선택해주세요.");
+      return;
+    }
+    
+    document.getElementById('audiApplyPurpose').value = '';
+    document.getElementById('audiApplyManager').value = '';
+    
+    let infoText = selectedAudiSlots.map(s => `${s.date.substring(5)}(${s.day}) ${s.period}`).join(', ');
+    if(infoText.length > 35) infoText = infoText.substring(0, 35) + '... 외 ' + (selectedAudiSlots.length - 1) + '건';
+    
+    document.getElementById('audiApplyInfo').innerHTML = `📌 총 ${selectedAudiSlots.length}타임 선택됨<br><span style="font-size:12px; font-weight:normal; color:#475569;">${infoText}</span>`;
+    openMod('audiApplyMod');
+  }
+
+  // 예약 일괄 저장 제출
+  function submitAudiApply() {
+    const purpose = document.getElementById('audiApplyPurpose').value.trim();
+    const manager = document.getElementById('audiApplyManager').value.trim();
+
+    if (!purpose || !manager) {
+      showAlert("용도와 담당자를 모두 입력해주세요!");
+      return;
+    }
+
+    toggleLoading(true, "예약 처리 중...");
+    const slotsToSave = selectedAudiSlots.map(s => ({ date: s.date, period: s.period }));
+    
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      if (res.success) {
+        closeMod('audiApplyMod');
+        showAlert("성공적으로 일괄 예약되었습니다.");
+        loadAudiWeekly(); // 완료 후 표 새로고침
+      } else {
+        showAlert(res.msg); 
+      }
+    }).saveMultipleAudiBookings(slotsToSave, purpose, manager);
+  }
+
+  // 다중 선택 후 우측 상단 '삭제' 버튼을 눌렀을 때 확인 팝업
+  function promptMultiAudiDelete() {
+    if (selectedAudiDeletes.length === 0) {
+      showAlert("삭제할 예약 항목을 표에서 먼저 클릭하여 선택해주세요.");
+      return;
+    }
+
+    // 어떤 항목들을 지우는지 요약해서 보여주기
+    let infoList = selectedAudiDeletes.map(s => `${s.date.substring(5)}(${s.day}) [${s.period}] ${s.purpose}`);
+    let displayInfo = infoList.slice(0, 3).join('\n');
+    if (infoList.length > 3) displayInfo += `\n... 외 ${infoList.length - 3}건`;
+
+    showConfirm(`총 ${selectedAudiDeletes.length}건의 예약을 일괄 삭제하시겠습니까?\n\n${displayInfo}\n\n⚠️ 삭제 전 반드시 담당 부서/교사와 상의를 완료하셨는지 확인해주세요!`, () => {
+      toggleLoading(true, "삭제 처리 중...");
+      const slotsToDelete = selectedAudiDeletes.map(s => ({ date: s.date, period: s.period }));
+      
+      g.withSuccessHandler(res => {
+        toggleLoading(false);
+        if(res.success) {
+          showAlert("선택한 예약이 일괄 삭제되었습니다.");
+          loadAudiWeekly(); // 삭제 후 새로고침
+        } else {
+          showAlert("삭제 중 오류가 발생했습니다.");
+        }
+      }).deleteMultipleAudiBookingsFromSheet(slotsToDelete);
+    });
+  }
+</script>

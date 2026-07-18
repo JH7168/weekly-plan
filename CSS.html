@@ -1,0 +1,208 @@
+<style>
+  /* 1. 시스템 공통 변수 */
+  :root {
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --edit: #10b981;
+    --danger: #ef4444;
+    --notice: #f5b026;
+    --bg: #f5f6f8;
+    --border: #e2e8f0;
+  }
+
+  * { box-sizing: border-box; }
+  
+  body { 
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; 
+    padding: 20px; background-color: var(--bg); color: #333; 
+    max-width: 1200px; margin: 0 auto; line-height: 1.6; 
+  }
+
+  .header-area { text-align: center; margin-bottom: 25px; }
+  h2 { font-size: 26px; font-weight: bold; margin-bottom: 15px; color: #333; }
+  h3 { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; color: #333; }
+
+  /* 2. 상단 메인 버튼 그룹 */
+  .btn-group { 
+    display: flex; justify-content: center; flex-wrap: nowrap; gap: 15px; margin-bottom: 25px; 
+  }
+  
+  .card-btn { 
+    background: #ffffff; padding: 15px 10px; border-radius: 10px; cursor: pointer; 
+    border: 1px solid var(--border); transition: all 0.2s ease; text-align: center; 
+    flex: 1; max-width: 100px; height: 90px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    gap: 10px; font-weight: bold; font-size: 14px; color: #444;
+  }
+  .card-btn:hover { background: #f8fafc; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
+  .card-btn i { font-size: 24px; }
+
+  /* 시청각실 전용 우측 쪼개진 버튼 */
+  .stacked-btn-wrapper { display: flex; flex-direction: column; gap: 8px; flex: 1; max-width: 130px; height: 90px; }
+  .stacked-btn { 
+    flex: 1; background: #ffffff; border: 1px solid var(--border); border-radius: 8px; 
+    cursor: pointer; font-weight: bold; transition: all 0.2s; display: flex; align-items: center; 
+    justify-content: center; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+  }
+  .stacked-btn:hover { background: #f8fafc; }
+
+  /* 3. 조회 필터 박스 (무조건 한 줄 유지) */
+  .search-box { 
+    display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 10px; 
+    background: #ffffff; padding: 15px 20px; border-radius: 12px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 25px; border: 1px solid #f1f5f9;
+  }
+  .search-box select { 
+    padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1; 
+    font-size: 15px; font-weight: 600; color: #333; outline: none; flex: 1; max-width: 150px;
+  }
+  
+  .btn-search { background: var(--primary); color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; white-space: nowrap; }
+  .btn-search:hover { background: var(--primary-hover); }
+  
+  .btn-cancel { background: #94a3b8; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; width: 100%; text-align: center; margin-top: 10px; }
+  .btn-cancel:hover { background: #64748b; }
+
+  /* 4. 전달사항 박스 */
+  .notice-container {
+    display: flex; background: #fffdf0; border: 1px solid #fde08b; border-radius: 8px; 
+    overflow: hidden; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+  .notice-badge {
+    background: var(--notice); color: white; font-weight: bold; padding: 15px 20px; 
+    display: flex; align-items: center; justify-content: center; min-width: 100px; font-size: 14px;
+  }
+  .notice-content {
+    padding: 15px 20px; color: #333; flex: 1; line-height: 1.6; font-size: 14.5px; text-align: left;
+  }
+  .notice-line { margin-bottom: 5px; }
+
+  /* 5. 주간 계획표 메인 테이블 */
+  table { width: 100%; border-collapse: collapse; min-width: 800px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
+  th, td { padding: 12px; border: 1px solid var(--border); text-align: center; }
+  th { background: #f8fafc; font-weight: bold; color: #333; font-size: 14px; }
+  
+  .dept-name-cell { font-weight: bold; background: #fdfdfd; width: 130px; color: #333; }
+  .date-row td { background: #fdfdfd; font-weight: bold; font-size: 14px; color: #333; }
+  .content-row td { min-height: 50px; height: 50px; font-size: 14px; color: #333; }
+
+  .event-bar {
+    background: #eef5ff; border-left: 4px solid var(--primary); padding: 8px 10px; 
+    border-radius: 4px; font-size: 13.5px; font-weight: 600; color: #333; white-space: pre-wrap; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; min-height: 36px; 
+    display: flex; align-items: center; line-height: 1.4;
+  }
+
+  /* 6. 공통 팝업창 (모달) */
+  .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 9999; padding: 15px; }
+  .modal-content { background: #ffffff; padding: 25px; border-radius: 16px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+
+  .field { margin-bottom: 15px; text-align: left; }
+  .field label { display: block; font-weight: bold; margin-bottom: 8px; color: #444; font-size: 14px; }
+  .field input[type="text"], .field input[type="date"], .field input[type="time"], .field select, .field textarea { 
+    width: 100%; padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary); }
+
+  /* 7. 등록 선택창 스타일 */
+  .type-select-btn {
+    flex: 1; background: #ffffff; border: 1px solid #e2e8f0; padding: 25px 10px; 
+    text-align: center; cursor: pointer; border-radius: 12px; transition: 0.2s; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    font-weight: bold; color: #333; font-size: 14px;
+  }
+  .type-select-btn:hover { border-color: #cbd5e1; background: #f8fafc; }
+  
+  .btn-outline-wide {
+    width: 100%; background: white; border: 1px solid #cbd5e1; color: #64748b; 
+    padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 5px;
+  }
+  .btn-outline-wide:hover { background: #f1f5f9; color: #333; }
+
+  /* 8. 부서 등록 마법사 및 팝업 스타일 */
+  .dept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; max-height: 45vh; overflow-y: auto; padding: 5px; }
+  .dept-btn { background: #ffffff; border: 1px solid var(--border); border-radius: 10px; padding: 15px 10px; font-size: 15px; font-weight: bold; color: #444; cursor: pointer; transition: 0.2s; text-align: center; }
+  .dept-btn:hover { border-color: var(--primary); background: #eff6ff; color: var(--primary); }
+
+  .toggle-group { display: flex; background: #e2e8f0; border-radius: 8px; padding: 3px; gap: 3px; }
+  .tg-btn { flex: 1; border: none; background: transparent; padding: 8px 12px; font-size: 13px; font-weight: bold; cursor: pointer; color: #666; border-radius: 6px; }
+  .tg-btn.active { background: #ffffff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  .calendar-days-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 13px; color: #666; }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+  .cal-day { padding: 10px 0; background: #ffffff; border: 1px solid transparent; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; }
+  .cal-day:hover { background: #f1f5f9; }
+  .cal-day.empty { background: transparent; cursor: default; }
+  .cal-day.selected { background: var(--primary); color: white; border-color: var(--primary); }
+  .cal-day.range-path { background: #eff6ff; color: var(--primary); }
+
+  /* 시청각실 그리드 및 상태창 */
+  .period-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .period-item { background: #ffffff; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .period-item:hover { border-color: #a855f7; background: #faf5ff; }
+  .period-item span { font-size: 11px; color: #888; }
+  .period-item b { font-size: 13px; color: #333; }
+  .period-item input[type="checkbox"] { width: 16px; height: 16px; }
+  .lunch-item { grid-column: 1 / -1; background: #fefce8; border-color: #fde047; justify-content: center; } 
+  .period-item.disabled { background: #f1f5f9; border-color: #e2e8f0; cursor: not-allowed; opacity: 0.5; }
+
+  .status-item { display: flex; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; margin-bottom: 8px; }
+  .status-item.booked { border-left: 4px solid #06b6d4; }
+  .status-item.empty { border-left: 4px solid #e2e8f0; background: #f8fafc; opacity: 0.8; }
+  .status-time { min-width: 100px; border-right: 1px dashed #cbd5e1; margin-right: 12px; padding-right: 12px; text-align: left; }
+  .status-time b { color: #333; font-size: 14px; display: block; }
+  .status-time span { color: #888; font-size: 11px; }
+  .status-desc { flex: 1; font-size: 14px; color: #333; text-align: left; }
+  
+  .btn-cancel-small { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-top: 6px; font-weight: bold; }
+
+  /* 삭제/수정 리스트 */
+  .del-item, .edit-item { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+  .del-item input[type="checkbox"] { margin-right: 12px; width: 18px; height: 18px; }
+  .del-item-info span, .edit-item-info span { font-size: 12px; color: #666; display: block; }
+  .del-item-info b, .edit-item-info b { font-size: 14px; color: #333; }
+  .btn-del-sel { background: var(--danger); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; margin-top: 12px; }
+
+  /* 로딩 및 인쇄 설정 */
+  #loadingOverlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.85); z-index:10000; flex-direction:column; justify-content:center; align-items:center; }
+  .spinner { border: 4px solid #e2e8f0; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  
+  .print-only-title { display: none; text-align: center; font-size: 26px; font-weight: bold; margin-bottom: 25px; color: black; }
+  @media print {
+    body { padding: 0; background: white; }
+    .btn-group, .search-box, .modal, .stacked-btn-wrapper, .notice-container { display: none !important; }
+    .print-only-title { display: block !important; }
+    table, th, td { border: 1px solid black !important; }
+    .event-bar { border-left: 4px solid black !important; background: transparent !important; color: black !important; }
+  }
+
+  /* 모바일 화면 최적화 */
+  @media (max-width: 768px) {
+    body { padding: 10px; min-width: 850px; overflow-x: auto; }
+    .search-box { padding: 12px 15px; }
+    .btn-group { gap: 10px; }
+    .card-btn { height: 80px; font-size: 13px; }
+    .stacked-btn-wrapper { height: 80px; }
+  }
+
+  /* 전체시간표 전용 고급 보더 스타일 디자인 세부 보강 */
+  #viewTimetable th {
+    background: #f1f5f9;
+    color: #1e293b;
+    font-weight: 700;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  
+  #viewTimetable td {
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+</style>

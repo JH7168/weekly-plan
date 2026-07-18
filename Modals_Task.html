@@ -1,0 +1,491 @@
+<div id="choiceMod" class="modal">
+  <div class="modal-content" style="max-width: 360px; padding: 25px;">
+    <h3 style="text-align:center; font-size:18px; margin-bottom:20px; color:#333;">등록 유형 선택</h3>
+    <div style="display:flex; gap:15px; margin-bottom: 15px;">
+      <div onclick="switchTo('notMod')" class="type-select-btn">
+        <i class="fas fa-bullhorn" style="color:#f5b026; font-size:24px; margin-bottom:8px;"></i>
+        <span>전달사항</span>
+      </div>
+      <div onclick="switchTo('workMod')" class="type-select-btn">
+        <i class="fas fa-tasks" style="color:#3b82f6; font-size:24px; margin-bottom:8px;"></i>
+        <span>부서업무</span>
+      </div>
+    </div>
+    <button class="btn-outline-wide" onclick="closeMod('choiceMod')">닫기</button>
+  </div>
+</div>
+
+<div id="workMod" class="modal">
+  <div class="modal-content" style="max-width: 600px; min-height: 500px;">
+    
+    <div id="wzStep1">
+      <h3 style="color:var(--primary); text-align:center; margin-bottom: 15px;">1단계: 부서 선택</h3>
+      <p style="text-align:center; color:#666; margin-bottom:20px; font-weight:bold;">업무를 주관하는 부서를 클릭해주세요.</p>
+      <input type="hidden" id="wzDept">
+      <div id="wzDeptGrid" class="dept-grid"></div>
+      <div style="margin-top: 20px; display:flex; gap:10px;">
+        <button class="btn-cancel" style="width:100%; margin-top:0;" onclick="closeMod('workMod')">취소</button>
+      </div>
+    </div>
+
+    <div id="wzStep2" style="display:none;">
+      <h3 style="color:var(--primary); text-align:center; margin-bottom: 10px;">2단계: 날짜 선택</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0; font-weight:bold;">
+          <input type="checkbox" id="wzIsRange" onclick="toggleWzRange()" style="width:20px; height:20px;">
+          기간으로 설정하기 (시작일과 종료일을 차례로 클릭)
+        </label>
+        <span id="wzRangeStatus" style="color:var(--danger); font-weight:bold; font-size:13px; display:none;">시작일을 선택하세요</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; font-weight:bold; font-size:20px;">
+         <button onclick="changeWzMonth(-1)" style="border:none; background:none; cursor:pointer; font-size:20px; color:var(--primary);">◀</button>
+         <span id="wzCalTitle"></span>
+         <button onclick="changeWzMonth(1)" style="border:none; background:none; cursor:pointer; font-size:20px; color:var(--primary);">▶</button>
+      </div>
+      <div class="calendar-days-header">
+         <span style="color:#ff6b6b">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span style="color:#4a90e2">토</span>
+      </div>
+      <div id="wzCalGrid" class="calendar-grid"></div>
+      <div style="margin-top: 20px; display:flex; gap:10px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="nextWzStep(1)">⬅ 이전으로</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('workMod')">닫기</button>
+      </div>
+    </div>
+
+    <div id="wzStep3" style="display:none;">
+      <h3 style="color:var(--primary); text-align:center; margin-bottom: 15px;">3단계: 상세 내용 입력</h3>
+      <div id="wzSelectedDateDisplay" style="text-align:center; background:#eef5ff; color:var(--primary); font-weight:bold; padding:8px; border-radius:8px; margin-bottom:20px;"></div>
+      
+      <div class="field" style="margin-bottom:15px;">
+        <label style="font-weight:bold; display:block; margin-bottom:5px;">상세 내용 입력 (일정명은 반드시 [ ] 안에 작성)</label>
+        <textarea id="wizardSingleInput" style="width:100%; height:220px; padding:15px; border:1px solid #cbd5e1; border-radius:5px; resize:none; font-family:inherit; font-size:14px; line-height:1.6;" placeholder="[선배멘토링]&#10;1. 일시: 2026. 7. 15.(수) 3교시~4교시&#10;2. 장소: 시청각실&#10;3. 대상: 1학년&#10;4. 전달사항: 임장지도 부탁드립니다."></textarea>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:20px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="nextWzStep(2)">⬅ 이전으로</button>
+        <button class="btn-search" style="flex:2;" onclick="saveWizard()">🎉 최종 등록하기</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="notMod" class="modal">
+  <div class="modal-content">
+    <h3 style="color:var(--notice); text-align:center">전달사항 등록</h3>
+    <div class="field">
+      <label id="notDateLabel">날짜 선택</label>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <input type="date" id="nsD" style="flex:1">
+        <input type="date" id="neD" style="flex:1; display:none;">
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; background:#f8f9fa; padding:10px; border-radius:8px;">
+        <input type="checkbox" id="isRangeNot" onchange="toggleDateFields('not')" style="width:18px; height:18px;">
+        <label for="isRangeNot" style="margin-bottom:0; cursor:pointer">기간으로 입력하기</label>
+      </div>
+    </div>
+    <div class="field"><label>전달사항</label><textarea id="notT" rows="5" style="width:100%"></textarea></div>
+    <button class="btn-search" style="width:100%; background:var(--notice)" onclick="saveN()">전달사항 저장</button>
+    <button class="btn-cancel" onclick="closeMod('notMod')">취소</button>
+  </div>
+</div>
+
+<div id="editMod" class="modal">
+  <div class="modal-content" style="max-width: 450px; padding: 25px;">
+    <div id="editStep1">
+      <h3 style="text-align:center; font-size:18px; margin-bottom:20px; color:#333;">수정 유형 선택</h3>
+      <div style="display:flex; gap:15px; margin-bottom: 15px;">
+        <div onclick="goToEditStep(2, 'notice')" class="type-select-btn">
+          <i class="fas fa-bullhorn" style="color:#f5b026; font-size:24px; margin-bottom:8px;"></i>
+          <span>전달사항</span>
+        </div>
+        <div onclick="goToEditStep(2, 'data')" class="type-select-btn">
+          <i class="fas fa-tasks" style="color:#3b82f6; font-size:24px; margin-bottom:8px;"></i>
+          <span>부서업무</span>
+        </div>
+      </div>
+      <button class="btn-outline-wide" onclick="closeMod('editMod')">닫기</button>
+    </div>
+    
+    <div id="editStep2" style="display:none;">
+      <h3 style="color:var(--edit); text-align:center; margin-bottom: 15px;">수정할 부서 선택</h3>
+      <div id="editDeptGrid" class="dept-grid"></div>
+      <div style="margin-top: 20px;">
+        <button class="btn-cancel" style="width:100%; margin-top:0;" onclick="goToEditStep(1)">⬅ 이전으로</button>
+      </div>
+    </div>
+
+    <div id="editStep3" style="display:none;">
+      <h3 style="color:var(--edit); text-align:center; margin-bottom: 15px;" id="editListTitle">항목 수정</h3>
+      <div id="editList" style="max-height: 350px; overflow-y: auto; background:#f8fafc; border:1px solid var(--border); padding:10px; border-radius:10px;"></div>
+      <div style="margin-top: 15px; display:flex; gap:10px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="goToEditStep(1)">⬅ 처음으로</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeEditModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="singleEditMod" class="modal" style="z-index:10001;">
+  <div class="modal-content" style="max-width: 480px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+    <h3 style="color:var(--edit); text-align:center; margin-top:0;">내용 수정하기</h3>
+    <input type="hidden" id="singleEditRow">
+    
+    <div class="field"><label>시작일</label><input type="date" id="singleEditStart"></div>
+    <div class="field"><label>종료일</label><input type="date" id="singleEditEnd"></div>
+    <div class="field">
+      <label>내용</label>
+      <textarea id="singleEditText" rows="6" style="resize:vertical; background:#ffffff;"></textarea>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn-search" style="flex:2; background:var(--edit);" onclick="saveSingleEdit()">💾 수정사항 저장</button>
+      <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('singleEditMod')">취소</button>
+    </div>
+  </div>
+</div>
+
+<div id="deleteMod" class="modal">
+  <div class="modal-content" style="max-width: 450px; padding: 25px;">
+    <div id="delStep1">
+      <h3 style="text-align:center; font-size:18px; margin-bottom:20px; color:#333;">삭제 유형 선택</h3>
+      <div style="display:flex; gap:15px; margin-bottom: 15px;">
+        <div onclick="goToDelStep(2, 'notice')" class="type-select-btn">
+          <i class="fas fa-bullhorn" style="color:#f5b026; font-size:24px; margin-bottom:8px;"></i>
+          <span>전달사항</span>
+        </div>
+        <div onclick="goToDelStep(2, 'data')" class="type-select-btn">
+          <i class="fas fa-tasks" style="color:#3b82f6; font-size:24px; margin-bottom:8px;"></i>
+          <span>부서업무</span>
+        </div>
+      </div>
+      <button class="btn-outline-wide" onclick="closeMod('deleteMod')">닫기</button>
+    </div>
+    
+    <div id="delStep2" style="display:none;">
+      <h3 style="color:var(--danger); text-align:center; margin-bottom: 15px;">삭제할 부서 선택</h3>
+      <div id="delDeptGrid" class="dept-grid"></div>
+      <div style="margin-top: 20px;">
+        <button class="btn-cancel" style="width:100%; margin-top:0;" onclick="goToDelStep(1)">⬅ 이전으로</button>
+      </div>
+    </div>
+
+    <div id="delStep3" style="display:none;">
+      <h3 style="color:var(--danger); text-align:center; margin-bottom: 15px;" id="delListTitle">항목 삭제</h3>
+      <div style="text-align:left; margin-bottom:10px; font-weight:bold; display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" id="chkAll" onchange="toggleAllCb()" style="width:18px; height:18px; cursor:pointer;"> 전체 선택
+      </div>
+      <div id="delList" style="max-height: 350px; overflow-y: auto; background:#f8fafc; border:1px solid var(--border); padding:10px; border-radius:10px;"></div>
+      <div id="delBtnGroup" class="del-btn-group" style="display:none;">
+        <button class="btn-del-sel" onclick="deleteSelected()">❌ 선택한 항목 삭제하기</button>
+      </div>
+      <div style="margin-top: 15px; display:flex; gap:10px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="goToDelStep(1)">⬅ 처음으로</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeDelModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTo(t) {
+    closeMod('choiceMod');
+    if (t === 'workMod') {
+      document.getElementById('wzDeptGrid').innerHTML = serverData.deptList.map(d => `<button class="dept-btn" onclick="selectWzDept('${d}')">${d}</button>`).join('');
+      document.getElementById('wzDept').value = '';
+      document.getElementById('wizardSingleInput').value = ''; // 통합 텍스트 에어리어 초기화
+      document.getElementById('wzIsRange').checked = false;
+      wzClickCount = 0; wzStartD = ''; wzEndD = '';
+      nextWzStep(1);
+    } else {
+      document.getElementById('nsD').value = ''; document.getElementById('neD').value = ''; document.getElementById('notT').value = ''; document.getElementById('isRangeNot').checked = false; toggleDateFields('not');
+    }
+    setTimeout(() => openMod(t), 50);
+  }
+
+  function selectWzDept(dept) {
+    document.getElementById('wzDept').value = dept;
+    nextWzStep(2);
+  }
+
+  function nextWzStep(stepNum) {
+    document.getElementById('wzStep1').style.display = 'none';
+    document.getElementById('wzStep2').style.display = 'none';
+    document.getElementById('wzStep3').style.display = 'none';
+    document.getElementById(`wzStep${stepNum}`).style.display = 'block';
+
+    if (stepNum === 2) {
+      wzCalDate = new Date();
+      buildWzCalendar();
+    } else if (stepNum === 3) {
+      const dateText = (document.getElementById('wzIsRange').checked && wzStartD && wzEndD) ? `${wzStartD} ~ ${wzEndD}` : wzStartD;
+      document.getElementById('wzSelectedDateDisplay').innerText = `선택된 날짜: ${dateText}`;
+    }
+  }
+
+  function toggleWzRange() {
+    wzClickCount = 0; wzStartD = ''; wzEndD = '';
+    const isRange = document.getElementById('wzIsRange').checked;
+    document.getElementById('wzRangeStatus').style.display = isRange ? 'inline' : 'none';
+    document.getElementById('wzRangeStatus').innerText = "시작일을 선택하세요";
+    buildWzCalendar();
+  }
+
+  function changeWzMonth(offset) {
+    wzCalDate.setMonth(wzCalDate.getMonth() + offset);
+    buildWzCalendar();
+  }
+
+  function buildWzCalendar() {
+    const y = wzCalDate.getFullYear(); const m = wzCalDate.getMonth();
+    document.getElementById('wzCalTitle').innerText = `${y}년 ${m + 1}월`;
+    const firstDay = new Date(y, m, 1).getDay(); const lastDate = new Date(y, m + 1, 0).getDate();
+    
+    let html = '';
+    for (let i = 0; i < firstDay; i++) { html += `<div class="cal-day empty"></div>`; }
+    for (let d = 1; d <= lastDate; d++) {
+      const dateStr = `${y}-${String(m+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      let extraClass = '';
+      if (dateStr === wzStartD || dateStr === wzEndD) extraClass = 'selected';
+      if (wzStartD && wzEndD && dateStr > wzStartD && dateStr < wzEndD) extraClass = 'range-path';
+      
+      html += `<div class="cal-day ${extraClass}" onclick="clickWzDate('${dateStr}')">${d}</div>`;
+    }
+    document.getElementById('wzCalGrid').innerHTML = html;
+  }
+
+  function clickWzDate(dateStr) {
+    const isRange = document.getElementById('wzIsRange').checked;
+    if (!isRange) {
+      wzStartD = dateStr; wzEndD = dateStr;
+      nextWzStep(3); 
+    } else {
+      if (wzClickCount === 0) {
+        wzStartD = dateStr; wzEndD = ''; wzClickCount = 1;
+        document.getElementById('wzRangeStatus').innerText = "종료일을 선택하세요";
+        buildWzCalendar();
+      } else {
+        wzEndD = dateStr;
+        if (wzStartD > wzEndD) { [wzStartD, wzEndD] = [wzEndD, wzStartD]; } 
+        wzClickCount = 0;
+        nextWzStep(3); 
+      }
+    }
+  }
+
+  function saveWizard() {
+    const dept = document.getElementById('wzDept').value;
+    if (!wzStartD) { showAlert("날짜를 선택해주세요."); return; }
+    
+    const finalContent = document.getElementById('wizardSingleInput').value.trim();
+    
+    if(!finalContent) {
+      showAlert("상세 내용을 입력해주세요.");
+      return;
+    }
+    
+    // 첫 글자가 '['로 시작하고, 그 뒤에 ']'가 닫히는지 엄격하게 검사
+    if (!finalContent.startsWith('[') || !finalContent.includes(']')) {
+      showAlert("일정명(행사명)은 반드시 앞뒤로 대괄호 [ ] 를 넣어 제일 윗줄에 작성해주세요.\n\n예시: [선배멘토링]");
+      return;
+    }
+
+    toggleLoading(true, "저장 중...");
+    g.withSuccessHandler(() => { 
+      toggleLoading(false); closeMod('workMod'); loadAll(); showAlert("등록이 완료되었습니다."); 
+    }).saveRangeToSheet(wzStartD, wzEndD || wzStartD, dept, finalContent);
+  }
+
+  function toggleDateFields(type) {
+    if (type === 'not') {
+      const c = document.getElementById('isRangeNot').checked;
+      document.getElementById('neD').style.display = c ? 'inline-block' : 'none';
+    }
+  }
+
+  function saveN() {
+    const sDVal = document.getElementById('nsD').value, isRange = document.getElementById('isRangeNot').checked, eDVal = document.getElementById('neD').value, text = document.getElementById('notT').value;
+    if(!sDVal || (isRange && !eDVal) || !text) { showAlert("필수 입력"); return; }
+    toggleLoading(true, "저장 중...");
+    g.withSuccessHandler(() => { toggleLoading(false); closeMod('notMod'); loadAll(); showAlert("저장됨"); }).saveNoticeToSheet(sDVal, isRange ? eDVal : sDVal, text);
+  }
+
+  function openDeleteMod() {
+    isDeleted = false;
+    goToDelStep(1);
+    openMod('deleteMod');
+  }
+
+  function goToDelStep(step, type) {
+    document.getElementById('delStep1').style.display = 'none';
+    document.getElementById('delStep2').style.display = 'none';
+    document.getElementById('delStep3').style.display = 'none';
+
+    if (step === 1) {
+      document.getElementById('delStep1').style.display = 'block';
+    } else if (step === 2) {
+      currentDelType = type;
+      if (type === 'notice') {
+        currentDelDept = '';
+        goToDelStep(3);
+      } else {
+        document.getElementById('delDeptGrid').innerHTML = serverData.deptList.map(d => `<button class="dept-btn" onclick="selectDelDept('${d}')">${d}</button>`).join('');
+        document.getElementById('delStep2').style.display = 'block';
+      }
+    } else if (step === 3) {
+      document.getElementById('delStep3').style.display = 'block';
+      document.getElementById('delListTitle').innerText = (currentDelType === 'notice') ? "전달사항 삭제" : `[${currentDelDept}] 삭제`;
+      fetchForDelWizard();
+    }
+  }
+
+  function selectDelDept(dept) {
+    currentDelDept = dept;
+    goToDelStep(3);
+  }
+
+  function fetchForDelWizard() {
+    const y = el.y().value, m = el.m().value, w = el.w().value;
+    document.getElementById('chkAll').checked = false;
+    document.getElementById('delBtnGroup').style.display = 'none';
+    document.getElementById('delList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">불러오는 중...</div>';
+    
+    g.withSuccessHandler(list => {
+      if (!list || list.length === 0) {
+        document.getElementById('delList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">삭제할 항목이 없습니다.</div>';
+        return;
+      }
+      document.getElementById('delBtnGroup').style.display = 'block';
+      document.getElementById('delList').innerHTML = list.map(item => `
+        <div class="del-item" onclick="toggleDelCb(this, ${item.rowNum})">
+          <input type="checkbox" value="${item.rowNum}">
+          <div class="del-item-info">
+            <span>${item.date}</span>
+            <b>${item.display}</b>
+          </div>
+        </div>
+      `).join('');
+    }).getItemsForDelete(currentDelType, y, m, w, currentDelDept);
+  }
+
+  function toggleDelCb(div, row) {
+    const cb = div.querySelector('input');
+    cb.checked = !cb.checked;
+  }
+  
+  function toggleAllCb() {
+    const checked = document.getElementById('chkAll').checked;
+    document.querySelectorAll('.del-item input[type="checkbox"]').forEach(cb => cb.checked = checked);
+  }
+
+  function deleteSelected() {
+    const cbs = document.querySelectorAll('.del-item input[type="checkbox"]:checked');
+    if (cbs.length === 0) { showAlert("선택된 항목이 없습니다."); return; }
+    
+    showConfirm(`${cbs.length}개 항목을 삭제하시겠습니까?`, () => {
+      const rowNums = Array.from(cbs).map(cb => parseInt(cb.value));
+      toggleLoading(true, "삭제 중...");
+      g.withSuccessHandler(() => {
+        toggleLoading(false);
+        isDeleted = true;
+        showAlert("삭제되었습니다.");
+        fetchForDelWizard();
+      }).processBulkDelete(currentDelType, rowNums);
+    });
+  }
+
+  function closeDelModal() {
+    closeMod('deleteMod');
+    if (isDeleted) loadAll();
+  }
+
+  function openEditMod() {
+    isEdited = false;
+    goToEditStep(1);
+    openMod('editMod');
+  }
+
+  function goToEditStep(step, type) {
+    document.getElementById('editStep1').style.display = 'none';
+    document.getElementById('editStep2').style.display = 'none';
+    document.getElementById('editStep3').style.display = 'none';
+
+    if (step === 1) {
+      document.getElementById('editStep1').style.display = 'block';
+    } else if (step === 2) {
+      currentEditType = type;
+      if (type === 'notice') {
+        currentEditDept = '';
+        goToEditStep(3);
+      } else {
+        document.getElementById('editDeptGrid').innerHTML = serverData.deptList.map(d => `<button class="dept-btn" onclick="selectEditDept('${d}')">${d}</button>`).join('');
+        document.getElementById('editStep2').style.display = 'block';
+      }
+    } else if (step === 3) {
+      document.getElementById('editStep3').style.display = 'block';
+      document.getElementById('editListTitle').innerText = (currentEditType === 'notice') ? "전달사항 수정" : `[${currentEditDept}] 수정`;
+      fetchForEditWizard();
+    }
+  }
+
+  function selectEditDept(dept) {
+    currentEditDept = dept;
+    goToEditStep(3);
+  }
+
+  function fetchForEditWizard() {
+    const y = el.y().value, m = el.m().value, w = el.w().value;
+    document.getElementById('editList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">불러오는 중...</div>';
+    
+    g.withSuccessHandler(list => {
+      if (!list || list.length === 0) {
+        document.getElementById('editList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">수정할 항목이 없습니다.</div>';
+        return;
+      }
+      document.getElementById('editList').innerHTML = list.map(item => `
+        <div class="edit-item">
+          <div class="edit-item-info">
+            <span>${item.date}</span>
+            <b>${item.display}</b>
+          </div>
+          <button class="btn-search" style="padding: 6px 12px; margin: 0; width: auto; background:var(--edit);" onclick='openSingleEdit(${item.rowNum}, ${JSON.stringify(item.fullText)}, "${item.isoStart}", "${item.isoEnd}")'>수정</button>
+        </div>
+      `).join('');
+    }).getItemsForDelete(currentEditType, y, m, w, currentEditDept);
+  }
+
+  function openSingleEdit(rowNum, fullText, start, end) {
+    document.getElementById('singleEditRow').value = rowNum;
+    document.getElementById('singleEditStart').value = start;
+    document.getElementById('singleEditEnd').value = end;
+    document.getElementById('singleEditText').value = fullText;
+    openMod('singleEditMod');
+  }
+
+  function saveSingleEdit() {
+    const rowNum = document.getElementById('singleEditRow').value;
+    const start = document.getElementById('singleEditStart').value;
+    const end = document.getElementById('singleEditEnd').value;
+    const text = document.getElementById('singleEditText').value;
+    
+    if (!start || !end || !text) { showAlert("날짜와 내용을 모두 입력하세요."); return; }
+    
+    toggleLoading(true, "수정 중...");
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      if (res) {
+        closeMod('singleEditMod');
+        isEdited = true;
+        showAlert("수정 완료");
+        fetchForEditWizard();
+      } else {
+        showAlert("수정 실패");
+      }
+    }).updateRowContent(currentEditType, rowNum, text, start, end);
+  }
+
+  function closeEditModal() {
+    closeMod('editMod');
+    if (isEdited) loadAll();
+  }
+</script>

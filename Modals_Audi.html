@@ -1,0 +1,263 @@
+<div id="calendarMod" class="modal">
+  <div class="modal-content" style="max-width: 380px;">
+    <h3 style="color:#9c27b0; text-align:center; margin-top:0;">날짜 선택</h3>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; font-weight:bold; font-size:18px;">
+       <button onclick="changeCalMonth(-1)" style="border:none; background:none; cursor:pointer; font-size:18px; color:#9c27b0;">◀</button>
+       <span id="calendarTitle"></span>
+       <button onclick="changeCalMonth(1)" style="border:none; background:none; cursor:pointer; font-size:18px; color:#9c27b0;">▶</button>
+    </div>
+    <div class="calendar-days-header">
+       <span style="color:#ff6b6b">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span style="color:#4a90e2">토</span>
+    </div>
+    <div id="calendarGrid" class="calendar-grid"></div>
+    <button class="btn-cancel" style="margin-top:20px;" onclick="closeMod('calendarMod')">취소</button>
+  </div>
+</div>
+
+<div id="auditoriumMod" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <h3 style="color:#9c27b0; text-align:center; margin-top:0;">시청각실 사용 신청</h3>
+    
+    <div class="field">
+      <label>사용 일자</label>
+      <div id="displayAudiDate" style="font-size: 18px; font-weight: bold; color: #9c27b0; background: #f3e5f5; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 5px;"></div>
+      <input type="hidden" id="audiDate">
+    </div>
+    
+    <div class="field">
+      <label>사용 시간 선택 (중복 선택 가능)</label>
+      <div class="period-grid">
+        <label class="period-item"><input type="checkbox" value="1교시"> <div><b>1교시</b><br><span>08:50~09:40</span></div></label>
+        <label class="period-item"><input type="checkbox" value="2교시"> <div><b>2교시</b><br><span>09:50~10:40</span></div></label>
+        <label class="period-item"><input type="checkbox" value="3교시"> <div><b>3교시</b><br><span>10:50~11:40</span></div></label>
+        <label class="period-item"><input type="checkbox" value="4교시"> <div><b>4교시</b><br><span>11:50~12:40</span></div></label>
+        <label class="period-item lunch-item"><input type="checkbox" value="점심시간"> <div><b>점심시간</b> <span>12:40~14:00</span></div></label>
+        <label class="period-item"><input type="checkbox" value="5교시"> <div><b>5교시</b><br><span>14:00~14:50</span></div></label>
+        <label class="period-item"><input type="checkbox" value="6교시"> <div><b>6교시</b><br><span>15:00~15:50</span></div></label>
+        <label class="period-item"><input type="checkbox" value="7교시"> <div><b>7교시</b><br><span>16:00~16:50</span></div></label>
+        <label class="period-item"><input type="checkbox" value="방과후"> <div><b>방과후</b><br><span>17:10~18:00</span></div></label>
+      </div>
+    </div>
+    
+    <div class="field" style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:10px; border:1px solid #eee;">
+      <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;">
+        <input type="checkbox" id="nightUseCb" onchange="toggleNightTime()" style="width:18px; height:18px;">
+        <b style="font-size:14px; color:#333;">야간 사용 (18:00 ~ 22:00) 시간 직접 지정</b>
+      </label>
+      <div id="nightTimeSelects" style="display:none; gap:10px; align-items:center;">
+        <select id="nightStartH" style="flex:1"></select>:<select id="nightStartM" style="flex:1"></select> 
+        <span style="font-weight:bold;">~</span> 
+        <select id="nightEndH" style="flex:1"></select>:<select id="nightEndM" style="flex:1"></select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>사용 목적 및 신청자</label>
+      <input type="text" id="audiPurpose" style="width:100%" placeholder="예) 전직원 연수 (교무기획부)">
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn-search" style="flex:2; background:#9c27b0; border-radius:8px;" onclick="saveAuditorium()">신청 완료</button>
+      <button class="btn-cancel" style="flex:1;" onclick="closeMod('auditoriumMod')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div id="auditoriumStatusMod" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <h3 style="color:#00bcd4; text-align:center; margin-top:0; margin-bottom:15px;">시청각실 신청 현황</h3>
+    
+    <div id="displayAudiStatusDate" style="font-size: 18px; font-weight: bold; color: #00bcd4; background: #e0f7fa; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
+      날짜 정보 표시
+    </div>
+    
+    <div id="audiStatusList" style="max-height: 350px; overflow-y: auto; background:#f8f9fa; border-radius:8px; padding:15px; border:1px solid #eee;"></div>
+    
+    <button class="btn-cancel" style="margin-top:15px;" onclick="closeMod('auditoriumStatusMod')">닫기</button>
+  </div>
+</div>
+
+<script>
+  function openCalendar(mode) {
+    calendarMode = mode; 
+    calDate = new Date(); 
+    buildCalendar();
+    openMod('calendarMod');
+  }
+
+  function changeCalMonth(offset) {
+    calDate.setMonth(calDate.getMonth() + offset);
+    buildCalendar();
+  }
+
+  function buildCalendar() {
+    const y = calDate.getFullYear();
+    const m = calDate.getMonth();
+    document.getElementById('calendarTitle').innerText = `${y}년 ${m + 1}월`;
+    
+    const firstDay = new Date(y, m, 1).getDay(); 
+    const lastDate = new Date(y, m + 1, 0).getDate(); 
+    
+    let html = '';
+    for (let i = 0; i < firstDay; i++) { html += `<div class="cal-day empty"></div>`; } 
+    for (let d = 1; d <= lastDate; d++) {
+      const dateStr = `${y}-${String(m+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      html += `<div class="cal-day" onclick="selectCalDate('${dateStr}')">${d}</div>`;
+    }
+    document.getElementById('calendarGrid').innerHTML = html;
+  }
+
+  function selectCalDate(dateStr) {
+    closeMod('calendarMod'); 
+    toggleLoading(true, "예약 현황 조회 중...");
+    
+    g.withSuccessHandler(dayBookings => {
+      toggleLoading(false);
+      
+      if (calendarMode === 'apply') {
+        document.getElementById('audiDate').value = dateStr; 
+        document.getElementById('displayAudiDate').innerText = dateStr; 
+        
+        document.querySelectorAll('.period-item').forEach(label => {
+          const cb = label.querySelector('input[type="checkbox"]');
+          if (dayBookings[cb.value]) {
+            cb.disabled = true;
+            cb.checked = false;
+            label.classList.add('disabled');
+          } else {
+            cb.disabled = false;
+            label.classList.remove('disabled');
+          }
+        });
+        
+        openMod('auditoriumMod'); 
+      } else if (calendarMode === 'view') {
+        document.getElementById('displayAudiStatusDate').innerText = dateStr + " 사용 현황"; 
+        renderAuditoriumStatus(dateStr, dayBookings); 
+        openMod('auditoriumStatusMod'); 
+      }
+    }).getAudiFromSheet(dateStr);
+  }
+
+  function initNightTimeSelects() {
+    let hHtml = '', mHtml = '';
+    for(let i=18; i<=22; i++) hHtml += `<option value="${i}">${i}시</option>`;
+    for(let i=0; i<60; i+=10) mHtml += `<option value="${i===0?'00':i}">${i===0?'00':i}분</option>`;
+    
+    document.getElementById('nightStartH').innerHTML = hHtml;
+    document.getElementById('nightEndH').innerHTML = hHtml;
+    document.getElementById('nightStartM').innerHTML = mHtml;
+    document.getElementById('nightEndM').innerHTML = mHtml;
+    
+    document.getElementById('nightEndH').value = '22'; 
+    document.getElementById('nightEndM').value = '00';
+  }
+
+  function toggleNightTime() {
+    const isChecked = document.getElementById('nightUseCb').checked;
+    document.getElementById('nightTimeSelects').style.display = isChecked ? 'flex' : 'none';
+    if(isChecked && document.getElementById('nightStartH').options.length === 0) {
+      initNightTimeSelects();
+    }
+  }
+
+  function saveAuditorium() {
+    const date = document.getElementById('audiDate').value;
+    const purpose = document.getElementById('audiPurpose').value;
+    const periods = Array.from(document.querySelectorAll('.period-item input:checked')).map(cb => cb.value);
+    
+    if (document.getElementById('nightUseCb').checked) {
+       const sh = document.getElementById('nightStartH').value;
+       const sm = document.getElementById('nightStartM').value;
+       const eh = document.getElementById('nightEndH').value;
+       const em = document.getElementById('nightEndM').value;
+       periods.push(`야간(${sh}:${sm}~${eh}:${em})`);
+    }
+
+    if (!date || !purpose || periods.length === 0) {
+      showAlert("사용 일자, 교시, 사용 목적을 모두 입력해주세요.");
+      return;
+    }
+    
+    toggleLoading(true, "예약 저장 중...");
+    
+    g.withSuccessHandler((res) => {
+      toggleLoading(false);
+      if (res && res.success) {
+        showAlert(`✅ 시청각실 신청이 완료되었습니다.\n[${date} / ${periods.join(', ')}]`);
+        
+        document.querySelectorAll('.period-item input:checked').forEach(cb => cb.checked = false);
+        document.getElementById('audiPurpose').value = '';
+        document.getElementById('nightUseCb').checked = false;
+        toggleNightTime();
+        
+        closeMod('auditoriumMod');
+      } else {
+        showAlert(res ? res.msg : "예약 중 알 수 없는 오류가 발생했습니다.");
+      }
+    }).saveAudiToSheet(date, periods, purpose);
+  }
+
+  function loadAuditoriumStatus(dateStr) {
+    toggleLoading(true, "현황 조회 중...");
+    g.withSuccessHandler(dayBookings => {
+      toggleLoading(false);
+      renderAuditoriumStatus(dateStr, dayBookings);
+    }).getAudiFromSheet(dateStr);
+  }
+
+  function renderAuditoriumStatus(dateStr, dayBookings) {
+    const periods = [
+      { name: "1교시", time: "08:50~09:40" },
+      { name: "2교시", time: "09:50~10:40" },
+      { name: "3교시", time: "10:50~11:40" },
+      { name: "4교시", time: "11:50~12:40" },
+      { name: "점심시간", time: "12:40~14:00" },
+      { name: "5교시", time: "14:00~14:50" },
+      { name: "6교시", time: "15:00~15:50" },
+      { name: "7교시", time: "16:00~16:50" },
+      { name: "방과후", time: "17:10~18:00" }
+    ];
+
+    let html = '';
+    periods.forEach(p => {
+      const isBooked = !!dayBookings[p.name]; 
+      const statusClass = isBooked ? "booked" : "empty";
+      const descClass = isBooked ? "" : "available";
+      const descText = isBooked ? dayBookings[p.name] : "신청 가능";
+      
+      const cancelBtn = isBooked ? `<br><button class="btn-cancel-small" onclick="cancelAuditorium('${dateStr}', '${p.name}')">취소하기</button>` : '';
+      
+      html += `
+        <div class="status-item ${statusClass}">
+          <div class="status-time"><b>${p.name}</b><span>${p.time}</span></div>
+          <div class="status-desc ${descClass}">${descText} ${cancelBtn}</div>
+        </div>
+      `;
+    });
+
+    Object.keys(dayBookings).forEach(key => {
+      if (key.startsWith('야간')) {
+        html += `
+          <div class="status-item booked">
+            <div class="status-time"><b>야간 시간</b><span>${key.replace('야간(', '').replace(')', '')}</span></div>
+            <div class="status-desc">${dayBookings[key]} <br><button class="btn-cancel-small" onclick="cancelAuditorium('${dateStr}', '${key}')">취소하기</button></div>
+          </div>
+        `;
+      }
+    });
+
+    document.getElementById('audiStatusList').innerHTML = html;
+  }
+
+  function cancelAuditorium(dateStr, period) {
+    showConfirm(`[${period}] 신청을 취소하시겠습니까?\n\n기존에 신청한 담당자와 상의 후 취소하셨나요?`, () => {
+      toggleLoading(true, "취소 중...");
+      g.withSuccessHandler(() => {
+        toggleLoading(false);
+        showAlert("성공적으로 취소되었습니다.");
+        loadAuditoriumStatus(dateStr); 
+      }).cancelAudiInSheet(dateStr, period);
+    });
+  }
+</script>
