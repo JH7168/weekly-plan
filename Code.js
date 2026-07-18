@@ -110,6 +110,7 @@ function getDeptList() {
   if (!s) return [];
   const lastRow = s.getLastRow();
   if (lastRow < 1) return [];
+  // Index 시트는 헤더 없이 1행부터 바로 부서명이 들어있습니다.
   return s.getRange(1, 1, lastRow, 1).getValues().flat().filter(String);
 }
 
@@ -219,88 +220,6 @@ function updateRowContent(type, rowNum, newText, newStart, newEnd) {
 
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
-
-function saveAudiToSheet(dateStr, periods, purpose) {
-  const lock = LockService.getScriptLock();
-  try {
-    lock.waitLock(10000);
-    
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName("시청각실");
-    
-    if (!sheet) {
-      sheet = ss.insertSheet("시청각실");
-      sheet.appendRow(["날짜", "교시", "목적", "등록일시"]);
-    }
-    
-    const existingBookings = getAudiFromSheet(dateStr);
-    const conflicts = periods.filter(p => existingBookings[p]);
-    
-    if (conflicts.length > 0) {
-      return { success: false, msg: `이미 예약된 교시가 있어 등록할 수 없습니다:\n[${conflicts.join(', ')}]` };
-    }
-
-    periods.forEach(p => {
-      sheet.appendRow(["'" + dateStr, p, purpose, new Date()]);
-    });
-    
-    return { success: true };
-    
-  } catch (e) {
-    return { success: false, msg: "사용자가 많아 처리가 지연되었습니다. 잠시 후 다시 시도해주세요." };
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-function getAudiFromSheet(dateStr) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName("시청각실");
-  if (!sheet) return {}; 
-  
-  const data = sheet.getDataRange().getValues();
-  let result = {};
-  
-  for (let i = 1; i < data.length; i++) {
-    if(!data[i][0]) continue;
-    let sheetDate = data[i][0];
-    
-    if (sheetDate instanceof Date) {
-      sheetDate = Utilities.formatDate(sheetDate, TZ, "yyyy-MM-dd");
-    } else {
-      sheetDate = String(sheetDate).replace(/'/g, '').trim();
-    }
-    
-    if (sheetDate === dateStr) {
-      result[data[i][1]] = data[i][2]; 
-    }
-  }
-  return result;
-}
-
-function cancelAudiInSheet(dateStr, period) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName("시청각실");
-  if (!sheet) return true;
-  
-  const data = sheet.getDataRange().getValues();
-  for (let i = data.length - 1; i >= 1; i--) {
-    if(!data[i][0]) continue;
-    let sheetDate = data[i][0];
-    
-    if (sheetDate instanceof Date) {
-      sheetDate = Utilities.formatDate(sheetDate, TZ, "yyyy-MM-dd");
-    } else {
-      sheetDate = String(sheetDate).replace(/'/g, '').trim();
-    }
-    
-    if (sheetDate === dateStr && data[i][1] === period) {
-      sheet.deleteRow(i + 1);
-      break; 
-    }
-  }
-  return true;
 }
 
 /**

@@ -188,6 +188,10 @@
 </div>
 
 <script>
+  let currentDelDept = '';
+  let currentEditDept = '';
+  let currentEditList = []; // 수정 목록 조회 결과를 보관 (onclick 속성에 텍스트를 직접 넣지 않기 위함)
+
   function switchTo(t) {
     closeMod('choiceMod');
     if (t === 'workMod') {
@@ -442,23 +446,28 @@
         document.getElementById('editList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">수정할 항목이 없습니다.</div>';
         return;
       }
-      document.getElementById('editList').innerHTML = list.map(item => `
+      currentEditList = list;
+      document.getElementById('editList').innerHTML = list.map((item, idx) => `
         <div class="edit-item">
           <div class="edit-item-info">
             <span>${item.date}</span>
             <b>${item.display}</b>
           </div>
-          <button class="btn-search" style="padding: 6px 12px; margin: 0; width: auto; background:var(--edit);" onclick='openSingleEdit(${item.rowNum}, ${JSON.stringify(item.fullText)}, "${item.isoStart}", "${item.isoEnd}")'>수정</button>
+          <button class="btn-search" style="padding: 6px 12px; margin: 0; width: auto; background:var(--edit);" onclick="openSingleEdit(${idx})">수정</button>
         </div>
       `).join('');
     }).getItemsForDelete(currentEditType, y, m, w, currentEditDept);
   }
 
-  function openSingleEdit(rowNum, fullText, start, end) {
-    document.getElementById('singleEditRow').value = rowNum;
-    document.getElementById('singleEditStart').value = start;
-    document.getElementById('singleEditEnd').value = end;
-    document.getElementById('singleEditText').value = fullText;
+  // 원문(fullText)에 따옴표 등이 포함돼도 onclick 속성이 깨지지 않도록,
+  // 텍스트를 속성에 직접 넣는 대신 currentEditList에서 인덱스로 조회합니다.
+  function openSingleEdit(idx) {
+    const item = currentEditList[idx];
+    if (!item) return;
+    document.getElementById('singleEditRow').value = item.rowNum;
+    document.getElementById('singleEditStart').value = item.isoStart;
+    document.getElementById('singleEditEnd').value = item.isoEnd;
+    document.getElementById('singleEditText').value = item.fullText;
     openMod('singleEditMod');
   }
 

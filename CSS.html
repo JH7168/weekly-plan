@@ -136,26 +136,6 @@
   .cal-day.selected { background: var(--primary); color: white; border-color: var(--primary); }
   .cal-day.range-path { background: #eff6ff; color: var(--primary); }
 
-  /* 시청각실 그리드 및 상태창 */
-  .period-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .period-item { background: #ffffff; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-  .period-item:hover { border-color: #a855f7; background: #faf5ff; }
-  .period-item span { font-size: 11px; color: #888; }
-  .period-item b { font-size: 13px; color: #333; }
-  .period-item input[type="checkbox"] { width: 16px; height: 16px; }
-  .lunch-item { grid-column: 1 / -1; background: #fefce8; border-color: #fde047; justify-content: center; } 
-  .period-item.disabled { background: #f1f5f9; border-color: #e2e8f0; cursor: not-allowed; opacity: 0.5; }
-
-  .status-item { display: flex; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; margin-bottom: 8px; }
-  .status-item.booked { border-left: 4px solid #06b6d4; }
-  .status-item.empty { border-left: 4px solid #e2e8f0; background: #f8fafc; opacity: 0.8; }
-  .status-time { min-width: 100px; border-right: 1px dashed #cbd5e1; margin-right: 12px; padding-right: 12px; text-align: left; }
-  .status-time b { color: #333; font-size: 14px; display: block; }
-  .status-time span { color: #888; font-size: 11px; }
-  .status-desc { flex: 1; font-size: 14px; color: #333; text-align: left; }
-  
-  .btn-cancel-small { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-top: 6px; font-weight: bold; }
-
   /* 삭제/수정 리스트 */
   .del-item, .edit-item { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
   .del-item input[type="checkbox"] { margin-right: 12px; width: 18px; height: 18px; }
