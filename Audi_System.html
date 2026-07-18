@@ -1,10 +1,10 @@
 <!-- 시청각실 주간 현황 모달 -->
 <div id="audiWeeklyMod" class="modal" style="z-index: 9999;">
-  <div class="modal-content" style="max-width: 900px; padding: 25px; position: relative;">
-    <h3 style="text-align:center; color:#9c27b0; margin-bottom: 20px;">🎬 시청각실 주간 현황 및 예약</h3>
-    
-    <!-- 우측 상단 다중 등록 및 삭제 버튼 -->
-    <div style="position:absolute; top:25px; right:25px; display:flex; gap:10px;">
+  <div class="modal-content" style="max-width: 900px; padding: 25px;">
+    <h3 style="text-align:center; color:#9c27b0; margin-bottom: 15px;">🎬 시청각실 주간 현황 및 예약</h3>
+
+    <!-- 다중 등록 및 삭제 버튼 (제목 아래 줄에 배치하여 겹치지 않음) -->
+    <div style="display:flex; justify-content:center; gap:10px; margin-bottom: 20px;">
       <button onclick="openMultiAudiApplyForm()" style="padding:8px 16px; background:#3b82f6; color:#fff; border:none; border-radius:5px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1);">예약</button>
       <button onclick="promptMultiAudiDelete()" style="padding:8px 16px; background:#e11d48; color:#fff; border:none; border-radius:5px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1);">예약취소</button>
     </div>
