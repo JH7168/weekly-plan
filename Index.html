@@ -35,6 +35,9 @@
           <div class="card-btn" onclick="openEditMod()" style="border-color: var(--edit); width: 100px; flex: none;">
             <i class="fas fa-pen" style="color:var(--edit)"></i>수정
           </div>
+          <div class="card-btn" onclick="openSearchMod()" style="border-color: #0ea5e9; width: 100px; flex: none;">
+            <i class="fas fa-search" style="color:#0ea5e9"></i>검색
+          </div>
         </div>
 
         <div style="display: flex; flex: 1; justify-content: flex-start; gap: 15px; padding-left: 7.5px;">
@@ -44,7 +47,10 @@
           <div class="card-btn" onclick="window.print()" style="border-color: #666; width: 100px; flex: none;">
             <i class="fas fa-print" style="color:#666"></i>인쇄
           </div>
-          
+          <div class="card-btn" onclick="exportCurrentWeekCSV()" style="border-color: #059669; width: 100px; flex: none;">
+            <i class="fas fa-file-export" style="color:#059669"></i>내보내기
+          </div>
+
           <!-- 첫 번째 열: 전체 시간표 (위) / 방과후 신청 (아래) -->
           <div class="stacked-btn-wrapper" style="width: max-content; flex: none;">
             <button class="stacked-btn" onclick="openTimetableModal()" style="border-color: #e11d48; color: #e11d48; padding: 0 15px;">

@@ -76,24 +76,25 @@ function getCombinedData(year, month, week) {
         .filter(line => line)
         .map(line => `<div class="notice-line">${line}</div>`)
         .join("");
-      
+
       if (linesHtml) {
-        noticeBlocks.push(linesHtml);
+        const authorHtml = r[3] ? `<div class="notice-author">- ${r[3]}</div>` : '';
+        noticeBlocks.push(linesHtml + authorHtml);
       }
     }
   });
 
   res.notice = noticeBlocks.join('<div style="height: 15px;"></div>') || "전달사항이 없습니다.";
-  
+
   const deptMap = {};
   datVals.forEach(r => {
     if (!(r[1] instanceof Date) || !(r[2] instanceof Date)) return;
     const st = r[1].getTime();
     const et = r[2].getTime();
-    
+
     if (st <= eTime && et >= sTime) {
       if (!deptMap[r[0]]) deptMap[r[0]] = [];
-      deptMap[r[0]].push({ date: formatSimple(r[1], r[2]), time: st, st: st, et: et, text: r[3] });
+      deptMap[r[0]].push({ date: formatSimple(r[1], r[2]), time: st, st: st, et: et, text: r[3], author: r[4] || '' });
     }
   });
   
@@ -114,26 +115,45 @@ function getDeptList() {
   return s.getRange(1, 1, lastRow, 1).getValues().flat().filter(String);
 }
 
-function saveRangeToSheet(s, e, dept, text) {
+// weeks(반복 주차 수)가 2 이상이면 7일 간격으로 동일한 내용을 여러 번 등록합니다 (최대 20주, 매주 반복 등록용).
+function saveRangeToSheet(s, e, dept, text, author, weeks) {
   const sParts = s.split('-');
   const startDate = new Date(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0);
-  
+
   const eParts = e ? e.split('-') : sParts;
   const endDate = new Date(eParts[0], eParts[1] - 1, eParts[2], 0, 0, 0);
-  
-  SS.getSheetByName("Data").appendRow([dept, startDate, endDate, text]); 
-  return true; 
+
+  const repeatCount = Math.max(1, Math.min(20, Number(weeks) || 1));
+  const rows = [];
+  for (let i = 0; i < repeatCount; i++) {
+    const sd = new Date(startDate); sd.setDate(sd.getDate() + i * 7);
+    const ed = new Date(endDate); ed.setDate(ed.getDate() + i * 7);
+    rows.push([dept, sd, ed, text, author || '']);
+  }
+
+  const sheet = SS.getSheetByName("Data");
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 5).setValues(rows);
+  return true;
 }
 
-function saveNoticeToSheet(s, e, text) { 
+function saveNoticeToSheet(s, e, text, author, weeks) {
   const sParts = s.split('-');
   const startDate = new Date(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0);
-  
+
   const eParts = e ? e.split('-') : sParts;
   const endDate = new Date(eParts[0], eParts[1] - 1, eParts[2], 0, 0, 0);
-  
-  SS.getSheetByName("Notice").appendRow([startDate, endDate, text]); 
-  return true; 
+
+  const repeatCount = Math.max(1, Math.min(20, Number(weeks) || 1));
+  const rows = [];
+  for (let i = 0; i < repeatCount; i++) {
+    const sd = new Date(startDate); sd.setDate(sd.getDate() + i * 7);
+    const ed = new Date(endDate); ed.setDate(ed.getDate() + i * 7);
+    rows.push([sd, ed, text, author || '']);
+  }
+
+  const sheet = SS.getSheetByName("Notice");
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 4).setValues(rows);
+  return true;
 }
 
 function processBulkDelete(type, rowNums) {
@@ -160,9 +180,9 @@ function getItemsForDelete(type, year, month, week, dept) {
   const startMonth = new Date(year, month - 1, 1).getTime();
   const endMonth = new Date(year, month, 0, 23, 59, 59, 999).getTime();
   
-  const [sIdx, eIdx, tIdx] = (type === 'notice') ? [0, 1, 2] : [1, 2, 3];
+  const [sIdx, eIdx, tIdx, aIdx] = (type === 'notice') ? [0, 1, 2, 3] : [1, 2, 3, 4];
   const MAX_LEN = 20;
-  
+
   return vals.map((row, i) => ({ row, i }))
     .filter(obj => {
       const row = obj.row;
@@ -172,20 +192,22 @@ function getItemsForDelete(type, year, month, week, dept) {
       const isMatchDate = rowStartTime <= endMonth && rowEndTime >= startMonth;
       return type === 'data' ? (isMatchDate && row[0] === dept) : isMatchDate;
     })
-    .reverse() 
+    .reverse()
     .map(obj => {
       const originalText = obj.row[tIdx] || "";
       const displayContent = originalText.length > MAX_LEN ? originalText.substring(0, MAX_LEN) + "..." : originalText;
-      
+      const author = obj.row[aIdx] || "";
+
       const startDate = obj.row[sIdx];
       const endDate = obj.row[eIdx];
 
       return {
         rowNum: obj.i + 1,
         fullText: originalText,
+        author: author,
         display: (type === 'notice') ? displayContent : `[${obj.row[0]}] ${displayContent}`,
-        date: Utilities.formatDate(startDate, TZ, "M/d") + 
-              (Utilities.formatDate(startDate, TZ, "M/d") === Utilities.formatDate(endDate, TZ, "M/d") ? 
+        date: Utilities.formatDate(startDate, TZ, "M/d") +
+              (Utilities.formatDate(startDate, TZ, "M/d") === Utilities.formatDate(endDate, TZ, "M/d") ?
               "" : " ~ " + Utilities.formatDate(endDate, TZ, "M/d")),
         isoStart: Utilities.formatDate(startDate, TZ, "yyyy-MM-dd"),
         isoEnd: Utilities.formatDate(endDate, TZ, "yyyy-MM-dd")
@@ -193,7 +215,7 @@ function getItemsForDelete(type, year, month, week, dept) {
     });
 }
 
-function updateRowContent(type, rowNum, newText, newStart, newEnd) {
+function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor) {
   try {
     const sheetName = (type === 'notice') ? "Notice" : "Data";
     const sheet = SS.getSheetByName(sheetName);
@@ -206,16 +228,66 @@ function updateRowContent(type, rowNum, newText, newStart, newEnd) {
     endDate.setHours(0,0,0,0);
 
     if (type === 'notice') {
-      sheet.getRange(row, 1, 1, 3).setValues([[startDate, endDate, newText]]);
+      sheet.getRange(row, 1, 1, 4).setValues([[startDate, endDate, newText, newAuthor || '']]);
     } else {
-      sheet.getRange(row, 2, 1, 3).setValues([[startDate, endDate, newText]]);
+      sheet.getRange(row, 2, 1, 4).setValues([[startDate, endDate, newText, newAuthor || '']]);
     }
-    
+
     return true;
   } catch (e) {
     console.error("수정 오류: " + e.toString());
     return false;
   }
+}
+
+/**
+ * 부서업무(Data)와 전달사항(Notice) 전체 기간을 대상으로 키워드로 검색합니다.
+ */
+function searchTasks(keyword) {
+  const kw = String(keyword || '').trim();
+  if (!kw) return [];
+
+  const results = [];
+
+  const datVals = SS.getSheetByName("Data")?.getDataRange().getValues() || [];
+  for (let i = 1; i < datVals.length; i++) {
+    const row = datVals[i];
+    if (!(row[1] instanceof Date && row[2] instanceof Date)) continue;
+    const dept = String(row[0] || '');
+    const text = String(row[3] || '');
+    if (text.includes(kw) || dept.includes(kw)) {
+      results.push({
+        type: 'data',
+        dept: dept,
+        text: text,
+        author: row[4] || '',
+        date: formatSimple(row[1], row[2]),
+        isoStart: Utilities.formatDate(row[1], TZ, "yyyy-MM-dd"),
+        sortTime: row[1].getTime()
+      });
+    }
+  }
+
+  const notVals = SS.getSheetByName("Notice")?.getDataRange().getValues() || [];
+  for (let i = 1; i < notVals.length; i++) {
+    const row = notVals[i];
+    if (!(row[0] instanceof Date && row[1] instanceof Date)) continue;
+    const text = String(row[2] || '');
+    if (text.includes(kw)) {
+      results.push({
+        type: 'notice',
+        dept: '전달사항',
+        text: text,
+        author: row[3] || '',
+        date: formatSimple(row[0], row[1]),
+        isoStart: Utilities.formatDate(row[0], TZ, "yyyy-MM-dd"),
+        sortTime: row[0].getTime()
+      });
+    }
+  }
+
+  results.sort((a, b) => b.sortTime - a.sortTime);
+  return results.slice(0, 100);
 }
 
 function include(filename) {

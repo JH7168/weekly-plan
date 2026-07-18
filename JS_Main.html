@@ -169,7 +169,8 @@
             const span = Math.max(...mappedIndices) - Math.min(...mappedIndices) + 1;
             
             // [핵심] white-space: pre-wrap; 을 적용하여 작성된 글의 Enter(줄바꿈)를 그대로 화면에 표시합니다.
-            bodyHtml += `<div class="event-bar" style="grid-column: ${gridStart} / span ${span}; ${fsStyle} white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;">${item.text}</div>`;
+            const authorHtml = item.author ? `<div class="event-author">- ${item.author}</div>` : '';
+            bodyHtml += `<div class="event-bar" style="grid-column: ${gridStart} / span ${span}; ${fsStyle} white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;"><div>${item.text}</div>${authorHtml}</div>`;
           }
         });
         bodyHtml += `</div></td></tr>`;
@@ -206,6 +207,49 @@
     selectedDatesForFilter = [];
     activeFilterIndices = [0, 1, 2, 3, 4];
     renderFilteredWeek(activeFilterIndices);
+  }
+
+  // 현재 조회된 주간 계획을 엑셀에서 바로 열리는 CSV 파일로 내보냅니다.
+  function exportCurrentWeekCSV() {
+    if (!currentWeekSchedule || currentWeekSchedule.length === 0) {
+      showAlert("먼저 조회를 눌러 데이터를 불러와주세요.");
+      return;
+    }
+    const y = el.y().value, m = el.m().value, w = el.w().value;
+
+    const rows = [];
+    rows.push([`${y}년 ${m}월 ${w}주차 주간 계획서`]);
+    rows.push([]);
+    rows.push(['연간 행사']);
+    rows.push(['날짜', '내용']);
+    currentWeekSchedule.forEach(d => rows.push([d.date, d.content || '']));
+    rows.push([]);
+    rows.push(['부서별 업무']);
+    rows.push(['부서', '기간', '등록자', '내용']);
+    (currentWeekWorkList || []).forEach(dept => {
+      dept.items.forEach(item => rows.push([dept.name, item.date, item.author || '', item.text]));
+    });
+
+    const csvContent = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+    // Excel에서 한글이 깨지지 않도록 UTF-8 BOM을 붙입니다.
+    const BOM = String.fromCharCode(0xFEFF);
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `주간계획서_${y}년${m}월${w}주차.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function csvEscape(val) {
+    const s = (val === null || val === undefined) ? '' : String(val);
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
   }
 
   // 3. UI 유틸리티 (로딩, 모달, 알림창)
