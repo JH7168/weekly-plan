@@ -30,9 +30,9 @@
 
     <div id="wzStep2" style="display:none;">
       <h3 style="color:var(--primary); text-align:center; margin-bottom: 10px;">2단계: 날짜 선택</h3>
-      <div style="display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px;">
-        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0; font-weight:bold;">
-          <input type="checkbox" id="wzIsRange" onclick="toggleWzRange()" style="width:20px; height:20px;">
+      <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0; font-weight:bold; font-size:13.5px;">
+          <input type="checkbox" id="wzIsRange" onclick="toggleWzRange()" style="width:20px; height:20px; flex-shrink:0;">
           기간으로 설정하기 (시작일과 종료일을 차례로 클릭)
         </label>
         <span id="wzRangeStatus" style="color:var(--danger); font-weight:bold; font-size:13px; display:none;">시작일을 선택하세요</span>

@@ -104,10 +104,10 @@
 
         <div id="rangeInfo" style="text-align:right; font-size:11px; color:#999; margin-bottom:15px;"></div>
         
-        <!-- 제목은 중앙에 고정, 버튼은 우측에 띄우는 레이아웃 -->
-        <div style="position: relative; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; min-height: 40px;">
+        <!-- 제목은 중앙에 고정, 버튼은 우측에 띄우는 레이아웃 (좁은 화면에서는 제목 아래로 줄바꿈되어 겹치지 않음) -->
+        <div id="deptTitleRow" style="position: relative; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; min-height: 40px;">
           <h3 class="table-title" style="margin: 0;">부서별 업무</h3>
-          <div style="position: absolute; right: 0; display: flex; gap: 8px;">
+          <div id="deptTitleActions" style="position: absolute; right: 0; display: flex; gap: 8px;">
             <button onclick="applyDateFilter()" class="btn-search" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #3b82f6; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔍 선택확대</button>
             <button onclick="resetDateFilter()" class="btn-cancel" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #94a3b8; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔄 원래대로</button>
           </div>

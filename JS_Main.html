@@ -543,10 +543,11 @@
     
     const modalBox = document.querySelector('#timetableMod .modal-content');
     if (modalBox) {
-      modalBox.style.width = '910px';   
-      modalBox.style.height = '910px';  
+      // 고정 910px로 두면 화면이 좁은 휴대폰에서 넘쳐버리므로, 화면 폭/높이를 넘지 않는 선에서 최대 910px로 표시
+      modalBox.style.width = 'min(910px, 95vw)';
+      modalBox.style.height = 'min(910px, 90vh)';
     }
-    
+
     timetableZoom = 1.0;
     applyTimetableZoom();
   }
