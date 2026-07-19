@@ -2,8 +2,57 @@
 <html>
   <head>
     <base target="_top">
+
+    <!-- 홈 화면에 추가했을 때 표시될 이름/아이콘 설정 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="주간계획서">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="주간계획서">
+    <meta name="theme-color" content="#3b82f6">
+    <script>
+      // 별도 이미지 파일 없이, 앱 브랜드 컬러(파란색)를 배경으로 한 캘린더 아이콘을
+      // 캔버스로 즉석에서 그려 홈 화면 추가 아이콘(apple-touch-icon 등)으로 등록합니다.
+      (function setupHomeScreenIcon() {
+        try {
+          const size = 180;
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+
+          const grad = ctx.createLinearGradient(0, 0, size, size);
+          grad.addColorStop(0, '#3b82f6');
+          grad.addColorStop(1, '#1d4ed8');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, size, size);
+
+          ctx.font = `${Math.round(size * 0.6)}px -apple-system, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('📅', size / 2, size / 2 + size * 0.05);
+
+          const dataUrl = canvas.toDataURL('image/png');
+
+          [
+            { rel: 'apple-touch-icon' },
+            { rel: 'icon', type: 'image/png' },
+            { rel: 'shortcut icon', type: 'image/png' }
+          ].forEach(cfg => {
+            const link = document.createElement('link');
+            link.rel = cfg.rel;
+            if (cfg.type) link.type = cfg.type;
+            link.href = dataUrl;
+            document.head.appendChild(link);
+          });
+        } catch (e) {
+          console.error('홈 화면 아이콘 생성 실패:', e);
+        }
+      })();
+    </script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
     <?!= include('CSS'); ?>
   </head>
   <body>

@@ -422,7 +422,7 @@
       }
       document.getElementById('delBtnGroup').style.display = 'block';
       document.getElementById('delList').innerHTML = list.map(item => `
-        <div class="del-item" onclick="toggleDelCb(this, ${item.rowNum})">
+        <div class="del-item" onclick="toggleDelCb(event, this)">
           <input type="checkbox" value="${item.rowNum}">
           <div class="del-item-info">
             <span>${item.date}${item.author ? ' · ' + item.author : ''}</span>
@@ -433,7 +433,10 @@
     }).getItemsForDelete(currentDelType, y, m, w, currentDelDept);
   }
 
-  function toggleDelCb(div, row) {
+  function toggleDelCb(e, div) {
+    // 체크박스 자체를 클릭한 경우 브라우저 기본 토글 동작이 이미 처리하므로,
+    // 여기서 또 뒤집으면 서로 상쇄되어 체크가 안 되는 것처럼 보입니다. 그 경우는 건너뜁니다.
+    if (e.target.tagName === 'INPUT') return;
     const cb = div.querySelector('input');
     cb.checked = !cb.checked;
   }
