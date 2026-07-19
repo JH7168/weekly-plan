@@ -207,18 +207,6 @@
   </div>
 </div>
 
-<div id="searchMod" class="modal">
-  <div class="modal-content" style="max-width: 500px; padding: 25px;">
-    <h3 style="text-align:center; color:var(--primary); margin-bottom:15px;">🔍 통합 검색</h3>
-    <div style="display:flex; gap:8px; margin-bottom:15px;">
-      <input type="text" id="searchKeyword" placeholder="부서, 전달사항, 내용으로 검색" style="flex:1; padding:10px 15px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; outline:none;" onkeydown="if(event.key==='Enter') runSearch()">
-      <button class="btn-search" style="margin:0; padding:10px 18px;" onclick="runSearch()">검색</button>
-    </div>
-    <div id="searchResultList" style="max-height: 400px; overflow-y: auto;"></div>
-    <button class="btn-cancel" onclick="closeMod('searchMod')">닫기</button>
-  </div>
-</div>
-
 <script>
   let currentDelDept = '';
   let currentEditDept = '';
@@ -562,58 +550,5 @@
   function closeEditModal() {
     closeMod('editMod');
     if (isEdited) loadAll();
-  }
-
-  // --- 통합 검색 ---
-  function openSearchMod() {
-    document.getElementById('searchKeyword').value = '';
-    document.getElementById('searchResultList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">검색어를 입력하고 검색 버튼을 눌러주세요.</div>';
-    openMod('searchMod');
-    setTimeout(() => document.getElementById('searchKeyword').focus(), 100);
-  }
-
-  function runSearch() {
-    const kw = document.getElementById('searchKeyword').value.trim();
-    if (!kw) { showAlert("검색어를 입력해주세요."); return; }
-
-    document.getElementById('searchResultList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">검색 중...</div>';
-    g.withSuccessHandler(list => {
-      if (!list || list.length === 0) {
-        document.getElementById('searchResultList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">검색 결과가 없습니다.</div>';
-        return;
-      }
-      document.getElementById('searchResultList').innerHTML = list.map(item => `
-        <div class="search-item">
-          <div class="search-item-top">
-            <span class="search-item-badge ${item.type === 'notice' ? 'badge-notice' : 'badge-data'}">${item.dept}</span>
-            <span class="search-item-date">${item.date}</span>
-          </div>
-          <div class="search-item-text">${item.text}</div>
-          ${item.author ? `<div class="search-item-author">등록자: ${item.author}</div>` : ''}
-          <button class="btn-search" style="padding:5px 12px; font-size:12px; margin-top:8px; width:auto;" onclick="jumpToDate('${item.isoStart}')">이 날짜 주간으로 이동</button>
-        </div>
-      `).join('');
-    }).searchTasks(kw);
-  }
-
-  // 검색 결과에서 선택한 날짜가 속한 주차를 계산해 상단 조회 필터로 이동합니다 (upWeeks()와 동일한 주차 판정 규칙 사용).
-  function getWeekNumForDate(d) {
-    const y = d.getFullYear(), m = d.getMonth() + 1;
-    let wCount = 0;
-    for (let i = 1; i <= d.getDate(); i++) {
-      const cur = new Date(y, m - 1, i);
-      if (i === 1 || cur.getDay() === 1) wCount++;
-    }
-    return wCount;
-  }
-
-  function jumpToDate(isoStr) {
-    const d = new Date(isoStr + 'T00:00:00');
-    el.y().value = d.getFullYear();
-    el.m().value = d.getMonth() + 1;
-    upWeeks();
-    el.w().value = getWeekNumForDate(d);
-    closeMod('searchMod');
-    loadAll();
   }
 </script>

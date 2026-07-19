@@ -240,56 +240,6 @@ function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor) {
   }
 }
 
-/**
- * 부서업무(Data)와 전달사항(Notice) 전체 기간을 대상으로 키워드로 검색합니다.
- */
-function searchTasks(keyword) {
-  const kw = String(keyword || '').trim();
-  if (!kw) return [];
-
-  const results = [];
-
-  const datVals = SS.getSheetByName("Data")?.getDataRange().getValues() || [];
-  for (let i = 1; i < datVals.length; i++) {
-    const row = datVals[i];
-    if (!(row[1] instanceof Date && row[2] instanceof Date)) continue;
-    const dept = String(row[0] || '');
-    const text = String(row[3] || '');
-    if (text.includes(kw) || dept.includes(kw)) {
-      results.push({
-        type: 'data',
-        dept: dept,
-        text: text,
-        author: row[4] || '',
-        date: formatSimple(row[1], row[2]),
-        isoStart: Utilities.formatDate(row[1], TZ, "yyyy-MM-dd"),
-        sortTime: row[1].getTime()
-      });
-    }
-  }
-
-  const notVals = SS.getSheetByName("Notice")?.getDataRange().getValues() || [];
-  for (let i = 1; i < notVals.length; i++) {
-    const row = notVals[i];
-    if (!(row[0] instanceof Date && row[1] instanceof Date)) continue;
-    const text = String(row[2] || '');
-    if (text.includes(kw)) {
-      results.push({
-        type: 'notice',
-        dept: '전달사항',
-        text: text,
-        author: row[3] || '',
-        date: formatSimple(row[0], row[1]),
-        isoStart: Utilities.formatDate(row[0], TZ, "yyyy-MM-dd"),
-        sortTime: row[0].getTime()
-      });
-    }
-  }
-
-  results.sort((a, b) => b.sortTime - a.sortTime);
-  return results.slice(0, 100);
-}
-
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
