@@ -63,9 +63,11 @@
   // 2. 데이터 조회 및 가로 막대(Gantt) 시간표 렌더링
   let currentWeekSchedule = []; // 현재 주차 날짜 데이터 보관
   let currentWeekWorkList = []; // 현재 주차 업무 데이터 보관
+  let currentNoticeItems = []; // 현재 주차 전달사항 데이터 보관 (학년 필터링용)
   let currentWeekSTime = 0;
   let selectedDatesForFilter = []; // 유저가 클릭한 날짜의 인덱스 보관
   let activeFilterIndices = [0, 1, 2, 3, 4]; // 현재 화면에 그려지고 있는 날짜 인덱스 (기본: 월~금 5일)
+  let currentGradeFilter = 'all'; // 학년 필터 ('all' | '1' | '2' | '3')
 
   function loadAll() {
     const y = el.y().value, m = el.m().value, w = el.w().value;
@@ -74,17 +76,42 @@
       toggleLoading(false);
       currentWeekSchedule = res.schedule;
       currentWeekWorkList = res.list;
+      currentNoticeItems = res.noticeItems;
       currentWeekSTime = res.sTime;
-      
+
       // 주차가 바뀌면 필터 초기화
       selectedDatesForFilter = [];
-      activeFilterIndices = [0, 1, 2, 3, 4]; 
-      
-      document.getElementById('noticeTxt').innerHTML = res.notice;
+      activeFilterIndices = [0, 1, 2, 3, 4];
+
+      renderNotices();
       document.getElementById('printTitle').innerText = `${y}년 ${m}월 ${w}주차 주간 계획서`;
-      
+
       renderFilteredWeek(activeFilterIndices);
     }).getCombinedData(y, m, w);
+  }
+
+  // 항목의 대상 학년(grades, 예: "1,2,3")이 현재 학년 필터에 해당하는지 확인합니다.
+  // 학년 정보가 없는 기존 데이터는 필터와 무관하게 항상 표시합니다.
+  function matchesGradeFilter(grades) {
+    if (currentGradeFilter === 'all') return true;
+    if (!grades) return true;
+    return String(grades).split(',').map(s => s.trim()).includes(currentGradeFilter);
+  }
+
+  // 학년 필터 칩 클릭 시 호출됩니다.
+  function setGradeFilter(grade, btnEl) {
+    currentGradeFilter = grade;
+    document.querySelectorAll('#gradeFilter .grade-chip').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    renderNotices();
+    renderFilteredWeek(activeFilterIndices);
+  }
+
+  // 전달사항을 현재 학년 필터에 맞게 걸러서 렌더링합니다.
+  function renderNotices() {
+    const visible = (currentNoticeItems || []).filter(item => matchesGradeFilter(item.grades));
+    const blocks = visible.map(item => item.html);
+    document.getElementById('noticeTxt').innerHTML = blocks.join('<div style="height: 15px;"></div>') || "전달사항이 없습니다.";
   }
 
   // 부서명 포맷팅 헬퍼 함수
@@ -140,37 +167,40 @@
     headHtml += `</tr>`;
     document.getElementById('workHead').innerHTML = headHtml;
 
-    // 2-3. 부서별 업무 본문 렌더링
-    if (!currentWeekWorkList || currentWeekWorkList.length === 0) {
+    // 2-3. 부서별 업무 본문 렌더링 (학년 필터에 맞는 항목만 표시, 해당 항목이 하나도 없는 부서는 행 자체를 숨김)
+    const visibleDepts = currentWeekWorkList
+      .map(dept => ({ name: dept.name, items: dept.items.filter(item => matchesGradeFilter(item.grades)) }))
+      .filter(dept => dept.items.length > 0);
+
+    if (!visibleDepts || visibleDepts.length === 0) {
       document.getElementById('workBody').innerHTML = `<tr style="${fsStyle}"><td colspan="${indices.length + 1}" style="padding:40px; color:#999; text-align:center; ${fsStyle}">데이터 없음</td></tr>`;
     } else {
       let bodyHtml = '';
-      currentWeekWorkList.forEach(dept => {
+      visibleDepts.forEach(dept => {
         let displayDept = formatDeptName(dept.name);
-        
+
         bodyHtml += `<tr style="page-break-inside: avoid; break-inside: avoid; border-bottom:1px solid #e2e8f0;">
           <td class="dept-name-cell" style="${deptCellStyle}">${displayDept}</td>
           <td colspan="${indices.length}" style="padding:0; vertical-align:top; border:none;">`;
-        
+
         bodyHtml += `<div style="display:grid; grid-template-columns: repeat(${indices.length}, minmax(0, 1fr)); gap:6px; padding:10px; height:100%; box-sizing:border-box;">`;
-        
+
         dept.items.forEach(item => {
           const globalStartIdx = Math.max(0, Math.round((item.st - currentWeekSTime) / 86400000));
           const globalEndIdx = Math.min(4, Math.round((item.et - currentWeekSTime) / 86400000));
-          
+
           let mappedIndices = [];
           for(let i = globalStartIdx; i <= globalEndIdx; i++) {
             let pos = indices.indexOf(i);
             if(pos !== -1) mappedIndices.push(pos);
           }
-          
+
           if (mappedIndices.length > 0) {
-            const gridStart = Math.min(...mappedIndices) + 1; 
+            const gridStart = Math.min(...mappedIndices) + 1;
             const span = Math.max(...mappedIndices) - Math.min(...mappedIndices) + 1;
-            
+
             // [핵심] white-space: pre-wrap; 을 적용하여 작성된 글의 Enter(줄바꿈)를 그대로 화면에 표시합니다.
-            const authorHtml = item.author ? `<div class="event-author">- ${item.author}</div>` : '';
-            bodyHtml += `<div class="event-bar" style="grid-column: ${gridStart} / span ${span}; ${fsStyle} white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;"><div>${item.text}</div>${authorHtml}</div>`;
+            bodyHtml += `<div class="event-bar" style="grid-column: ${gridStart} / span ${span}; ${fsStyle} white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;">${item.text}</div>`;
           }
         });
         bodyHtml += `</div></td></tr>`;
@@ -332,9 +362,8 @@
         fullTimetableBgs = res.backgrounds;
         renderFullTimetable();
       }
-      document.getElementById('searchTeacherName').value = '';
-      
-      addActionButtons(); 
+
+      addActionButtons();
       
       openMod('timetableMod');
     }).getTimetableFromSheet();
@@ -378,74 +407,6 @@
       modalBox.style.width = '95vw'; 
       modalBox.style.height = '90vh';
     }
-  }
-
-  function searchMyTimetable() {
-    const inputName = document.getElementById('searchTeacherName').value.trim();
-    if (!inputName) { showAlert("검색할 선생님 성함을 입력해주세요.\n(시간표에 적힌 글자 그대로 입력, 예: 박정1)"); return; }
-
-    let schedule = { '1':{}, '2':{}, '3':{}, '4':{}, '5':{}, '6':{}, '7':{}, '8':{} };
-    const days = ['월', '화', '수', '목', '금'];
-    let foundCount = 0;
-
-    let gradeRowIdx = -1;
-    for (let i = 0; i < 10; i++) {
-      if (fullTimetableData[i] && fullTimetableData[i].some(v => String(v).includes('1학년'))) {
-        gradeRowIdx = i; break;
-      }
-    }
-    let classRowIdx = gradeRowIdx !== -1 ? gradeRowIdx + 1 : -1;
-
-    let grades = [];
-    let classes = [];
-    let currentGrade = "";
-    
-    if (gradeRowIdx !== -1 && classRowIdx !== -1) {
-      for (let c = 2; c < fullTimetableData[gradeRowIdx].length; c++) {
-        let gVal = String(fullTimetableData[gradeRowIdx][c] || '').trim();
-        if (gVal.includes('학년')) currentGrade = gVal;
-        grades[c] = currentGrade;
-        
-        let cVal = String(fullTimetableData[classRowIdx][c] || '').trim();
-        classes[c] = (cVal && !isNaN(cVal)) ? cVal + '반' : cVal;
-      }
-    }
-
-    let currentDay = "";
-    let startRow = classRowIdx !== -1 ? classRowIdx + 1 : 4;
-
-    for (let r = startRow; r < fullTimetableData.length; r++) {
-      let rowDay = String(fullTimetableData[r][0] || '').trim();
-      if (rowDay && days.includes(rowDay)) currentDay = rowDay;
-      
-      let periodStr = String(fullTimetableData[r][1] || '').trim();
-      let pMatch = periodStr.match(/([1-8])/);
-      if (!pMatch) continue; 
-      let pNum = pMatch[1];
-
-      if (!currentDay) continue;
-
-      for (let c = 2; c < fullTimetableData[r].length; c++) {
-        let cellVal = String(fullTimetableData[r][c] || '').trim();
-        
-        if (cellVal && cellVal.includes(inputName)) {
-          foundCount++;
-          let locationInfo = ((grades[c] || '') + ' ' + (classes[c] || '')).trim() || '장소 미상';
-          if (!schedule[pNum]) schedule[pNum] = {};
-          
-          let existing = schedule[pNum][currentDay] ? schedule[pNum][currentDay] + "<br><hr style='margin:4px 0; border:0; border-top:1px dashed #cbd5e1;'>" : "";
-          let formattedCell = cellVal.replace(/\n/g, ' ').replace(/_x000D_/g, ''); 
-          
-          schedule[pNum][currentDay] = existing + `<b style="color:#e11d48; font-size:14px;">${locationInfo}</b><br><span style="font-size:15px; color:#1e293b; font-weight:600;">${formattedCell}</span>`;
-        }
-      }
-    }
-
-    if (foundCount === 0) {
-      showAlert(`'${inputName}' 선생님의 수업 일정을 찾을 수 없습니다.`); return;
-    }
-
-    renderCompactTimetable(schedule, `${inputName} 시간표`);
   }
 
   function searchClassTimetable() {
@@ -553,8 +514,6 @@
   }
 
   function resetTimetable() {
-    document.getElementById('searchTeacherName').value = '';
-    
     if(document.getElementById('searchGrade')) {
       document.getElementById('searchGrade').selectedIndex = 0;
       document.getElementById('searchClass').selectedIndex = 0;

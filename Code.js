@@ -23,7 +23,7 @@ function doGet() {
  * 데이터 통합 조회 (가장 안정적이고 빠른 버전)
  */
 function getCombinedData(year, month, week) {
-  const res = { schedule: [], notice: "", list: [], rangeText: "" };
+  const res = { schedule: [], noticeItems: [], list: [], rangeText: "" };
   
   const firstDay = new Date(year, month - 1, 1);
   const diffToMonday = (firstDay.getDay() === 0) ? 1 : (1 - firstDay.getDay());
@@ -66,8 +66,7 @@ function getCombinedData(year, month, week) {
     });
   }
   
-  // 전달사항 처리
-  let noticeBlocks = [];
+  // 전달사항 처리 (학년 필터링은 클라이언트에서 처리하므로 학년 태그를 함께 내려줍니다)
   notVals.forEach(r => {
     if (!(r[0] instanceof Date && r[1] instanceof Date)) return;
     if (r[0].getTime() <= eTime && r[1].getTime() >= sTime) {
@@ -78,13 +77,10 @@ function getCombinedData(year, month, week) {
         .join("");
 
       if (linesHtml) {
-        const authorHtml = r[3] ? `<div class="notice-author">- ${r[3]}</div>` : '';
-        noticeBlocks.push(linesHtml + authorHtml);
+        res.noticeItems.push({ html: linesHtml, grades: r[4] || '' });
       }
     }
   });
-
-  res.notice = noticeBlocks.join('<div style="height: 15px;"></div>') || "전달사항이 없습니다.";
 
   const deptMap = {};
   datVals.forEach(r => {
@@ -94,7 +90,7 @@ function getCombinedData(year, month, week) {
 
     if (st <= eTime && et >= sTime) {
       if (!deptMap[r[0]]) deptMap[r[0]] = [];
-      deptMap[r[0]].push({ date: formatSimple(r[1], r[2]), time: st, st: st, et: et, text: r[3], author: r[4] || '' });
+      deptMap[r[0]].push({ date: formatSimple(r[1], r[2]), time: st, st: st, et: et, text: r[3], grades: r[5] || '' });
     }
   });
   
@@ -116,7 +112,8 @@ function getDeptList() {
 }
 
 // weeks(반복 주차 수)가 2 이상이면 7일 간격으로 동일한 내용을 여러 번 등록합니다 (최대 20주, 매주 반복 등록용).
-function saveRangeToSheet(s, e, dept, text, author, weeks) {
+// grades: 대상 학년을 콤마로 구분한 문자열 (예: "1,2,3", "1"). 빈 값이면 학년 필터와 무관하게 항상 표시됩니다.
+function saveRangeToSheet(s, e, dept, text, author, weeks, grades) {
   const sParts = s.split('-');
   const startDate = new Date(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0);
 
@@ -128,15 +125,15 @@ function saveRangeToSheet(s, e, dept, text, author, weeks) {
   for (let i = 0; i < repeatCount; i++) {
     const sd = new Date(startDate); sd.setDate(sd.getDate() + i * 7);
     const ed = new Date(endDate); ed.setDate(ed.getDate() + i * 7);
-    rows.push([dept, sd, ed, text, author || '']);
+    rows.push([dept, sd, ed, text, author || '', grades || '']);
   }
 
   const sheet = SS.getSheetByName("Data");
-  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 5).setValues(rows);
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
   return true;
 }
 
-function saveNoticeToSheet(s, e, text, author, weeks) {
+function saveNoticeToSheet(s, e, text, author, weeks, grades) {
   const sParts = s.split('-');
   const startDate = new Date(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0);
 
@@ -148,11 +145,11 @@ function saveNoticeToSheet(s, e, text, author, weeks) {
   for (let i = 0; i < repeatCount; i++) {
     const sd = new Date(startDate); sd.setDate(sd.getDate() + i * 7);
     const ed = new Date(endDate); ed.setDate(ed.getDate() + i * 7);
-    rows.push([sd, ed, text, author || '']);
+    rows.push([sd, ed, text, author || '', grades || '']);
   }
 
   const sheet = SS.getSheetByName("Notice");
-  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 4).setValues(rows);
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 5).setValues(rows);
   return true;
 }
 
@@ -180,7 +177,7 @@ function getItemsForDelete(type, year, month, week, dept) {
   const startMonth = new Date(year, month - 1, 1).getTime();
   const endMonth = new Date(year, month, 0, 23, 59, 59, 999).getTime();
   
-  const [sIdx, eIdx, tIdx, aIdx] = (type === 'notice') ? [0, 1, 2, 3] : [1, 2, 3, 4];
+  const [sIdx, eIdx, tIdx, gIdx] = (type === 'notice') ? [0, 1, 2, 4] : [1, 2, 3, 5];
   const MAX_LEN = 20;
 
   return vals.map((row, i) => ({ row, i }))
@@ -196,7 +193,7 @@ function getItemsForDelete(type, year, month, week, dept) {
     .map(obj => {
       const originalText = obj.row[tIdx] || "";
       const displayContent = originalText.length > MAX_LEN ? originalText.substring(0, MAX_LEN) + "..." : originalText;
-      const author = obj.row[aIdx] || "";
+      const grades = obj.row[gIdx] || "";
 
       const startDate = obj.row[sIdx];
       const endDate = obj.row[eIdx];
@@ -204,7 +201,7 @@ function getItemsForDelete(type, year, month, week, dept) {
       return {
         rowNum: obj.i + 1,
         fullText: originalText,
-        author: author,
+        grades: grades,
         display: (type === 'notice') ? displayContent : `[${obj.row[0]}] ${displayContent}`,
         date: Utilities.formatDate(startDate, TZ, "M/d") +
               (Utilities.formatDate(startDate, TZ, "M/d") === Utilities.formatDate(endDate, TZ, "M/d") ?
@@ -215,7 +212,7 @@ function getItemsForDelete(type, year, month, week, dept) {
     });
 }
 
-function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor) {
+function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, newGrades) {
   try {
     const sheetName = (type === 'notice') ? "Notice" : "Data";
     const sheet = SS.getSheetByName(sheetName);
@@ -228,9 +225,9 @@ function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor) {
     endDate.setHours(0,0,0,0);
 
     if (type === 'notice') {
-      sheet.getRange(row, 1, 1, 4).setValues([[startDate, endDate, newText, newAuthor || '']]);
+      sheet.getRange(row, 1, 1, 5).setValues([[startDate, endDate, newText, newAuthor || '', newGrades || '']]);
     } else {
-      sheet.getRange(row, 2, 1, 4).setValues([[startDate, endDate, newText, newAuthor || '']]);
+      sheet.getRange(row, 2, 1, 5).setValues([[startDate, endDate, newText, newAuthor || '', newGrades || '']]);
     }
 
     return true;

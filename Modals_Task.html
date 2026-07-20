@@ -62,8 +62,12 @@
       </div>
 
       <div class="field" style="margin-bottom:15px;">
-        <label style="font-weight:bold; display:block; margin-bottom:5px;">등록자</label>
-        <input type="text" id="wzAuthor" style="width:100%; padding:10px 15px; border:1px solid #cbd5e1; border-radius:5px;" placeholder="이름을 입력하세요">
+        <label style="font-weight:bold; display:block; margin-bottom:5px;">대상 학년</label>
+        <div id="wzGradeGroup" class="grade-check-group">
+          <label class="grade-check-item"><input type="checkbox" value="1" checked>1학년</label>
+          <label class="grade-check-item"><input type="checkbox" value="2" checked>2학년</label>
+          <label class="grade-check-item"><input type="checkbox" value="3" checked>3학년</label>
+        </div>
       </div>
 
       <div style="display:flex; align-items:center; gap:8px; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px;">
@@ -97,7 +101,14 @@
       </div>
     </div>
     <div class="field"><label>전달사항</label><textarea id="notT" rows="5" style="width:100%"></textarea></div>
-    <div class="field"><label>등록자</label><input type="text" id="notAuthor" placeholder="이름을 입력하세요"></div>
+    <div class="field">
+      <label>대상 학년</label>
+      <div id="notGradeGroup" class="grade-check-group">
+        <label class="grade-check-item"><input type="checkbox" value="1" checked>1학년</label>
+        <label class="grade-check-item"><input type="checkbox" value="2" checked>2학년</label>
+        <label class="grade-check-item"><input type="checkbox" value="3" checked>3학년</label>
+      </div>
+    </div>
     <div style="display:flex; align-items:center; gap:8px; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px;">
       <input type="checkbox" id="notRepeat" onchange="toggleRepeatFields('not')" style="width:18px; height:18px;">
       <label for="notRepeat" style="margin:0; cursor:pointer; font-weight:bold;">매주 반복 등록</label>
@@ -156,7 +167,14 @@
       <label>내용</label>
       <textarea id="singleEditText" rows="6" style="resize:vertical; background:#ffffff;"></textarea>
     </div>
-    <div class="field"><label>등록자</label><input type="text" id="singleEditAuthor" placeholder="이름을 입력하세요"></div>
+    <div class="field">
+      <label>대상 학년</label>
+      <div id="singleEditGradeGroup" class="grade-check-group">
+        <label class="grade-check-item"><input type="checkbox" value="1" checked>1학년</label>
+        <label class="grade-check-item"><input type="checkbox" value="2" checked>2학년</label>
+        <label class="grade-check-item"><input type="checkbox" value="3" checked>3학년</label>
+      </div>
+    </div>
 
     <div style="display:flex; gap:10px; margin-top:20px;">
       <button class="btn-search" style="flex:2; background:var(--edit);" onclick="saveSingleEdit()">💾 수정사항 저장</button>
@@ -218,15 +236,16 @@
       document.getElementById('wzDeptGrid').innerHTML = serverData.deptList.map(d => `<button class="dept-btn" onclick="selectWzDept('${d}')">${d}</button>`).join('');
       document.getElementById('wzDept').value = '';
       document.getElementById('wizardSingleInput').value = ''; // 통합 텍스트 에어리어 초기화
-      document.getElementById('wzAuthor').value = '';
       document.getElementById('wzIsRange').checked = false;
+      setCheckedGrades('wzGradeGroup', '1,2,3');
       document.getElementById('wzRepeat').checked = false;
       document.getElementById('wzRepeatWeeks').value = 4;
       toggleRepeatFields('wz');
       wzClickCount = 0; wzStartD = ''; wzEndD = '';
       nextWzStep(1);
     } else {
-      document.getElementById('nsD').value = ''; document.getElementById('neD').value = ''; document.getElementById('notT').value = ''; document.getElementById('notAuthor').value = ''; document.getElementById('isRangeNot').checked = false; toggleDateFields('not');
+      document.getElementById('nsD').value = ''; document.getElementById('neD').value = ''; document.getElementById('notT').value = ''; document.getElementById('isRangeNot').checked = false; toggleDateFields('not');
+      setCheckedGrades('notGradeGroup', '1,2,3');
       document.getElementById('notRepeat').checked = false;
       document.getElementById('notRepeatWeeks').value = 4;
       toggleRepeatFields('not');
@@ -239,6 +258,20 @@
     const checked = document.getElementById(`${prefix}Repeat`).checked;
     document.getElementById(`${prefix}RepeatWeeks`).style.display = checked ? 'inline-block' : 'none';
     document.getElementById(`${prefix}RepeatUnitLabel`).style.display = checked ? 'inline' : 'none';
+  }
+
+  // 대상 학년 체크박스 그룹에서 선택된 값을 "1,2,3" 형태의 문자열로 읽어옵니다.
+  function getCheckedGrades(containerId) {
+    const boxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
+    return Array.from(boxes).map(b => b.value).join(',');
+  }
+
+  // 대상 학년 체크박스 그룹을 주어진 "1,2,3" 문자열에 맞게 되돌립니다. 값이 없으면 전체 학년을 기본으로 체크합니다.
+  function setCheckedGrades(containerId, gradesStr) {
+    const grades = gradesStr ? gradesStr.split(',') : ['1', '2', '3'];
+    document.querySelectorAll(`#${containerId} input[type="checkbox"]`).forEach(cb => {
+      cb.checked = grades.includes(cb.value);
+    });
   }
 
   function selectWzDept(dept) {
@@ -328,8 +361,8 @@
       return;
     }
 
-    const author = document.getElementById('wzAuthor').value.trim();
-    if (!author) { showAlert("등록자 이름을 입력해주세요."); return; }
+    const grades = getCheckedGrades('wzGradeGroup');
+    if (!grades) { showAlert("대상 학년을 하나 이상 선택해주세요."); return; }
 
     const isRepeat = document.getElementById('wzRepeat').checked;
     const weeks = isRepeat ? Math.max(2, parseInt(document.getElementById('wzRepeatWeeks').value) || 2) : 1;
@@ -338,7 +371,7 @@
     g.withSuccessHandler(() => {
       toggleLoading(false); closeMod('workMod'); loadAll();
       showAlert(isRepeat ? `${weeks}주간 반복 등록이 완료되었습니다.` : "등록이 완료되었습니다.");
-    }).saveRangeToSheet(wzStartD, wzEndD || wzStartD, dept, finalContent, author, weeks);
+    }).saveRangeToSheet(wzStartD, wzEndD || wzStartD, dept, finalContent, '', weeks, grades);
   }
 
   function toggleDateFields(type) {
@@ -350,8 +383,10 @@
 
   function saveN() {
     const sDVal = document.getElementById('nsD').value, isRange = document.getElementById('isRangeNot').checked, eDVal = document.getElementById('neD').value, text = document.getElementById('notT').value;
-    const author = document.getElementById('notAuthor').value.trim();
-    if(!sDVal || (isRange && !eDVal) || !text || !author) { showAlert("날짜, 전달사항, 등록자를 모두 입력해주세요."); return; }
+    if(!sDVal || (isRange && !eDVal) || !text) { showAlert("날짜와 전달사항을 모두 입력해주세요."); return; }
+
+    const grades = getCheckedGrades('notGradeGroup');
+    if (!grades) { showAlert("대상 학년을 하나 이상 선택해주세요."); return; }
 
     const isRepeat = document.getElementById('notRepeat').checked;
     const weeks = isRepeat ? Math.max(2, parseInt(document.getElementById('notRepeatWeeks').value) || 2) : 1;
@@ -360,7 +395,7 @@
     g.withSuccessHandler(() => {
       toggleLoading(false); closeMod('notMod'); loadAll();
       showAlert(isRepeat ? `${weeks}주간 반복 등록되었습니다.` : "저장됨");
-    }).saveNoticeToSheet(sDVal, isRange ? eDVal : sDVal, text, author, weeks);
+    }).saveNoticeToSheet(sDVal, isRange ? eDVal : sDVal, text, '', weeks, grades);
   }
 
   function openDeleteMod() {
@@ -413,7 +448,7 @@
         <div class="del-item" onclick="toggleDelCb(event, this)">
           <input type="checkbox" value="${item.rowNum}">
           <div class="del-item-info">
-            <span>${item.date}${item.author ? ' · ' + item.author : ''}</span>
+            <span>${item.date}</span>
             <b>${item.display}</b>
           </div>
         </div>
@@ -502,7 +537,7 @@
       document.getElementById('editList').innerHTML = list.map((item, idx) => `
         <div class="edit-item">
           <div class="edit-item-info">
-            <span>${item.date}${item.author ? ' · ' + item.author : ''}</span>
+            <span>${item.date}</span>
             <b>${item.display}</b>
           </div>
           <button class="btn-search" style="padding: 6px 12px; margin: 0; width: auto; background:var(--edit);" onclick="openSingleEdit(${idx})">수정</button>
@@ -520,7 +555,7 @@
     document.getElementById('singleEditStart').value = item.isoStart;
     document.getElementById('singleEditEnd').value = item.isoEnd;
     document.getElementById('singleEditText').value = item.fullText;
-    document.getElementById('singleEditAuthor').value = item.author || '';
+    setCheckedGrades('singleEditGradeGroup', item.grades);
     openMod('singleEditMod');
   }
 
@@ -529,9 +564,10 @@
     const start = document.getElementById('singleEditStart').value;
     const end = document.getElementById('singleEditEnd').value;
     const text = document.getElementById('singleEditText').value;
-    const author = document.getElementById('singleEditAuthor').value.trim();
+    const grades = getCheckedGrades('singleEditGradeGroup');
 
     if (!start || !end || !text) { showAlert("날짜와 내용을 모두 입력하세요."); return; }
+    if (!grades) { showAlert("대상 학년을 하나 이상 선택해주세요."); return; }
 
     toggleLoading(true, "수정 중...");
     g.withSuccessHandler(res => {
@@ -544,7 +580,7 @@
       } else {
         showAlert("수정 실패");
       }
-    }).updateRowContent(currentEditType, rowNum, text, start, end, author);
+    }).updateRowContent(currentEditType, rowNum, text, start, end, '', grades);
   }
 
   function closeEditModal() {
