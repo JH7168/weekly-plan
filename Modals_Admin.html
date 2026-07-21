@@ -19,11 +19,11 @@
   <div class="modal-content" style="max-width: 650px;">
     <h3 style="text-align:center; color:var(--danger); margin-top:0;">🔐 관리자 - 자료 업로드</h3>
 
-    <!-- 1단계: 서식 / 학교생활기록부 선택 -->
+    <!-- 1단계: 학교생활기록부 / 서식 선택 -->
     <div id="adminStep1">
       <div class="dept-grid">
-        <button class="dept-btn" onclick="openAdminSection('forms')">📄 서식</button>
         <button class="dept-btn" onclick="openAdminSection('record')">📚 학교생활기록부</button>
+        <button class="dept-btn" onclick="openAdminSection('forms')">📄 서식</button>
       </div>
     </div>
 
@@ -79,8 +79,8 @@
   const FORM_SLOTS = [
     { group: '여비정산 신청서', items: [ { key: 'travel_expense', label: '여비정산 신청서' } ] },
     { group: '인쇄요구서', items: [ { key: 'print_request', label: '인쇄요구서' } ] },
-    { group: '원천징수 동의서(교직원 급식)', items: [ { key: 'withholding_consent', label: '원천징수 동의서(교직원 급식)' } ] },
     { group: '가정통신문 양식', items: [ { key: 'family_letter_template', label: '가정통신문 양식' } ] },
+    { group: '교과협의회 양식', items: [ { key: 'subject_council_form', label: '교과협의회 양식' } ] },
     { group: '결보강 계획서', items: [
         { key: 'resub_class_hwp', label: '수업계' },
         { key: 'resub_after_hwp', label: '방과후' }
