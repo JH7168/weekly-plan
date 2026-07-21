@@ -18,7 +18,24 @@
 <div id="adminPanelMod" class="modal">
   <div class="modal-content" style="max-width: 650px;">
     <h3 style="text-align:center; color:var(--danger); margin-top:0;">🔐 관리자 - 자료 업로드</h3>
-    <div id="adminMaterialList" style="max-height: 60vh; overflow-y:auto;"></div>
+
+    <!-- 1단계: 서식 / 학교생활기록부 선택 -->
+    <div id="adminStep1">
+      <div class="dept-grid">
+        <button class="dept-btn" onclick="openAdminSection('forms')">📄 서식</button>
+        <button class="dept-btn" onclick="openAdminSection('record')">📚 학교생활기록부</button>
+      </div>
+    </div>
+
+    <!-- 2단계: 선택한 구분의 업로드 목록 -->
+    <div id="adminStep2" style="display:none;">
+      <div style="position:relative; display:flex; justify-content:center; align-items:center; min-height:36px; margin-bottom:15px;">
+        <button class="btn-cancel" style="position:absolute; left:0; width:auto; margin:0; padding:8px 14px; font-size:13px;" onclick="backToAdminList()">⬅ 뒤로</button>
+        <h4 id="adminStep2Title" style="margin:0; font-size:16px; font-weight:bold; color:#333;"></h4>
+      </div>
+      <div id="adminMaterialList" style="max-height: 55vh; overflow-y:auto;"></div>
+    </div>
+
     <button class="btn-cancel" onclick="closeMod('adminPanelMod')">닫기</button>
   </div>
 </div>
@@ -86,11 +103,14 @@
     { key: 'record_excel_check', label: '엑셀 점검 자료' }
   ];
 
-  // 관리자 패널도 서식/학교생활기록부 모달과 같은 그룹 구조로 묶어서 보여줍니다.
-  const ADMIN_GROUPS = FORM_SLOTS.concat([
-    { group: '학교생활기록부 · 기재요령', items: RECORD_GUIDE_ITEMS },
-    { group: '학교생활기록부', items: RECORD_OTHER_ITEMS }
-  ]);
+  // 관리자 패널도 서식/학교생활기록부로 구분해서 보여줍니다.
+  const ADMIN_SECTIONS = {
+    forms: { title: '서식', groups: FORM_SLOTS },
+    record: { title: '학교생활기록부', groups: [
+      { group: '기재요령', items: RECORD_GUIDE_ITEMS },
+      { group: '기타 자료', items: RECORD_OTHER_ITEMS }
+    ]}
+  };
 
   // slotKey -> 확인창에 보여줄 문서 이름 (그룹에 항목이 여러 개면 "그룹 · 항목"으로 구분)
   const MATERIAL_DISPLAY_NAMES = {};
@@ -248,18 +268,38 @@
     }).verifyAdminPassword(pw);
   }
 
+  let currentAdminSection = null; // 'forms' | 'record'
+
   function openAdminPanel() {
     toggleLoading(true, "불러오는 중...");
     refreshMaterialsStatus(() => {
       toggleLoading(false);
-      renderAdminPanel();
+      currentAdminSection = null;
+      document.getElementById('adminStep1').style.display = 'block';
+      document.getElementById('adminStep2').style.display = 'none';
       openMod('adminPanelMod');
     });
   }
 
+  // 1단계에서 "서식" 또는 "학교생활기록부"를 선택했을 때, 해당 구분의 업로드 목록만 보여줍니다.
+  function openAdminSection(sectionKey) {
+    currentAdminSection = sectionKey;
+    document.getElementById('adminStep2Title').innerText = ADMIN_SECTIONS[sectionKey].title;
+    renderAdminPanel();
+    document.getElementById('adminStep1').style.display = 'none';
+    document.getElementById('adminStep2').style.display = 'block';
+  }
+
+  function backToAdminList() {
+    currentAdminSection = null;
+    document.getElementById('adminStep2').style.display = 'none';
+    document.getElementById('adminStep1').style.display = 'block';
+  }
+
   function renderAdminPanel() {
-    // 서식/학교생활기록부 모달과 동일한 그룹 형태로 묶어서 보여줘 항목을 찾기 쉽게 합니다.
-    document.getElementById('adminMaterialList').innerHTML = ADMIN_GROUPS.map(group => {
+    if (!currentAdminSection) return;
+    const groups = ADMIN_SECTIONS[currentAdminSection].groups;
+    document.getElementById('adminMaterialList').innerHTML = groups.map(group => {
       const rows = group.items.map(slot => {
         const has = materialsStatus[slot.key];
         const rowLabel = group.items.length === 1 ? group.group : slot.label;
