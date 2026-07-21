@@ -1,0 +1,324 @@
+<!-- 관리자 로그인 -->
+<div id="adminLoginMod" class="modal">
+  <div class="modal-content" style="max-width: 320px; text-align:center;">
+    <div style="font-size:38px; line-height:1; margin-bottom:10px;">🔒</div>
+    <h3 style="text-align:center; margin:0 0 22px;">관리자 로그인</h3>
+    <div class="field" style="text-align:center;">
+      <label style="text-align:center;">비밀번호</label>
+      <input type="password" id="adminPwInput" placeholder="비밀번호를 입력하세요" style="text-align:center; letter-spacing:2px;" onkeydown="if(event.key==='Enter') submitAdminLogin()">
+    </div>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn-search" style="flex:1;" onclick="submitAdminLogin()">확인</button>
+      <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('adminLoginMod')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- 관리자 패널: 자료 업로드/삭제 -->
+<div id="adminPanelMod" class="modal">
+  <div class="modal-content" style="max-width: 650px;">
+    <h3 style="text-align:center; color:var(--danger); margin-top:0;">🔐 관리자 - 자료 업로드</h3>
+    <div id="adminMaterialList" style="max-height: 60vh; overflow-y:auto;"></div>
+    <button class="btn-cancel" onclick="closeMod('adminPanelMod')">닫기</button>
+  </div>
+</div>
+
+<!-- 서식 -->
+<div id="formsMod" class="modal">
+  <div class="modal-content" style="max-width: 480px;">
+    <h3 style="text-align:center; margin-top:0;">📄 서식</h3>
+
+    <!-- 1단계: 카테고리 버튼 목록 -->
+    <div id="formsStep1">
+      <div id="formsCategoryGrid" class="dept-grid" style="max-height: 60vh;"></div>
+    </div>
+
+    <!-- 2단계: 선택한 카테고리 안의 파일 버튼들 -->
+    <div id="formsStep2" style="display:none;">
+      <div style="position:relative; display:flex; justify-content:center; align-items:center; min-height:36px; margin-bottom:20px;">
+        <button class="btn-cancel" style="position:absolute; left:0; width:auto; margin:0; padding:8px 14px; font-size:13px;" onclick="backToFormsList()">⬅ 뒤로</button>
+        <h4 id="formsStep2Title" style="margin:0; font-size:16px; font-weight:bold; color:#333;"></h4>
+      </div>
+      <div id="formsStep2Buttons" class="material-btn-row" style="justify-content:center;"></div>
+    </div>
+
+    <button class="btn-cancel" onclick="closeMod('formsMod')">닫기</button>
+  </div>
+</div>
+
+<!-- 학교생활기록부 -->
+<div id="recordMod" class="modal">
+  <div class="modal-content" style="max-width: 480px;">
+    <h3 style="text-align:center; margin-top:0;">📚 학교생활기록부</h3>
+    <div id="recordMaterialList" style="max-height: 65vh; overflow-y:auto;"></div>
+    <button class="btn-cancel" onclick="closeMod('recordMod')">닫기</button>
+  </div>
+</div>
+
+<script>
+  // 서식 모달에 표시할 항목 구성 (버튼을 누르면 확인창을 띄운 뒤 다운로드합니다).
+  // 항목이 1개뿐인 그룹은 제목 없이 버튼만 상단에 모아 보여주고, 2개 이상인 그룹만 제목과 함께 하단에 표시합니다.
+  // 목록은 ㄱㄴㄷ(가나다) 순으로 자동 정렬되므로, 새 항목을 추가할 때 순서를 따로 맞출 필요가 없습니다.
+  const FORM_SLOTS = [
+    { group: '여비정산 신청서', items: [ { key: 'travel_expense', label: '여비정산 신청서' } ] },
+    { group: '인쇄요구서', items: [ { key: 'print_request', label: '인쇄요구서' } ] },
+    { group: '원천징수 동의서(교직원 급식)', items: [ { key: 'withholding_consent', label: '원천징수 동의서(교직원 급식)' } ] },
+    { group: '가정통신문 양식', items: [ { key: 'family_letter_template', label: '가정통신문 양식' } ] },
+    { group: '결보강 계획서', items: [
+        { key: 'resub_class_hwp', label: '수업계' },
+        { key: 'resub_after_hwp', label: '방과후' }
+    ]},
+    { group: '급식 변경 신청서', items: [
+        { key: 'meal_change_apply', label: '신청' },
+        { key: 'meal_change_cancel', label: '취소' }
+    ]}
+  ].sort((a, b) => a.group.localeCompare(b.group, 'ko'));
+
+  // 학교생활기록부 모달 - 기재요령은 제목 아래 학년도별 버튼을 한 줄로 표시 (5번째 "자기평가서 작성"은 외부 링크라 별도 처리)
+  const RECORD_GUIDE_ITEMS = [
+    { key: 'record_guide_2024', label: '2024학년도' },
+    { key: 'record_guide_2025', label: '2025학년도' },
+    { key: 'record_guide_2026', label: '2026학년도' }
+  ];
+  const RECORD_OTHER_ITEMS = [
+    { key: 'record_guidebook', label: '길라잡이' },
+    { key: 'record_example', label: '과세특 작성 예시' },
+    { key: 'record_excel_check', label: '엑셀 점검 자료' }
+  ];
+
+  // 관리자 패널도 서식/학교생활기록부 모달과 같은 그룹 구조로 묶어서 보여줍니다.
+  const ADMIN_GROUPS = FORM_SLOTS.concat([
+    { group: '학교생활기록부 · 기재요령', items: RECORD_GUIDE_ITEMS },
+    { group: '학교생활기록부', items: RECORD_OTHER_ITEMS }
+  ]);
+
+  // slotKey -> 확인창에 보여줄 문서 이름 (그룹에 항목이 여러 개면 "그룹 · 항목"으로 구분)
+  const MATERIAL_DISPLAY_NAMES = {};
+  FORM_SLOTS.forEach(group => {
+    group.items.forEach(item => {
+      MATERIAL_DISPLAY_NAMES[item.key] = group.items.length > 1 ? `${group.group} · ${item.label}` : group.group;
+    });
+  });
+
+  const SELF_EVAL_URL = 'https://script.google.com/macros/s/AKfycbxzVAsMPUkxFxoRQ7CQaVJnVlkdITq8Epl-DV7gMaePOPYLWkZvKDLpAXJgxCUDdTpu/exec';
+
+  let materialsStatus = {}; // slotKey -> {fileName}
+
+  function refreshMaterialsStatus(callback) {
+    g.withSuccessHandler(status => {
+      materialsStatus = status || {};
+      if (callback) callback();
+    }).getMaterialsStatus();
+  }
+
+  // --- 서식 모달 (1단계: 카테고리 버튼 → 2단계: 그 안의 파일 버튼) ---
+  function openFormsMod() {
+    toggleLoading(true, "불러오는 중...");
+    refreshMaterialsStatus(() => {
+      toggleLoading(false);
+      renderFormsCategoryList();
+      document.getElementById('formsStep1').style.display = 'block';
+      document.getElementById('formsStep2').style.display = 'none';
+      openMod('formsMod');
+    });
+  }
+
+  function renderMaterialButton(item) {
+    const has = materialsStatus[item.key];
+    return has
+      ? `<button class="material-dl-btn" onclick="confirmDownload('${item.key}')">${item.label}</button>`
+      : `<button class="material-dl-btn disabled" disabled>${item.label} (미등록)</button>`;
+  }
+
+  // 1단계: 카테고리 개수만큼만 버튼이 보이므로, 안에 파일이 아무리 늘어나도 목록이 깔끔하게 유지됩니다.
+  function renderFormsCategoryList() {
+    document.getElementById('formsCategoryGrid').innerHTML = FORM_SLOTS.map((group, idx) =>
+      `<button class="dept-btn" onclick="openFormsCategory(${idx})">${group.group}</button>`
+    ).join('');
+  }
+
+  // 카테고리 버튼 클릭 시: 파일이 1개뿐이면 바로 다운로드 확인창, 여러 개면 2단계 화면으로 이동합니다.
+  function openFormsCategory(idx) {
+    const group = FORM_SLOTS[idx];
+    if (group.items.length === 1) {
+      confirmDownload(group.items[0].key);
+      return;
+    }
+    document.getElementById('formsStep2Title').innerText = group.group;
+    document.getElementById('formsStep2Buttons').innerHTML = group.items.map(renderMaterialButton).join('');
+    document.getElementById('formsStep1').style.display = 'none';
+    document.getElementById('formsStep2').style.display = 'block';
+  }
+
+  function backToFormsList() {
+    document.getElementById('formsStep2').style.display = 'none';
+    document.getElementById('formsStep1').style.display = 'block';
+  }
+
+  // 다운로드 전 확인창을 띄웁니다.
+  function confirmDownload(slotKey) {
+    const name = MATERIAL_DISPLAY_NAMES[slotKey] || '파일';
+    showConfirm(`${name}을(를) 다운로드하시겠습니까?`, () => downloadMaterial(slotKey));
+  }
+
+  // --- 학교생활기록부 모달 ---
+  function openRecordMod() {
+    toggleLoading(true, "불러오는 중...");
+    refreshMaterialsStatus(() => {
+      toggleLoading(false);
+      renderRecordMod();
+      openMod('recordMod');
+    });
+  }
+
+  function renderRecordDownloadButton(item) {
+    const has = materialsStatus[item.key];
+    return has
+      ? `<button class="material-dl-btn" onclick="downloadMaterial('${item.key}')">${item.label}</button>`
+      : `<button class="material-dl-btn disabled" disabled>${item.label} (미등록)</button>`;
+  }
+
+  function renderRecordMod() {
+    let html = '';
+
+    // 기재요령: 제목 아래 학년도별 버튼을 한 줄로 표시
+    html += `<div class="material-group"><div class="material-group-title">기재요령</div><div class="material-btn-row">`;
+    html += RECORD_GUIDE_ITEMS.map(renderRecordDownloadButton).join('');
+    html += `</div></div>`;
+
+    RECORD_OTHER_ITEMS.forEach(item => {
+      const has = materialsStatus[item.key];
+      html += `
+        <div class="record-item">
+          <span>${item.label}</span>
+          ${has
+            ? `<button class="btn-search" style="width:auto; padding:8px 16px; margin:0;" onclick="downloadMaterial('${item.key}')">⬇ 다운로드</button>`
+            : `<button class="btn-cancel" style="width:auto; padding:8px 16px; margin:0;" disabled>미등록</button>`}
+        </div>`;
+    });
+    html += `
+      <div class="record-item">
+        <span>자기평가서 작성</span>
+        <button class="btn-search" style="width:auto; padding:8px 16px; margin:0; background:#10b981;" onclick="window.open('${SELF_EVAL_URL}', '_blank')">↗ 열기</button>
+      </div>`;
+    document.getElementById('recordMaterialList').innerHTML = html;
+  }
+
+  // --- 파일 다운로드 (Drive 파일을 base64로 받아 브라우저에서 바로 저장) ---
+  function downloadMaterial(slotKey) {
+    toggleLoading(true, "다운로드 준비 중...");
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      if (!res || !res.success) { showAlert("파일을 불러오지 못했습니다."); return; }
+      const byteChars = atob(res.base64);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: res.mimeType || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = res.fileName || 'download';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }).getMaterialContent(slotKey);
+  }
+
+  // --- 관리자 로그인/패널 ---
+  function openAdminLogin() {
+    document.getElementById('adminPwInput').value = '';
+    openMod('adminLoginMod');
+    setTimeout(() => document.getElementById('adminPwInput').focus(), 100);
+  }
+
+  function submitAdminLogin() {
+    const pw = document.getElementById('adminPwInput').value;
+    if (!pw) { showAlert("비밀번호를 입력해주세요."); return; }
+    toggleLoading(true, "확인 중...");
+    g.withSuccessHandler(ok => {
+      toggleLoading(false);
+      if (ok) {
+        closeMod('adminLoginMod');
+        openAdminPanel();
+      } else {
+        showAlert("비밀번호가 올바르지 않습니다.");
+      }
+    }).verifyAdminPassword(pw);
+  }
+
+  function openAdminPanel() {
+    toggleLoading(true, "불러오는 중...");
+    refreshMaterialsStatus(() => {
+      toggleLoading(false);
+      renderAdminPanel();
+      openMod('adminPanelMod');
+    });
+  }
+
+  function renderAdminPanel() {
+    // 서식/학교생활기록부 모달과 동일한 그룹 형태로 묶어서 보여줘 항목을 찾기 쉽게 합니다.
+    document.getElementById('adminMaterialList').innerHTML = ADMIN_GROUPS.map(group => {
+      const rows = group.items.map(slot => {
+        const has = materialsStatus[slot.key];
+        const rowLabel = group.items.length === 1 ? group.group : slot.label;
+        return `
+          <div class="admin-material-row">
+            <div class="admin-material-label">${rowLabel}</div>
+            <div class="admin-material-status">${has ? `📄 ${has.fileName}` : '업로드된 파일 없음'}</div>
+            <div class="admin-material-actions">
+              <input type="file" id="file_${slot.key}" accept=".hwp,.pdf,.xlsx,.xls" style="display:none;" onchange="handleAdminFileUpload('${slot.key}')">
+              <button class="btn-search" style="width:auto; padding:6px 14px; margin:0; font-size:13px;" onclick="document.getElementById('file_${slot.key}').click()">업로드</button>
+              ${has ? `<button class="btn-cancel-small" onclick="handleAdminFileDelete('${slot.key}')">삭제</button>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+      return `<div class="material-group"><div class="material-group-title">${group.group}</div>${rows}</div>`;
+    }).join('');
+  }
+
+  function handleAdminFileUpload(slotKey) {
+    const input = document.getElementById(`file_${slotKey}`);
+    const file = input.files[0];
+    if (!file) return;
+
+    if (file.size > 30 * 1024 * 1024) {
+      showAlert("파일 크기는 30MB 이하로 올려주세요.");
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function() {
+      const base64 = reader.result.split(',')[1];
+      toggleLoading(true, "업로드 중...");
+      g.withFailureHandler(err => {
+        toggleLoading(false);
+        input.value = '';
+        showAlert("업로드에 실패했습니다.\n\n" + (err && err.message ? err.message : err));
+      }).withSuccessHandler(res => {
+        toggleLoading(false);
+        input.value = '';
+        if (res && res.success) {
+          showAlert("업로드가 완료되었습니다.");
+          refreshMaterialsStatus(renderAdminPanel);
+        } else {
+          showAlert("업로드에 실패했습니다.\n\n" + (res && res.message ? res.message : "원인을 알 수 없습니다."));
+        }
+      }).uploadMaterial(slotKey, base64, file.name, file.type || 'application/octet-stream');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleAdminFileDelete(slotKey) {
+    showConfirm("이 파일을 삭제하시겠습니까?", () => {
+      toggleLoading(true, "삭제 중...");
+      g.withSuccessHandler(() => {
+        toggleLoading(false);
+        showAlert("삭제되었습니다.");
+        refreshMaterialsStatus(renderAdminPanel);
+      }).deleteMaterial(slotKey);
+    });
+  }
+</script>

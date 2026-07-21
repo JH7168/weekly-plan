@@ -73,8 +73,9 @@
     </div>
 
     <div class="header-area">
+      <button class="admin-btn" onclick="openAdminLogin()"><i class="fas fa-lock"></i> 관리자</button>
       <h2>주간 계획서</h2>
-      
+
       <div class="btn-group" style="display: flex; width: 100%; justify-content: center; gap: 0; flex-wrap: nowrap;">
         
         <div style="display: flex; flex: 1; justify-content: flex-end; gap: 15px; padding-right: 7.5px;">
@@ -111,8 +112,11 @@
           <button class="shortcut-link" style="--accent:#f97316;" onclick="window.open('https://script.google.com/macros/s/AKfycbw3g841N66dD-v82Rsufi7o3c91oeNpyu8_WBlv-OqnY9FysMMHclA-uj-Jht_P0xT3jg/exec', '_blank')">
             <i class="fas fa-chalkboard-teacher"></i>방과후 신청
           </button>
-          <button class="shortcut-link" style="--accent:#10b981;" onclick="window.open('https://script.google.com/macros/s/AKfycbxzVAsMPUkxFxoRQ7CQaVJnVlkdITq8Epl-DV7gMaePOPYLWkZvKDLpAXJgxCUDdTpu/exec', '_blank')">
-            <i class="fas fa-file-signature"></i>자기평가서 작성
+          <button class="shortcut-link" style="--accent:#6366f1;" onclick="openRecordMod()">
+            <i class="fas fa-book"></i>학교생활기록부
+          </button>
+          <button class="shortcut-link" style="--accent:#0ea5e9;" onclick="openFormsMod()">
+            <i class="fas fa-file-alt"></i>서식
           </button>
         </div>
       </div>
@@ -222,6 +226,7 @@
     </div>
 
     <?!= include('Modals_Task'); ?>
+    <?!= include('Modals_Admin'); ?>
 
     <script>
       const serverData = <?!= JSON.stringify(initialData) ?>;

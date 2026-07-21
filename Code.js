@@ -2,6 +2,99 @@
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 const TZ = "GMT+9";
 
+// --- 관리자 자료실 (서식/학교생활기록부 자료 업로드·다운로드) ---
+const ADMIN_PASSWORD = 'HY4312';
+const MATERIALS_FOLDER_NAME = '주간계획서_자료실';
+
+function verifyAdminPassword(pw) {
+  return pw === ADMIN_PASSWORD;
+}
+
+function getMaterialsFolder_() {
+  const folders = DriveApp.getFoldersByName(MATERIALS_FOLDER_NAME);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(MATERIALS_FOLDER_NAME);
+}
+
+// 각 자료 슬롯의 업로드 여부/파일명만 가볍게 내려줍니다 (다운로드 화면·관리자 화면 공용).
+function getMaterialsStatus() {
+  const props = PropertiesService.getScriptProperties().getProperties();
+  const result = {};
+  Object.keys(props).forEach(key => {
+    if (key.indexOf('material_') !== 0) return;
+    try {
+      const data = JSON.parse(props[key]);
+      result[key.substring('material_'.length)] = { fileName: data.fileName };
+    } catch (e) {
+      // 손상된 값은 무시합니다.
+    }
+  });
+  return result;
+}
+
+// slotKey에 해당하는 파일을 Drive에 저장하고, 기존 파일이 있으면 휴지통으로 보냅니다.
+function uploadMaterial(slotKey, base64Data, fileName, mimeType) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const existingRaw = props.getProperty('material_' + slotKey);
+
+    const folder = getMaterialsFolder_();
+    const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType, fileName);
+    const file = folder.createFile(blob);
+
+    if (existingRaw) {
+      try {
+        const existing = JSON.parse(existingRaw);
+        DriveApp.getFileById(existing.fileId).setTrashed(true);
+      } catch (e) {
+        // 기존 파일을 찾지 못해도 새 파일 업로드는 그대로 진행합니다.
+      }
+    }
+
+    props.setProperty('material_' + slotKey, JSON.stringify({ fileId: file.getId(), fileName: fileName }));
+    return { success: true, fileName: fileName };
+  } catch (e) {
+    console.error('자료 업로드 오류: ' + e.toString());
+    return { success: false, message: e.message || e.toString() };
+  }
+}
+
+function deleteMaterial(slotKey) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const raw = props.getProperty('material_' + slotKey);
+    if (raw) {
+      const data = JSON.parse(raw);
+      try { DriveApp.getFileById(data.fileId).setTrashed(true); } catch (e) {}
+      props.deleteProperty('material_' + slotKey);
+    }
+    return true;
+  } catch (e) {
+    console.error('자료 삭제 오류: ' + e.toString());
+    return false;
+  }
+}
+
+// 다운로드 시 파일 내용을 base64로 인코딩해 반환합니다 (Drive 공유 설정 없이 앱 안에서만 내려받도록).
+function getMaterialContent(slotKey) {
+  try {
+    const raw = PropertiesService.getScriptProperties().getProperty('material_' + slotKey);
+    if (!raw) return { success: false };
+    const data = JSON.parse(raw);
+    const file = DriveApp.getFileById(data.fileId);
+    const blob = file.getBlob();
+    return {
+      success: true,
+      fileName: data.fileName,
+      mimeType: blob.getContentType(),
+      base64: Utilities.base64Encode(blob.getBytes())
+    };
+  } catch (e) {
+    console.error('자료 다운로드 오류: ' + e.toString());
+    return { success: false };
+  }
+}
+
 function doGet() {
   const template = HtmlService.createTemplateFromFile('Index');
   const now = new Date();
