@@ -213,6 +213,54 @@
     .card-btn { height: 80px; font-size: 13px; }
   }
 
+  /* 9. 결보강 계획서: 사유/주차 선택 칩 */
+  .reason-chip { background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 8px 16px; border-radius: 20px; font-size: 13.5px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+  .reason-chip:hover { border-color: #e11d48; color: #e11d48; }
+  .reason-chip.active { background: #e11d48; border-color: #e11d48; color: #ffffff; }
+
+  /* 결보강 계획서: 결강/교체보강 날짜 드롭다운 선택기 */
+  .rs-date-select { position: relative; }
+  .rs-date-select-trigger {
+    display:flex; align-items:center; justify-content:space-between; width:100%;
+    padding:10px 15px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; font-weight:bold;
+    color:#333; background:#fff; cursor:pointer; transition:0.2s;
+  }
+  .rs-date-select-trigger:hover { border-color:#e11d48; }
+  .rs-date-select-trigger i { color:#94a3b8; margin-left: 6px; }
+  .rs-date-dropdown {
+    position:fixed; background:#fff; border:1px solid #cbd5e1;
+    border-radius:8px; box-shadow:0 8px 20px rgba(0,0,0,0.25); z-index:10050; max-height:260px; overflow-y:auto; padding:6px;
+  }
+  .rs-date-option { padding:9px 12px; border-radius:6px; font-size:13.5px; font-weight:600; color:#333; cursor:pointer; }
+  .rs-date-option:hover { background:#fee2e2; color:#e11d48; }
+  .rs-date-option.active { background:#e11d48; color:#fff; }
+  .rs-manual-input { width:100%; padding:7px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; box-sizing:border-box; }
+
+  /* 결보강 계획서: 시간표 선택 그리드 버튼 */
+  .rs-picker-table { border-collapse: collapse; background: white; }
+  .rs-picker-table th, .rs-picker-table td { border: 1px solid #cbd5e1; text-align: center; }
+  .rs-slot-btn {
+    width: 100%; height: 100%; min-height: 40px; border: none; background: transparent; cursor: pointer;
+    padding: 6px; font-size: 12.5px; font-weight: 600; color: #1e293b; line-height: 1.3; transition: 0.15s;
+  }
+  .rs-slot-btn:hover { background: #fee2e2; color: #e11d48; }
+
+  /* 결보강 계획서: 최종 문서 미리보기 */
+  .resub-doc { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; color: #111; }
+  .resub-title { text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 4px; margin: 0 0 10px 0; border-bottom: 3px double #111; padding-bottom: 10px; }
+  .resub-approval-wrap { display: flex; justify-content: flex-end; margin-bottom: -1px; }
+  .resub-approval-table, .resub-doc-table { border-collapse: collapse; width: 100%; }
+  .resub-approval-table { width: 340px; table-layout: fixed; }
+  .resub-approval-table th, .resub-approval-table td { border: 1px solid #333; padding: 8px 16px; text-align: center; font-size: 12.5px; }
+  .resub-doc-table { margin-top: 10px; table-layout: fixed; }
+  .resub-doc-table th, .resub-doc-table td { border: 1px solid #333; padding: 8px 4px; font-size: 13px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .resub-doc-table td[contenteditable="true"]:hover { background: #fff7ed; outline: 1px dashed #f97316; cursor: text; }
+  .resub-reason-cell { white-space: normal !important; text-align: left; padding: 6px 10px !important; }
+  .resub-reason-line1 { text-align: center; white-space: nowrap; }
+  .resub-reason-line2 { text-align: left; margin-top: 4px; }
+  .resub-approval-blank td { height: 48px; }
+  .resub-footnote { font-size: 11.5px; color: #444; margin-top: 8px; }
+
   /* 전체시간표 전용 고급 보더 스타일 디자인 세부 보강 */
   #viewTimetable th {
     background: #f1f5f9;

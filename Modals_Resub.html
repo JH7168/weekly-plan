@@ -1,0 +1,572 @@
+<div id="resubMod" class="modal">
+  <div class="modal-content" style="max-width: 480px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; padding: 22px;">
+
+    <!-- 0단계: 기본 정보 (신청 교사명 / 날짜 / 사유) -->
+    <div id="rsStep0">
+      <h3 style="color:#e11d48; text-align:center; margin-bottom: 18px;">결보강 계획서 - 기본 정보</h3>
+      <div class="field">
+        <label>신청 교사명</label>
+        <input type="text" id="rsTeacherInput" placeholder="예: 박정환">
+      </div>
+      <div class="field">
+        <label>날짜</label>
+        <input type="date" id="rsDateInput">
+      </div>
+      <div class="field">
+        <label>사유</label>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          <button type="button" class="reason-chip" onclick="rsSelectReason('출장', this)">출장</button>
+          <button type="button" class="reason-chip" onclick="rsSelectReason('연가', this)">연가</button>
+          <button type="button" class="reason-chip" onclick="rsSelectReason('병가', this)">병가</button>
+          <button type="button" class="reason-chip" onclick="rsSelectReason('조퇴', this)">조퇴</button>
+          <button type="button" class="reason-chip" onclick="rsSelectReason('외출', this)">외출</button>
+          <button type="button" class="reason-chip" onclick="rsSelectReason('기타', this)">기타</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>구체적 사유</label>
+        <input type="text" id="rsReasonText" placeholder="예: 골절 수술">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('resubMod')">취소</button>
+        <button class="btn-search" style="flex:2; background:#e11d48;" onclick="rsStep0Next()">다음 ➡</button>
+      </div>
+    </div>
+
+    <!-- 1단계: 결강(A) 수업 선택 -->
+    <div id="rsStep1" style="display:none;">
+      <h3 style="color:#e11d48; text-align:center; margin-bottom: 4px;">결강할 수업 선택</h3>
+      <p style="text-align:center; color:#666; font-weight:bold; margin-bottom:10px; font-size:14px;">교체하실 선생님의 수업을 골라주세요.</p>
+      <div style="max-height:60vh; overflow:auto; border:1px solid #cbd5e1; border-radius:8px; padding:8px;">
+        <table id="rsPickerTableA" class="rs-picker-table"></table>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(0)">⬅ 이전으로</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('resubMod')">취소</button>
+      </div>
+    </div>
+
+    <!-- 2단계: 교체·보강(B) 수업 선택 -->
+    <div id="rsStep2" style="display:none;">
+      <h3 style="color:#e11d48; text-align:center; margin-bottom: 4px;">교체·보강할 수업 선택</h3>
+      <p style="text-align:center; color:#666; font-weight:bold; margin-bottom:8px; font-size:14px;">수업교체 및 결보강 하실 수업을 골라주세요.</p>
+      <div id="rsStep2ABanner" style="background:#fff1f2; color:#e11d48; font-size:12.5px; font-weight:bold; padding:8px 10px; border-radius:8px; margin-bottom:10px;"></div>
+      <div style="max-height:56vh; overflow:auto; border:1px solid #cbd5e1; border-radius:8px; padding:8px;">
+        <table id="rsPickerTableB" class="rs-picker-table"></table>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(1)">⬅ 이전으로</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('resubMod')">취소</button>
+      </div>
+    </div>
+
+    <!-- 3단계: 구분 선택 -->
+    <div id="rsStep3" style="display:none;">
+      <h3 style="color:#e11d48; text-align:center; margin-bottom: 12px;">구분 선택</h3>
+      <div id="rsStep3Summary" style="background:#f8fafc; border:1px solid var(--border); padding:10px 12px; border-radius:8px; margin-bottom:15px; font-size:13px; line-height:1.7;"></div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <button type="button" class="dept-btn" onclick="rsSelectType('수업교체')">수업교체</button>
+        <button type="button" class="dept-btn" onclick="rsSelectType('수업변경')">수업변경</button>
+        <button type="button" class="dept-btn" onclick="rsSelectType('결보강')">결보강</button>
+        <button type="button" class="dept-btn" onclick="rsSelectType('결강보충수업')">결강보충수업</button>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:15px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(2)">⬅ 이전으로</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('resubMod')">취소</button>
+      </div>
+    </div>
+
+    <!-- 4단계: 최종 확인 및 날짜(주차) 설정 -->
+    <div id="rsStep4" style="display:none;">
+      <h3 style="color:#e11d48; text-align:center; margin-bottom: 12px;">최종 확인 및 날짜 설정</h3>
+      <div id="rsSummaryText" style="background:#f8fafc; border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:15px; font-size:13.5px; line-height:1.7;"></div>
+
+      <div style="display:flex; gap:12px; margin-bottom:10px;">
+        <div class="field" style="flex:1; margin-bottom:0;">
+          <label>결강 날짜</label>
+          <div class="rs-date-select" id="rsDateSelectA">
+            <div class="rs-date-select-trigger" onclick="rsToggleDateDropdown('A')">
+              <span id="rsDateLabelA"></span>
+              <i class="fas fa-caret-down"></i>
+            </div>
+            <div class="rs-date-dropdown" id="rsDateDropdownA" style="display:none;"></div>
+          </div>
+        </div>
+        <div class="field" style="flex:1; margin-bottom:0;">
+          <label>교체보강 날짜</label>
+          <div class="rs-date-select" id="rsDateSelectB">
+            <div class="rs-date-select-trigger" onclick="rsToggleDateDropdown('B')">
+              <span id="rsDateLabelB"></span>
+              <i class="fas fa-caret-down"></i>
+            </div>
+            <div class="rs-date-dropdown" id="rsDateDropdownB" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:18px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(3)">⬅ 이전으로</button>
+        <button class="btn-search" style="flex:2; background:#e11d48;" onclick="rsGoStep(5)">📝 계획서 생성하기</button>
+      </div>
+    </div>
+
+    <!-- 5단계: 최종 미리보기 (수정 가능) -->
+    <div id="rsStep5" style="display:none;">
+      <h3 style="color:#e11d48; text-align:center; margin-bottom: 10px;">완성된 계획서 <span style="font-weight:normal; color:#888; font-size:12.5px;">(표를 직접 클릭해 수정할 수 있습니다)</span></h3>
+      <div id="rsDocWrapper" style="overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px; padding:15px; background:#fff;"></div>
+      <div style="display:flex; gap:10px; margin-top:15px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(4)">⬅ 이전으로</button>
+        <button class="btn-search" style="flex:1; background:#10b981;" onclick="rsPrintDoc()"><i class="fas fa-print"></i> 인쇄하기</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('resubMod')">닫기</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ===== 결보강 계획서 상태 =====
+  let rsData = { teacher: '', anchorDate: '', reason: '', reasonText: '', A: null, B: null, type: '', aMode: 'week', aWeekOffset: 0, bMode: 'week', bWeekOffset: 0, aDateObj: null, bDateObj: null };
+  let rsSlots = [];
+  const RS_DAY_IDX = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4 };
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.rs-date-select')) {
+      const a = document.getElementById('rsDateDropdownA');
+      const b = document.getElementById('rsDateDropdownB');
+      if (a) a.style.display = 'none';
+      if (b) b.style.display = 'none';
+    }
+  });
+
+  function openResubMod() {
+    if (!fullTimetableData || fullTimetableData.length === 0) {
+      showAlert('먼저 전체 시간표가 로딩된 후 이용해주세요.');
+      return;
+    }
+    rsData = { teacher: '', anchorDate: '', reason: '', reasonText: '', A: null, B: null, type: '', aMode: 'week', aWeekOffset: 0, bMode: 'week', bWeekOffset: 0, aDateObj: null, bDateObj: null };
+    document.getElementById('rsTeacherInput').value = '';
+    document.getElementById('rsDateInput').value = rsToISODate(new Date());
+    document.querySelectorAll('#resubMod .reason-chip').forEach(b => b.classList.remove('active'));
+    document.getElementById('rsReasonText').value = '';
+    openMod('resubMod');
+    rsGoStep(0);
+  }
+
+  function rsGoStep(n) {
+    for (let i = 0; i <= 5; i++) {
+      const stepEl = document.getElementById('rsStep' + i);
+      if (stepEl) stepEl.style.display = (i === n) ? 'block' : 'none';
+    }
+    const box = document.querySelector('#resubMod .modal-content');
+    if (box) {
+      if (n === 1 || n === 2) { box.style.maxWidth = '95vw'; box.style.width = '95vw'; }
+      else if (n === 5) { box.style.maxWidth = '950px'; box.style.width = '95vw'; }
+      else { box.style.maxWidth = '480px'; box.style.width = '100%'; }
+    }
+    if (n === 1) rsRenderPicker('A');
+    if (n === 2) {
+      rsRenderPicker('B');
+      document.getElementById('rsStep2ABanner').innerHTML =
+        `<b>선택된 결강 수업(A):</b> ${rsData.A.grade} ${rsData.A.className} · ${rsData.A.day}요일 ${rsData.A.period}교시 · ${rsData.A.subject}${rsData.A.teacher ? ' (' + rsData.A.teacher + ')' : ''}`;
+    }
+    if (n === 3) {
+      document.getElementById('rsStep3Summary').innerHTML =
+        `<div><b>결강(A):</b> ${rsData.A.grade} ${rsData.A.className} · ${rsData.A.day}요일 ${rsData.A.period}교시 · ${rsData.A.subject}${rsData.A.teacher ? ' (' + rsData.A.teacher + ')' : ''}</div>
+         <div style="margin-top:4px;"><b>교체·보강(B):</b> ${rsData.B.grade} ${rsData.B.className} · ${rsData.B.day}요일 ${rsData.B.period}교시 · ${rsData.B.subject}${rsData.B.teacher ? ' (' + rsData.B.teacher + ')' : ''}</div>`;
+    }
+    if (n === 4) rsRenderSummaryStep();
+    if (n === 5) rsRenderFinalDoc();
+  }
+
+  // ===== 0단계 로직 =====
+  function rsToISODate(d) {
+    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function rsSelectReason(reason, btn) {
+    document.querySelectorAll('#resubMod .reason-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    rsData.reason = reason;
+  }
+
+  function rsStep0Next() {
+    const teacher = document.getElementById('rsTeacherInput').value.trim();
+    const dateVal = document.getElementById('rsDateInput').value;
+    const reasonText = document.getElementById('rsReasonText').value.trim();
+    if (!teacher) { showAlert('신청 교사명을 입력해주세요.'); return; }
+    if (!dateVal) { showAlert('날짜를 선택해주세요.'); return; }
+    if (!rsData.reason) { showAlert('사유를 선택해주세요 (출장/연가/병가/조퇴/외출/기타).'); return; }
+    if (!reasonText) { showAlert('구체적인 사유를 입력해주세요.'); return; }
+    rsData.teacher = teacher;
+    rsData.anchorDate = dateVal;
+    rsData.reasonText = reasonText;
+    rsGoStep(1);
+  }
+
+  // ===== 시간표 그리드 파싱 및 선택 버튼 렌더링 =====
+  function rsParseGrid() {
+    const data = fullTimetableData;
+    const days = ['월', '화', '수', '목', '금'];
+
+    let gradeRowIdx = -1;
+    for (let i = 0; i < 10; i++) {
+      if (data[i] && data[i].some(v => String(v).includes('학년'))) { gradeRowIdx = i; break; }
+    }
+    const classRowIdx = gradeRowIdx !== -1 ? gradeRowIdx + 1 : -1;
+    const startRow = classRowIdx !== -1 ? classRowIdx + 1 : 4;
+
+    let colInfo = {};
+    let currentGrade = '';
+    if (gradeRowIdx !== -1) {
+      for (let c = 2; c < data[gradeRowIdx].length; c++) {
+        let gVal = String(data[gradeRowIdx][c] || '').trim();
+        if (gVal.includes('학년')) currentGrade = gVal;
+        let cVal = String(data[classRowIdx][c] || '').trim();
+        let formattedClass = (cVal && !isNaN(cVal)) ? cVal + '반' : cVal;
+        if (currentGrade && formattedClass) colInfo[c] = { grade: currentGrade, className: formattedClass };
+      }
+    }
+
+    let rowInfo = {};
+    let currentDay = '';
+    for (let r = startRow; r < data.length; r++) {
+      let rowDay = String(data[r][0] || '').trim();
+      if (rowDay && days.includes(rowDay)) currentDay = rowDay;
+      let periodStr = String(data[r][1] || '').trim();
+      let pMatch = periodStr.match(/([1-8])/);
+      if (!pMatch || !currentDay) continue;
+      rowInfo[r] = { day: currentDay, period: pMatch[1] };
+    }
+
+    return { colInfo, rowInfo };
+  }
+
+  function rsParseSubjectTeacher(raw) {
+    const cleaned = String(raw || '').replace(/_x000D_/g, '').trim();
+    const tokens = cleaned.split(/[\s\n]+/).filter(Boolean);
+    if (tokens.length === 0) return { subject: '', teacher: '' };
+    if (tokens.length === 1) return { subject: tokens[0], teacher: '' };
+    const teacher = tokens[tokens.length - 1];
+    const subject = tokens.slice(0, -1).join(' ');
+    return { subject, teacher };
+  }
+
+  function rsRenderPicker(target) {
+    rsSlots = [];
+    const tableId = target === 'A' ? 'rsPickerTableA' : 'rsPickerTableB';
+    const { colInfo, rowInfo } = rsParseGrid();
+    let html = '';
+    fullTimetableData.forEach((row, rIdx) => {
+      html += '<tr>';
+      row.forEach((cell, cIdx) => {
+        const originalBg = (fullTimetableBgs[rIdx] && fullTimetableBgs[rIdx][cIdx]) || '';
+        const raw = String(cell || '').trim();
+        const displayCell = raw.replace(/\s+/g, '<br>');
+        const isLabelCol = (cIdx === 0 || cIdx === 1);
+        const baseStyle = isLabelCol
+          ? 'width:30px; padding:4px; font-size:12px; line-height:1.2;'
+          : 'min-width:55px; padding:6px; font-size:13px; line-height:1.3;';
+
+        if (rIdx === 0) {
+          const thBg = (originalBg && originalBg !== '#ffffff') ? originalBg : '#f1f5f9';
+          html += `<th style="background:${thBg}; ${baseStyle}">${displayCell}</th>`;
+        } else if (rowInfo[rIdx] && colInfo[cIdx] && raw) {
+          const info = rowInfo[rIdx], col = colInfo[cIdx];
+          const idx = rsSlots.push({ rIdx, cIdx, grade: col.grade, className: col.className, day: info.day, period: info.period, raw }) - 1;
+          html += `<td style="background:${originalBg || '#fff'}; ${baseStyle} padding:0;">
+            <button type="button" class="rs-slot-btn" onclick="rsSelectSlot('${target}', ${idx})">${displayCell}</button>
+          </td>`;
+        } else {
+          let tdBg = (originalBg && originalBg !== '#ffffff') ? originalBg : (raw ? '#ffffff' : '#f8fafc');
+          html += `<td style="background:${tdBg}; ${baseStyle}">${displayCell}</td>`;
+        }
+      });
+      html += '</tr>';
+    });
+    document.getElementById(tableId).innerHTML = html;
+  }
+
+  function rsSelectSlot(target, idx) {
+    const slot = rsSlots[idx];
+    if (!slot) return;
+    const parsed = rsParseSubjectTeacher(slot.raw);
+    const full = Object.assign({}, slot, parsed);
+    if (target === 'A') {
+      rsData.A = full;
+      rsGoStep(2);
+    } else {
+      if (rsData.A && rsData.A.rIdx === slot.rIdx && rsData.A.cIdx === slot.cIdx) {
+        showAlert('결강 수업과 동일한 수업입니다. 다른 수업을 선택해주세요.');
+        return;
+      }
+      rsData.B = full;
+      rsGoStep(3);
+    }
+  }
+
+  // ===== 3단계: 구분 선택 =====
+  function rsSelectType(type) {
+    rsData.type = type;
+    rsGoStep(4);
+  }
+
+  // ===== 4단계: 요약 + 주차 기반 날짜 계산 =====
+  function rsGetMonday(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.getFullYear(), d.getMonth(), diff);
+  }
+
+  function rsAddDays(date, days) {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d;
+  }
+
+  function rsFormatDate(d) {
+    return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+  }
+
+  function rsFormatDateShort(d) {
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  }
+
+  function rsRenderSummaryStep() {
+    const A = rsData.A, B = rsData.B;
+    document.getElementById('rsSummaryText').innerHTML = `
+      <div><b>신청 교사:</b> ${rsData.teacher}</div>
+      <div><b>사유:</b> ${rsData.reason} · ${rsData.reasonText}</div>
+      <div style="margin-top:8px;"><b>결강(A):</b> ${A.grade} ${A.className} / ${A.day}요일 ${A.period}교시 / ${A.subject}${A.teacher ? ' (' + A.teacher + ')' : ''}</div>
+      <div><b>교체·보강(B):</b> ${B.grade} ${B.className} / ${B.day}요일 ${B.period}교시 / ${B.subject}${B.teacher ? ' (' + B.teacher + ')' : ''}</div>
+      <div><b>구분:</b> ${rsData.type}</div>
+    `;
+    rsData.aMode = 'week'; rsData.aWeekOffset = 0;
+    rsData.bMode = 'week'; rsData.bWeekOffset = 0;
+    rsInitDateSelector('A');
+    rsInitDateSelector('B');
+  }
+
+  // target의 기본(이번주) 날짜를 계산해 표시값을 세팅합니다.
+  function rsInitDateSelector(target) {
+    const monday0 = rsGetMonday(rsData.anchorDate);
+    const person = target === 'A' ? rsData.A : rsData.B;
+    const dateObj = rsAddDays(monday0, RS_DAY_IDX[person.day]);
+    if (target === 'A') rsData.aDateObj = dateObj; else rsData.bDateObj = dateObj;
+    document.getElementById('rsDateDropdown' + target).style.display = 'none';
+    rsUpdateDateLabel(target);
+  }
+
+  // 결강/교체보강 날짜 선택용 드롭다운을 열고 닫습니다 (한 번에 하나만 열림).
+  function rsToggleDateDropdown(target) {
+    const dd = document.getElementById('rsDateDropdown' + target);
+    const willOpen = dd.style.display !== 'block';
+    document.getElementById('rsDateDropdownA').style.display = 'none';
+    document.getElementById('rsDateDropdownB').style.display = 'none';
+    if (willOpen) {
+      rsRenderDateDropdown(target);
+      rsPositionDropdown(target);
+      dd.style.display = 'block';
+    }
+  }
+
+  // 모달의 overflow-y:auto에 의해 드롭다운이 잘리지 않도록, 뷰포트(화면) 좌표 기준으로 위치를 계산합니다.
+  function rsPositionDropdown(target) {
+    const trigger = document.querySelector('#rsDateSelect' + target + ' .rs-date-select-trigger');
+    const dd = document.getElementById('rsDateDropdown' + target);
+    if (!trigger || !dd) return;
+    const rect = trigger.getBoundingClientRect();
+    const maxDropdownHeight = 260;
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    dd.style.left = rect.left + 'px';
+    dd.style.width = rect.width + 'px';
+    if (spaceBelow < maxDropdownHeight && rect.top > spaceBelow) {
+      dd.style.top = Math.max(8, rect.top - maxDropdownHeight - 4) + 'px';
+    } else {
+      dd.style.top = (rect.bottom + 4) + 'px';
+    }
+  }
+
+  // 모달 내부를 스크롤하면 트리거 위치가 바뀌어 어긋나므로, 열려있던 드롭다운은 닫습니다.
+  document.addEventListener('DOMContentLoaded', function () {
+    const modContent = document.querySelector('#resubMod .modal-content');
+    if (modContent) {
+      modContent.addEventListener('scroll', function () {
+        document.getElementById('rsDateDropdownA').style.display = 'none';
+        document.getElementById('rsDateDropdownB').style.display = 'none';
+      });
+    }
+  });
+
+  // 해당 요일 기준으로 앞뒤 3주씩, 총 7개 날짜 후보 + 직접입력 항목을 그려줍니다.
+  function rsRenderDateDropdown(target) {
+    const dd = document.getElementById('rsDateDropdown' + target);
+    const person = target === 'A' ? rsData.A : rsData.B;
+    const mode = target === 'A' ? rsData.aMode : rsData.bMode;
+    const curOffset = target === 'A' ? rsData.aWeekOffset : rsData.bWeekOffset;
+    const monday0 = rsGetMonday(rsData.anchorDate);
+
+    let html = '';
+    for (let off = -3; off <= 3; off++) {
+      const d = rsAddDays(rsAddDays(monday0, off * 7), RS_DAY_IDX[person.day]);
+      const active = (mode === 'week' && off === curOffset) ? 'active' : '';
+      html += `<div class="rs-date-option ${active}" onclick="rsPickWeekDate('${target}', ${off})">${rsFormatDate(d)} (${person.day})</div>`;
+    }
+    const manualActive = (mode === 'manual');
+    const manualDateObj = target === 'A' ? rsData.aDateObj : rsData.bDateObj;
+    html += `<div class="rs-date-option rs-date-manual-row ${manualActive ? 'active' : ''}">
+      <span class="rs-manual-label" onclick="rsOpenManualPicker('${target}', event)" style="display:${manualActive ? 'none' : 'inline'};">직접입력</span>
+      <input type="date" id="rsManualInput${target}" class="rs-manual-input" style="display:${manualActive ? 'block' : 'none'};" value="${manualActive && manualDateObj ? rsToISODate(manualDateObj) : ''}" onclick="event.stopPropagation()" onchange="rsPickManualDate('${target}', this.value)">
+    </div>`;
+    dd.innerHTML = html;
+  }
+
+  function rsPickWeekDate(target, off) {
+    const monday0 = rsGetMonday(rsData.anchorDate);
+    const person = target === 'A' ? rsData.A : rsData.B;
+    const dateObj = rsAddDays(rsAddDays(monday0, off * 7), RS_DAY_IDX[person.day]);
+    if (target === 'A') { rsData.aMode = 'week'; rsData.aWeekOffset = off; rsData.aDateObj = dateObj; }
+    else { rsData.bMode = 'week'; rsData.bWeekOffset = off; rsData.bDateObj = dateObj; }
+    rsUpdateDateLabel(target);
+    document.getElementById('rsDateDropdown' + target).style.display = 'none';
+  }
+
+  function rsOpenManualPicker(target, evt) {
+    if (evt) evt.stopPropagation();
+    const dd = document.getElementById('rsDateDropdown' + target);
+    const label = dd.querySelector('.rs-manual-label');
+    const input = document.getElementById('rsManualInput' + target);
+    if (label) label.style.display = 'none';
+    if (!input) return;
+    input.style.display = 'block';
+    const dateObj = target === 'A' ? rsData.aDateObj : rsData.bDateObj;
+    input.value = rsToISODate(dateObj || new Date());
+    input.focus();
+    if (input.showPicker) { try { input.showPicker(); } catch (e) {} }
+  }
+
+  function rsPickManualDate(target, val) {
+    if (!val) return;
+    const d = new Date(val + 'T00:00:00');
+    if (target === 'A') { rsData.aMode = 'manual'; rsData.aDateObj = d; }
+    else { rsData.bMode = 'manual'; rsData.bDateObj = d; }
+    rsUpdateDateLabel(target);
+    document.getElementById('rsDateDropdown' + target).style.display = 'none';
+  }
+
+  function rsUpdateDateLabel(target) {
+    const dateObj = target === 'A' ? rsData.aDateObj : rsData.bDateObj;
+    document.getElementById('rsDateLabel' + target).innerText = rsFormatDate(dateObj);
+  }
+
+  // ===== 5단계: 최종 문서 생성 (수정 가능) =====
+  function rsRenderFinalDoc() {
+    const A = rsData.A, B = rsData.B, aDate = rsData.aDateObj, bDate = rsData.bDateObj;
+    const reasonList = ['출장', '연가', '병가', '조퇴', '외출', '기타'];
+    const reasonBoxes = reasonList.map(r => `${r} ${r === rsData.reason ? '☑' : '□'}`).join(' , ');
+    const aClass = `${A.grade.replace('학년', '')}-${A.className.replace('반', '')}`;
+    const bClass = `${B.grade.replace('학년', '')}-${B.className.replace('반', '')}`;
+    // "결보강" 유형은 대신 수업을 진행해줄 뿐, 본인이 나중에 따로 보충하지 않으므로 본인보강 칸은 비워둡니다.
+    const skipSelfMakeup = rsData.type === '결보강';
+
+    const blankRows = Array(5).fill('<tr>' + Array(11).fill('<td contenteditable="true">&nbsp;</td>').join('') + '</tr>').join('');
+
+    const html = `
+      <div class="resub-doc" id="resubDocContent">
+        <h2 class="resub-title">수업교체 및 결·보강 계획서</h2>
+        <div class="resub-approval-wrap">
+          <table class="resub-approval-table">
+            <colgroup><col style="width:33.34%"><col style="width:33.33%"><col style="width:33.33%"></colgroup>
+            <tr><th>수업계</th><th>교육과정<br>부장</th><th>교감</th></tr>
+            <tr class="resub-approval-blank"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+          </table>
+        </div>
+        <table class="resub-doc-table">
+          <colgroup>
+            <col style="width:7%"><col style="width:7%"><col style="width:8%"><col style="width:9%">
+            <col style="width:10%"><col style="width:9%"><col style="width:9%">
+            <col style="width:11%"><col style="width:8%"><col style="width:9%">
+            <col style="width:13%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th style="white-space:normal; overflow:visible; line-height:1.3;">일자<br>(요일)</th>
+              <td contenteditable="true" colspan="2">${rsFormatDate(aDate)} (${A.day}요일)</td>
+              <th>사유</th>
+              <td contenteditable="true" colspan="5" class="resub-reason-cell">
+                <div class="resub-reason-line1">${reasonBoxes}</div>
+                <div class="resub-reason-line2">· ${rsData.reasonText}</div>
+              </td>
+              <th>교사</th>
+              <td contenteditable="true">${rsData.teacher} (인)</td>
+            </tr>
+            <tr>
+              <th rowspan="2">일자</th>
+              <th colspan="3">결&nbsp;&nbsp;강</th>
+              <th colspan="3">교체·보강</th>
+              <th colspan="3">본인&nbsp;보강</th>
+              <th rowspan="2">비고</th>
+            </tr>
+            <tr>
+              <th>학급</th><th>교시</th><th>과목</th>
+              <th>보강교사</th><th>과목</th><th>서명</th>
+              <th>월일(요일)</th><th>교시</th><th>과목</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td contenteditable="true">${rsFormatDateShort(aDate)}</td>
+              <td contenteditable="true">${aClass}</td>
+              <td contenteditable="true">${A.period}교시</td>
+              <td contenteditable="true">${A.subject}</td>
+              <td contenteditable="true">${B.teacher}</td>
+              <td contenteditable="true">${skipSelfMakeup ? A.subject : B.subject}</td>
+              <td contenteditable="true">&nbsp;</td>
+              <td contenteditable="true">${skipSelfMakeup ? '&nbsp;' : rsFormatDateShort(bDate)}</td>
+              <td contenteditable="true">${skipSelfMakeup ? '&nbsp;' : B.period + '교시'}</td>
+              <td contenteditable="true">${skipSelfMakeup ? '&nbsp;' : A.subject}</td>
+              <td contenteditable="true">${rsData.type}</td>
+            </tr>
+            ${blankRows}
+          </tbody>
+        </table>
+        <p class="resub-footnote">※ 수업 교체 계획서를 작성하기 전에 반드시 수업계 선생님과 먼저 교체 날짜 및 세부 사항을 상의하시기 바랍니다.</p>
+      </div>
+    `;
+    document.getElementById('rsDocWrapper').innerHTML = html;
+  }
+
+  function rsPrintDoc() {
+    const content = document.getElementById('resubDocContent');
+    if (!content) return;
+    const win = window.open('', '_blank', 'width=1000,height=800');
+    win.document.write('<html><head><title>수업교체 및 결보강 계획서</title>');
+    win.document.write(`<style>
+      @page { size: landscape; margin: 12mm; }
+      body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 25px; color:#111; }
+      .resub-title { text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 4px; margin: 0 0 12px 0; border-bottom: 3px double #111; padding-bottom: 10px; }
+      .resub-approval-wrap { display: flex; justify-content: flex-end; margin-bottom: -1px; }
+      .resub-approval-table, .resub-doc-table { border-collapse: collapse; width: 100%; }
+      .resub-approval-table { width: 340px; table-layout: fixed; }
+      .resub-approval-table th, .resub-approval-table td { border: 1px solid #333; padding: 8px 16px; text-align: center; font-size: 12.5px; }
+      .resub-doc-table { margin-top: 10px; table-layout: fixed; }
+      .resub-doc-table th, .resub-doc-table td { border: 1px solid #333; padding: 8px 4px; font-size: 13px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .resub-reason-cell { white-space: normal !important; text-align: left; padding: 6px 10px !important; }
+      .resub-reason-line1 { text-align: center; white-space: nowrap; }
+      .resub-reason-line2 { text-align: left; margin-top: 4px; }
+      .resub-approval-blank td { height: 48px; }
+      .resub-footnote { font-size: 11.5px; color: #444; margin-top: 8px; }
+    </style></head><body>`);
+    win.document.write(content.outerHTML);
+    win.document.write('</body></html>');
+    win.document.close();
+    win.onload = function () {
+      win.focus();
+      win.print();
+      win.close();
+    };
+  }
+</script>
