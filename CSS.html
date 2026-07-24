@@ -247,19 +247,38 @@
 
   /* 결보강 계획서: 최종 문서 미리보기 */
   .resub-doc { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; color: #111; }
-  .resub-title { text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 4px; margin: 0 0 10px 0; border-bottom: 3px double #111; padding-bottom: 10px; }
-  .resub-approval-wrap { display: flex; justify-content: flex-end; margin-bottom: -1px; }
+  .resub-title { text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; margin: 0 0 20px 0; border-bottom: 3px double #111; padding-bottom: 10px; }
+  .resub-approval-wrap { display: flex; justify-content: flex-end; margin-bottom: 20px; }
   .resub-approval-table, .resub-doc-table { border-collapse: collapse; width: 100%; }
   .resub-approval-table { width: 340px; table-layout: fixed; }
   .resub-approval-table th, .resub-approval-table td { border: 1px solid #333; padding: 8px 16px; text-align: center; font-size: 12.5px; }
-  .resub-doc-table { margin-top: 10px; table-layout: fixed; }
+  .resub-doc-table { margin-top: 0; table-layout: fixed; }
   .resub-doc-table th, .resub-doc-table td { border: 1px solid #333; padding: 8px 4px; font-size: 13px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .resub-doc-table th { font-size: 14px; }
+  .resub-doc-table tbody td { height: 45px; }
   .resub-doc-table td[contenteditable="true"]:hover { background: #fff7ed; outline: 1px dashed #f97316; cursor: text; }
   .resub-reason-cell { white-space: normal !important; text-align: left; padding: 6px 10px !important; }
   .resub-reason-line1 { text-align: center; white-space: nowrap; }
   .resub-reason-line2 { text-align: left; margin-top: 4px; }
-  .resub-approval-blank td { height: 48px; }
+  .resub-approval-blank td { height: 67px; }
   .resub-footnote { font-size: 11.5px; color: #444; margin-top: 8px; }
+
+  /* 전체 시간표 조회: 헤더바 / 본문 배경 / 툴바 레이아웃 */
+  .tt-header-bar { background:#1e3a8a; padding:16px 20px; text-align:center; flex-shrink:0; }
+  .tt-header-bar h3 { margin:0; color:#ffffff; font-size:19px; font-weight:700; }
+  .tt-body { background:#f5f7fa; flex:1; min-height:0; display:flex; flex-direction:column; padding:18px 20px; overflow:hidden; }
+  .tt-table-wrap { flex:1; overflow:auto; border:1px solid #cbd5e1; border-radius:8px; background:#ffffff; padding:10px; position:relative; }
+  .tt-toolbar-row { display:flex; align-items:center; gap:14px; margin-bottom:10px; flex-wrap:wrap; }
+  .tt-action-buttons { display:flex; gap:8px; margin-left:auto; }
+  .tt-search-group { display:flex; align-items:center; gap:8px; }
+  .tt-zoom-group { display:flex; align-items:center; gap:8px; }
+
+  /* 전체 시간표 조회: 전체/학년별 탭 */
+  .tt-grade-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .tt-grade-tab { padding:8px 22px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; font-size:14px; font-weight:700; color:#475569; transition:0.15s; }
+  .tt-grade-tab:hover { background:#fee2e2; color:#e11d48; border-color:#fecdd3; }
+  .tt-grade-tab.active { background:#e11d48; border-color:#e11d48; color:#fff; }
+  .tt-day-tab { padding:8px 14px; }
 
   /* 전체시간표 전용 고급 보더 스타일 디자인 세부 보강 */
   #viewTimetable th {

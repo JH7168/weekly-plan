@@ -87,6 +87,9 @@
       document.getElementById('printTitle').innerText = `${y}년 ${m}월 ${w}주차 주간 계획서`;
 
       renderFilteredWeek(activeFilterIndices);
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      showAlert('데이터를 불러오는 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
     }).getCombinedData(y, m, w);
   }
 
@@ -281,23 +284,6 @@
   }
 
   // --- 인쇄 및 복사 제어 로직 ---
-  function addActionButtons() {
-    let actionDiv = document.getElementById('timetableActionBtns');
-    if (!actionDiv) {
-      actionDiv = document.createElement('div');
-      actionDiv.id = 'timetableActionBtns';
-      actionDiv.style.textAlign = 'right';
-      actionDiv.style.marginBottom = '10px';
-      actionDiv.innerHTML = `
-        <button onclick="copyTimetable()" style="padding:8px 16px; background:#10b981; color:#fff; border:none; border-radius:5px; cursor:pointer; margin-right:8px; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📋 표 복사하기</button>
-        <button onclick="printTimetable()" style="padding:8px 16px; background:#3b82f6; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🖨️ 인쇄하기</button>
-      `;
-      const viewEl = document.getElementById('viewTimetable');
-      const targetEl = viewEl.tagName === 'TBODY' ? viewEl.parentNode : viewEl;
-      targetEl.parentNode.insertBefore(actionDiv, targetEl);
-    }
-  }
-
   function copyTimetable() {
     const viewEl = document.getElementById('viewTimetable');
     let targetTable = viewEl.querySelector('table') || (viewEl.tagName === 'TABLE' || viewEl.tagName === 'TBODY' ? viewEl : viewEl);
@@ -346,7 +332,7 @@
   }
 
   // --- 전체 시간표 모달 및 확대/축소 제어 로직 ---
-  let timetableZoom = 1.0;
+  let timetableZoom = 0.9;
   let fullTimetableData = [];
   let fullTimetableBgs = [];
 
@@ -354,7 +340,11 @@
     toggleLoading(true, "전체 시간표 및 배경색 로딩 중...");
     g.withSuccessHandler(res => {
       toggleLoading(false);
-      
+
+      ttSelectedGrade = null;
+      ttActiveDays = ['월', '화', '수', '목', '금'];
+      renderTtGradeBar();
+
       if (!res || !res.values || res.values.length === 0) {
         document.getElementById('viewTimetable').innerHTML = '<tr><td style="padding:40px; color:#999; text-align:center;">시간표 데이터 또는 "전체시간표" 시트를 찾을 수 없습니다.</td></tr>';
       } else {
@@ -363,54 +353,244 @@
         renderFullTimetable();
       }
 
-      addActionButtons();
-      
       openMod('timetableMod');
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      showAlert('전체 시간표를 불러오는 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
     }).getTimetableFromSheet();
   }
 
-  function renderFullTimetable() {
-    let html = '';
-    fullTimetableData.forEach((row, rIdx) => {
-      html += '<tr>';
-      row.forEach((cell, cIdx) => {
-        let originalBg = fullTimetableBgs[rIdx][cIdx];
-        let displayCell = cell || '';
+  // 요일/교시(0,1열)는 세로로 병합해서 가운데 정렬하고, 학년/반(2열~) 헤더는 "1-1","3-4"처럼
+  // 학년 숫자+반 숫자 한 줄로 합쳐서 보여주는 공용 렌더러입니다. dayFilter가 없으면 전체 요일을 표시합니다.
+  // dataCellRenderer(r, cIdx)가 주어지면 2열(학년/반 데이터) 셀의 렌더링을 위임합니다.
+  // 문자열을 반환하면 그 <td>...</td> 마크업을 그대로 쓰고, null/undefined면 기본 렌더링으로 대체합니다.
+  function buildMergedTimetableHtml(cols, dayFilter, dataCellRenderer) {
+    const dayList = ['월', '화', '수', '목', '금'];
 
-        if (rIdx >= 2 && cIdx >= 2 && displayCell) {
-          displayCell = String(displayCell).trim().replace(/\s+/g, '<br>');
-        }
+    let gradeRowIdx = -1;
+    for (let i = 0; i < 10; i++) {
+      if (fullTimetableData[i] && fullTimetableData[i].some(v => String(v).includes('1학년'))) {
+        gradeRowIdx = i; break;
+      }
+    }
+    const classRowIdx = gradeRowIdx !== -1 ? gradeRowIdx + 1 : -1;
+    const headerEnd = classRowIdx !== -1 ? classRowIdx : 1;
+    const dataStart = headerEnd + 1;
 
-        let extraStyle = '';
-        if (cIdx === 0 || cIdx === 1) {
-          extraStyle = 'width:30px; padding:4px; font-size:13px; line-height:1.2; white-space:normal;';
-        } else {
-          extraStyle = 'min-width:50px; padding:6px; font-size:14px; line-height:1.4; white-space:normal;';
-        }
+    let colGradeNum = {};
+    if (gradeRowIdx !== -1) {
+      let currentGradeText = '';
+      for (let c = 2; c < fullTimetableData[gradeRowIdx].length; c++) {
+        let gVal = String(fullTimetableData[gradeRowIdx][c] || '').trim();
+        if (gVal.includes('학년')) currentGradeText = gVal;
+        const m = currentGradeText.match(/(\d+)/);
+        colGradeNum[c] = m ? m[1] : '';
+      }
+    }
 
-        if (rIdx === 0) {
-          let thBg = (originalBg && originalBg !== '#ffffff') ? originalBg : '#f1f5f9';
-          html += `<th style="background: ${thBg}; ${extraStyle}">${displayCell}</th>`;
-        } else {
-          let tdBg = (originalBg && originalBg !== '#ffffff') ? originalBg : '#ffffff';
-          if (!displayCell && tdBg === '#ffffff') tdBg = '#f8fafc';
-          html += `<td style="background: ${tdBg}; ${extraStyle}">${displayCell}</td>`;
-        }
-      });
-      html += '</tr>';
+    const labelColStyle = 'width:30px; padding:4px; font-size:13px; line-height:1.2; white-space:normal;';
+    const dataColStyle = 'min-width:50px; padding:6px; font-size:14px; line-height:1.4; white-space:normal;';
+
+    // 헤더 1행: 요일 / 교시 (아래 반 번호 행까지 세로 병합)
+    let headHtml = '<tr>';
+    cols.forEach(cIdx => {
+      if (cIdx !== 0 && cIdx !== 1) return;
+      const rawBg = (fullTimetableBgs[gradeRowIdx] || [])[cIdx];
+      const bg = (rawBg && rawBg !== '#ffffff') ? rawBg : '#f1f5f9';
+      const label = String((fullTimetableData[gradeRowIdx] || [])[cIdx] || '').trim();
+      headHtml += `<th rowspan="2" style="background:${bg}; ${labelColStyle} vertical-align:middle; text-align:center;">${label}</th>`;
     });
-    document.getElementById('viewTimetable').innerHTML = html;
+    headHtml += '</tr>';
+
+    // 헤더 2행: 학년-반 (예: 1-1, 3-4)
+    headHtml += '<tr>';
+    cols.forEach(cIdx => {
+      if (cIdx === 0 || cIdx === 1) return;
+      const rawClass = String((fullTimetableData[classRowIdx] || [])[cIdx] || '').trim();
+      const label = colGradeNum[cIdx] ? `${colGradeNum[cIdx]}-${rawClass}` : rawClass;
+      const rawBg = (fullTimetableBgs[classRowIdx] || [])[cIdx];
+      const bg = (rawBg && rawBg !== '#ffffff') ? rawBg : '#f1f5f9';
+      headHtml += `<th style="background:${bg}; ${dataColStyle}">${label}</th>`;
+    });
+    headHtml += '</tr>';
+
+    // 본문: dayFilter에 해당하는 행만 골라내고, 요일(0열)은 같은 요일끼리 세로 병합합니다.
+    let rowsToRender = [];
+    let currentDay = '';
+    for (let r = dataStart; r < fullTimetableData.length; r++) {
+      let rowDay = String(fullTimetableData[r][0] || '').trim();
+      if (rowDay && dayList.includes(rowDay)) currentDay = rowDay;
+      if (!currentDay) continue;
+      if (dayFilter && !dayFilter.includes(currentDay)) continue;
+      rowsToRender.push({ r, day: currentDay });
+    }
+
+    let blockSizeAt = {};
+    for (let i = 0; i < rowsToRender.length; i++) {
+      if (i === 0 || rowsToRender[i].day !== rowsToRender[i - 1].day) {
+        let size = 1;
+        for (let j = i + 1; j < rowsToRender.length && rowsToRender[j].day === rowsToRender[i].day; j++) size++;
+        blockSizeAt[rowsToRender[i].r] = size;
+      }
+    }
+
+    let bodyHtml = '';
+    rowsToRender.forEach(({ r, day }) => {
+      bodyHtml += '<tr>';
+      cols.forEach(cIdx => {
+        const originalBg = (fullTimetableBgs[r] || [])[cIdx];
+
+        if (cIdx === 0) {
+          if (blockSizeAt[r]) {
+            bodyHtml += `<td rowspan="${blockSizeAt[r]}" style="${labelColStyle} vertical-align:middle; text-align:center; font-weight:700; background:#f8fafc;">${day}</td>`;
+          }
+          return;
+        }
+
+        if (cIdx >= 2 && dataCellRenderer) {
+          const custom = dataCellRenderer(r, cIdx);
+          if (custom) { bodyHtml += custom; return; }
+        }
+
+        let displayCell = String((fullTimetableData[r] || [])[cIdx] || '');
+        if (cIdx >= 2 && displayCell.trim()) {
+          displayCell = displayCell.trim().replace(/\s+/g, '<br>');
+        }
+
+        const style = (cIdx === 1) ? labelColStyle : dataColStyle;
+        let tdBg = (originalBg && originalBg !== '#ffffff') ? originalBg : '#ffffff';
+        if (!displayCell.trim() && tdBg === '#ffffff') tdBg = '#f8fafc';
+        bodyHtml += `<td style="background: ${tdBg}; ${style}">${displayCell}</td>`;
+      });
+      bodyHtml += '</tr>';
+    });
+
+    return headHtml + bodyHtml;
+  }
+
+  function renderFullTimetable() {
+    const totalCols = fullTimetableData[0] ? fullTimetableData[0].length : 0;
+    const cols = [];
+    for (let c = 0; c < totalCols; c++) cols.push(c);
+
+    document.getElementById('viewTimetable').innerHTML = buildMergedTimetableHtml(cols, null);
     resetZoomTimetable();
 
     const modalBox = document.querySelector('#timetableMod .modal-content');
     if (modalBox) {
-      modalBox.style.width = '95vw'; 
+      modalBox.style.width = '95vw';
       modalBox.style.height = '90vh';
     }
   }
 
+  // --- 전체/학년별 탭 + 요일 필터 전환 ---
+  let ttSelectedGrade = null; // null = "전체" 모드, 아니면 '1학년'|'2학년'|'3학년'
+  let ttActiveDays = ['월', '화', '수', '목', '금'];
+
+  function selectTtAll() {
+    ttSelectedGrade = null;
+    ttActiveDays = ['월', '화', '수', '목', '금'];
+    if (document.getElementById('searchGrade')) {
+      document.getElementById('searchGrade').selectedIndex = 0;
+      document.getElementById('searchClass').selectedIndex = 0;
+    }
+    renderTtGradeBar();
+    renderFullTimetable();
+  }
+
+  function selectTtGrade(grade) {
+    ttSelectedGrade = grade;
+    ttActiveDays = ['월', '화', '수', '목', '금'];
+    if (document.getElementById('searchGrade')) {
+      document.getElementById('searchGrade').selectedIndex = 0;
+      document.getElementById('searchClass').selectedIndex = 0;
+    }
+    renderTtGradeBar();
+    renderGradeTimetable(grade, ttActiveDays);
+  }
+
+  // 요일 버튼 클릭 시: 처음(5일 전체 선택 상태)에는 클릭한 요일 하나만 남기고,
+  // 그 다음부터는 클릭할 때마다 해당 요일을 추가/제거합니다 (최소 1개는 유지).
+  function toggleTtDay(day) {
+    if (!ttSelectedGrade) return;
+    if (ttActiveDays.length === 5) {
+      ttActiveDays = [day];
+    } else if (ttActiveDays.includes(day)) {
+      if (ttActiveDays.length > 1) ttActiveDays = ttActiveDays.filter(d => d !== day);
+    } else {
+      ttActiveDays.push(day);
+    }
+    renderTtGradeBar();
+    renderGradeTimetable(ttSelectedGrade, ttActiveDays);
+  }
+
+  function renderTtGradeBar() {
+    const bar = document.getElementById('ttGradeBar');
+    if (!bar) return;
+
+    if (!ttSelectedGrade) {
+      bar.innerHTML = `
+        <button type="button" class="tt-grade-tab active" onclick="selectTtAll()">전체</button>
+        <button type="button" class="tt-grade-tab" onclick="selectTtGrade('1학년')">1학년</button>
+        <button type="button" class="tt-grade-tab" onclick="selectTtGrade('2학년')">2학년</button>
+        <button type="button" class="tt-grade-tab" onclick="selectTtGrade('3학년')">3학년</button>
+      `;
+    } else {
+      const days = ['월', '화', '수', '목', '금'];
+      const daysHtml = days.map(d => {
+        const active = ttActiveDays.includes(d) ? 'active' : '';
+        return `<button type="button" class="tt-grade-tab tt-day-tab ${active}" onclick="toggleTtDay('${d}')">${d}</button>`;
+      }).join('');
+      bar.innerHTML = `
+        <button type="button" class="tt-grade-tab" onclick="selectTtAll()">전체</button>
+        <button type="button" class="tt-grade-tab active" onclick="selectTtGrade('${ttSelectedGrade}')">${ttSelectedGrade}</button>
+        ${daysHtml}
+      `;
+    }
+  }
+
+  // 선택한 학년의 반들만, 선택한 요일의 행만 추려서 전체시간표와 동일한 형태로 렌더링합니다.
+  function renderGradeTimetable(grade, days) {
+    if (!days) days = ttActiveDays;
+
+    let gradeRowIdx = -1;
+    for (let i = 0; i < 10; i++) {
+      if (fullTimetableData[i] && fullTimetableData[i].some(v => String(v).includes('1학년'))) {
+        gradeRowIdx = i; break;
+      }
+    }
+
+    let matchCols = [];
+    let currentGrade = "";
+    if (gradeRowIdx !== -1) {
+      for (let c = 2; c < fullTimetableData[gradeRowIdx].length; c++) {
+        let gVal = String(fullTimetableData[gradeRowIdx][c] || '').trim();
+        if (gVal.includes('학년')) currentGrade = gVal;
+        if (currentGrade === grade) matchCols.push(c);
+      }
+    }
+
+    if (matchCols.length === 0) {
+      document.getElementById('viewTimetable').innerHTML = `<tr><td style="padding:40px; color:#999; text-align:center;">${grade} 시간표 열을 찾을 수 없습니다.</td></tr>`;
+      return;
+    }
+
+    const cols = [0, 1].concat(matchCols);
+    document.getElementById('viewTimetable').innerHTML = buildMergedTimetableHtml(cols, days);
+    resetZoomTimetable();
+
+    const modalBox = document.querySelector('#timetableMod .modal-content');
+    if (modalBox) {
+      modalBox.style.width = '910px';
+      modalBox.style.height = '910px';
+    }
+  }
+
   function searchClassTimetable() {
-    const selectedGrade = document.getElementById('searchGrade').value; 
+    ttSelectedGrade = null;
+    ttActiveDays = ['월', '화', '수', '목', '금'];
+    renderTtGradeBar();
+    const selectedGrade = document.getElementById('searchGrade').value;
     const selectedClass = document.getElementById('searchClass').value; 
 
     let schedule = { '1':{}, '2':{}, '3':{}, '4':{}, '5':{}, '6':{}, '7':{}, '8':{} };
@@ -509,17 +689,12 @@
       modalBox.style.height = '910px';  
     }
     
-    timetableZoom = 1.0;
+    timetableZoom = 0.9;
     applyTimetableZoom();
   }
 
   function resetTimetable() {
-    if(document.getElementById('searchGrade')) {
-      document.getElementById('searchGrade').selectedIndex = 0;
-      document.getElementById('searchClass').selectedIndex = 0;
-    }
-    
-    renderFullTimetable();
+    selectTtAll();
   }
 
   function zoomTimetable(amount) {
@@ -528,7 +703,7 @@
   }
 
   function resetZoomTimetable() {
-    timetableZoom = 1.0;
+    timetableZoom = 0.9;
     applyTimetableZoom();
   }
 

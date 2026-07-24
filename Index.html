@@ -188,51 +188,73 @@
     </div>
 
     <div id="timetableMod" class="modal">
-      <div class="modal-content" style="max-width: 95vw; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 20px;">
-        <div style="position: relative; display: flex; justify-content: center; align-items: center; min-height: 32px; margin-bottom: 10px;">
-          <h3 style="text-align: center; color: #e11d48; margin: 0;">전체 시간표 조회</h3>
-          <button class="btn-search" style="position:absolute; right:0; top:50%; transform:translateY(-50%); padding:8px 14px; margin:0; background:#e11d48; font-size:13px;" onclick="openResubMod()">
-            <i class="fas fa-calendar-day"></i> 결보강 계획서 작성
-          </button>
+      <div class="modal-content" style="max-width: 95vw; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+
+        <div class="tt-header-bar">
+          <h3>전체 시간표 조회</h3>
         </div>
 
-        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-          <select id="searchGrade" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; cursor:pointer;">
-            <option value="1학년">1학년</option>
-            <option value="2학년">2학년</option>
-            <option value="3학년">3학년</option>
-          </select>
-          <select id="searchClass" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; cursor:pointer;">
-            <option value="1반">1반</option><option value="2반">2반</option><option value="3반">3반</option>
-            <option value="4반">4반</option><option value="5반">5반</option><option value="6반">6반</option>
-            <option value="7반">7반</option><option value="8반">8반</option><option value="9반">9반</option>
-          </select>
-          <button class="btn-search" style="padding: 8px 16px; margin: 0; background: #0ea5e9;" onclick="searchClassTimetable()">반 검색</button>
+        <div class="tt-body">
+          <div style="display: flex; justify-content: flex-end; align-items:center; gap:8px; margin-bottom: 12px;">
+            <button class="btn-search" style="padding: 8px 14px; margin: 0; background:#e11d48; font-size:13px;" onclick="openResubMod()">
+              <i class="fas fa-calendar-day"></i> 결보강 계획서 작성
+            </button>
+            <button class="btn-search" style="padding: 8px 14px; margin: 0; background:#64748b; font-size:13px;" onclick="tlOpenPasswordMod()">
+              <i class="fas fa-lock"></i> 관리자
+            </button>
+          </div>
 
-          <span style="color:#cbd5e1; margin: 0 5px;">|</span>
+          <div id="timetableWrapper" class="tt-table-wrap">
+            <div class="tt-toolbar-row">
+              <div class="tt-grade-tabs" id="ttGradeBar">
+                <button type="button" class="tt-grade-tab active" onclick="selectTtAll()">전체</button>
+                <button type="button" class="tt-grade-tab" onclick="selectTtGrade('1학년')">1학년</button>
+                <button type="button" class="tt-grade-tab" onclick="selectTtGrade('2학년')">2학년</button>
+                <button type="button" class="tt-grade-tab" onclick="selectTtGrade('3학년')">3학년</button>
+              </div>
 
-          <button class="btn-search" style="padding: 8px 16px; margin: 0; background: #94a3b8;" onclick="resetTimetable()">전체 보기</button>
-        </div>
+              <div class="tt-search-group">
+                <select id="searchGrade" style="padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; cursor:pointer;">
+                  <option value="1학년">1학년</option>
+                  <option value="2학년">2학년</option>
+                  <option value="3학년">3학년</option>
+                </select>
+                <select id="searchClass" style="padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; cursor:pointer;">
+                  <option value="1반">1반</option><option value="2반">2반</option><option value="3반">3반</option>
+                  <option value="4반">4반</option><option value="5반">5반</option><option value="6반">6반</option>
+                  <option value="7반">7반</option><option value="8반">8반</option><option value="9반">9반</option>
+                </select>
+                <button class="btn-search" style="padding: 7px 14px; margin: 0; background: #0ea5e9; font-size:13px;" onclick="searchClassTimetable()">검색</button>
+                <span style="color:#cbd5e1;">|</span>
+                <button class="btn-search" style="padding: 7px 14px; margin: 0; background: #94a3b8; font-size:13px;" onclick="resetTimetable()">전체 보기</button>
+              </div>
 
-        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0;">
-          <button class="btn-search" style="padding: 6px 14px; background: #64748b; font-size: 13px; margin: 0; width: auto;" onclick="zoomTimetable(-0.1)"><i class="fas fa-search-minus"></i> 축소</button>
-          <span id="zoomLabel" style="font-weight: bold; font-size: 14px; min-width: 60px; text-align: center;">100%</span>
-          <button class="btn-search" style="padding: 6px 14px; background: #64748b; font-size: 13px; margin: 0; width: auto;" onclick="zoomTimetable(0.1)"><i class="fas fa-search-plus"></i> 확대</button>
-          <button class="btn-search" style="padding: 6px 14px; background: #94a3b8; font-size: 13px; color: white; margin: 0; width: auto;" onclick="resetZoomTimetable()">원래대로</button>
+              <div class="tt-zoom-group">
+                <button class="btn-search" style="padding: 7px 12px; background: #64748b; font-size: 13px; margin: 0; width: auto;" onclick="zoomTimetable(-0.1)"><i class="fas fa-search-minus"></i> 축소</button>
+                <button class="btn-search" style="padding: 7px 12px; background: #64748b; font-size: 13px; margin: 0; width: auto;" onclick="zoomTimetable(0.1)"><i class="fas fa-search-plus"></i> 확대</button>
+                <button class="btn-search" style="padding: 7px 12px; background: #94a3b8; font-size: 13px; color: white; margin: 0; width: auto;" onclick="resetZoomTimetable()">원래대로</button>
+                <span id="zoomLabel" style="display:none;"></span>
+              </div>
+
+              <div class="tt-action-buttons">
+                <button onclick="copyTimetable()" style="padding:8px 16px; background:#10b981; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📋 표 복사하기</button>
+                <button onclick="printTimetable()" style="padding:8px 16px; background:#3b82f6; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🖨️ 인쇄하기</button>
+              </div>
+            </div>
+
+            <table id="viewTimetable" style="border-collapse: collapse; background: white; transform-origin: top left;">
+              </table>
+          </div>
+
+          <button class="btn-cancel" style="margin-top: 15px; max-width: 150px; margin-left: auto; margin-right: auto;" onclick="closeMod('timetableMod')">닫기</button>
         </div>
-        
-        <div id="timetableWrapper" style="flex: 1; overflow: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; padding: 10px; position: relative;">
-          <table id="viewTimetable" style="border-collapse: collapse; background: white; transform-origin: top left;">
-            </table>
-        </div>
-        
-        <button class="btn-cancel" style="margin-top: 15px; max-width: 150px; margin-left: auto; margin-right: auto;" onclick="closeMod('timetableMod')">닫기</button>
       </div>
     </div>
 
     <?!= include('Modals_Task'); ?>
     <?!= include('Modals_Admin'); ?>
     <?!= include('Modals_Resub'); ?>
+    <?!= include('Modals_TeacherLookup'); ?>
 
     <script>
       const serverData = <?!= JSON.stringify(initialData) ?>;

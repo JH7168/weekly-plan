@@ -1,0 +1,233 @@
+<!-- 개인용 조회 도구: 실제 "관리자" 기능이 아니라 비밀번호로만 가볍게 잠근 개인 전용 탭입니다. -->
+<div id="tlPassMod" class="modal">
+  <div class="modal-content" style="max-width:380px; width:100%; padding:0; overflow:hidden;">
+    <div style="background:#1f2937; padding:16px 20px; display:flex; align-items:center; justify-content:space-between;">
+      <div style="display:flex; align-items:center; gap:10px; color:#fff; font-size:17px; font-weight:700;">
+        <i class="fas fa-key" style="color:#e2e8f0;"></i> 관리자 로그인
+      </div>
+      <span style="color:#94a3b8; font-size:22px; cursor:pointer; line-height:1;" onclick="closeMod('tlPassMod')">&times;</span>
+    </div>
+    <div style="padding:22px 20px 20px;">
+      <p style="margin:0 0 12px; font-weight:700; color:#1e293b; font-size:14.5px;">관리자 비밀번호를 입력하세요.</p>
+      <input type="password" id="tlPassInput" placeholder="비밀번호" onkeydown="if(event.key==='Enter') tlCheckPassword()"
+        style="width:100%; padding:11px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; outline:none; box-sizing:border-box;">
+      <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
+        <button class="btn-cancel" style="flex:0 0 auto; padding:9px 24px; margin-top:0; width:auto;" onclick="closeMod('tlPassMod')">취소</button>
+        <button class="btn-search" style="flex:0 0 auto; padding:9px 24px; width:auto; margin:0;" onclick="tlCheckPassword()">확인</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="teacherLookupMod" class="modal">
+  <div class="modal-content" style="width:910px; height:910px; max-width:95vw; max-height:90vh; padding:0; overflow:hidden; display:flex; flex-direction:column;">
+
+    <div style="background:#1f2937; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:10px; color:#fff; font-size:17px; font-weight:700;">
+        <i class="fas fa-user-tie" style="color:#e2e8f0;"></i> 교사별 시간표 조회
+      </div>
+      <span style="color:#94a3b8; font-size:22px; cursor:pointer; line-height:1;" onclick="closeMod('teacherLookupMod')">&times;</span>
+    </div>
+
+    <div style="background:#f5f7fa; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-shrink:0; border-bottom:1px solid #e2e8f0; flex-wrap:wrap;">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input type="text" id="tlTeacherInput" placeholder="교사명 검색 (예: 박정환)" onkeydown="if(event.key==='Enter') tlSearchTeacher()"
+          style="padding:7px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; width:170px;">
+        <button class="btn-search" style="padding:7px 14px; font-size:13px; margin:0;" onclick="tlSearchTeacher()">검색</button>
+      </div>
+
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn-search" style="padding:6px 14px; background:#64748b; font-size:13px; margin:0; width:auto;" onclick="tlAdjustZoom(-0.1)"><i class="fas fa-search-minus"></i> 축소</button>
+        <button class="btn-search" style="padding:6px 14px; background:#64748b; font-size:13px; margin:0; width:auto;" onclick="tlAdjustZoom(0.1)"><i class="fas fa-search-plus"></i> 확대</button>
+        <button class="btn-search" style="padding:6px 14px; background:#94a3b8; font-size:13px; color:#fff; margin:0; width:auto;" onclick="tlResetZoom()">원래대로</button>
+      </div>
+
+      <button class="btn-search" style="padding:7px 16px; background:#0ea5e9; font-size:13px; margin:0; width:auto;" onclick="tlTogglePe()">
+        <i class="fas fa-running"></i> 체육교사 시간표
+      </button>
+    </div>
+
+    <div style="flex:1; overflow-y:auto; background:#f5f7fa; padding:18px 20px;">
+      <div id="tlZoomWrapper" style="transform-origin: top left;">
+
+        <div id="tlSearchResultCard" style="display:none; background:#fff; border-radius:10px; padding:16px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid #eef1f5;">
+          <div id="tlSearchResult"></div>
+        </div>
+
+        <div id="tlPeSection" style="display:none; background:#fff; border-radius:10px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid #eef1f5;">
+          <h3 style="text-align:center; color:#334155; margin:0 0 4px;">체육 교사 시간표 비교</h3>
+          <p style="text-align:center; color:#888; font-size:12.5px; margin:0 0 12px;">체육관 사용이 겹치는 시간(빨간색)을 한눈에 확인할 수 있습니다.</p>
+          <div id="tlPeWrapper"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function tlOpenPasswordMod() {
+    document.getElementById('tlPassInput').value = '';
+    openMod('tlPassMod');
+  }
+
+  function tlCheckPassword() {
+    const val = document.getElementById('tlPassInput').value;
+    if (val === 'PY4312') {
+      closeMod('tlPassMod');
+      tlOpenLookup();
+    } else {
+      showAlert('비밀번호가 올바르지 않습니다.');
+    }
+  }
+
+  function tlOpenLookup() {
+    if (!fullTimetableData || fullTimetableData.length === 0) {
+      showAlert('먼저 전체 시간표가 로딩된 후 이용해주세요.');
+      return;
+    }
+    document.getElementById('tlTeacherInput').value = '';
+    document.getElementById('tlSearchResult').innerHTML = '';
+    document.getElementById('tlSearchResultCard').style.display = 'none';
+    document.getElementById('tlPeSection').style.display = 'none';
+    tlZoomLevel = 0.9;
+    tlApplyZoom();
+    openMod('teacherLookupMod');
+  }
+
+  // 우측 상단 "체육교사 시간표" 버튼: 누를 때마다 비교표를 펼치거나 접습니다.
+  function tlTogglePe() {
+    const sec = document.getElementById('tlPeSection');
+    const willShow = sec.style.display === 'none';
+    sec.style.display = willShow ? 'block' : 'none';
+    if (willShow) tlRenderPeOverlap();
+  }
+
+  // --- 확대/축소 ---
+  let tlZoomLevel = 0.9;
+  function tlAdjustZoom(delta) {
+    tlZoomLevel = Math.max(0.5, Math.min(2.0, tlZoomLevel + delta));
+    tlApplyZoom();
+  }
+  function tlResetZoom() {
+    tlZoomLevel = 0.9;
+    tlApplyZoom();
+  }
+  function tlApplyZoom() {
+    const wrap = document.getElementById('tlZoomWrapper');
+    if (wrap) wrap.style.zoom = tlZoomLevel;
+  }
+
+  // 시간표 전체를 훑어서 해당 교사의 주간 수업 목록을 뽑아냅니다.
+  // rsParseGrid()/rsParseSubjectTeacher()는 Modals_Resub.html에 정의된 공용 함수를 재사용합니다.
+  function tlFindTeacherSchedule(teacherName) {
+    const { colInfo, rowInfo } = rsParseGrid();
+    let results = [];
+    Object.keys(rowInfo).forEach(rKey => {
+      const r = parseInt(rKey, 10);
+      const { day, period } = rowInfo[r];
+      Object.keys(colInfo).forEach(cKey => {
+        const c = parseInt(cKey, 10);
+        const raw = String((fullTimetableData[r] || [])[c] || '').trim();
+        if (!raw) return;
+        const { subject, teacher } = rsParseSubjectTeacher(raw);
+        if (teacher === teacherName) {
+          results.push({ day, period, grade: colInfo[c].grade, className: colInfo[c].className, subject });
+        }
+      });
+    });
+    return results;
+  }
+
+  // 체육 교과 담당 교사 3명 (고정 목록)
+  const TL_PE_TEACHERS = ['박정환', '문승연', '양서경'];
+
+  function tlBuildScheduleTable(cellHtmlFn, hasContentFn) {
+    const days = ['월', '화', '수', '목', '금'];
+    let html = `<table class="rs-picker-table" style="width:100%; table-layout:fixed;">
+      <tr><th style="width:50px;">교시</th>${days.map(d => `<th>${d}</th>`).join('')}</tr>`;
+    for (let p = 1; p <= 8; p++) {
+      if (p === 8 && !days.some(d => hasContentFn(p, d))) continue;
+      const rowHtml = days.map(d => cellHtmlFn(p, d)).join('');
+      html += `<tr><td style="font-weight:bold; background:#f8fafc; text-align:center;">${p}</td>${rowHtml}</tr>`;
+    }
+    html += '</table>';
+    return html;
+  }
+
+  function tlSearchTeacher() {
+    const name = document.getElementById('tlTeacherInput').value.trim();
+    if (!name) { showAlert('교사명을 입력해주세요.'); return; }
+
+    document.getElementById('tlSearchResultCard').style.display = 'block';
+
+    const sched = tlFindTeacherSchedule(name);
+    if (sched.length === 0) {
+      document.getElementById('tlSearchResult').innerHTML = `<div style="color:#64748b; font-size:13px; padding:10px; background:#f1f5f9; border-radius:8px; text-align:center;">"${name}" 교사의 수업을 찾을 수 없습니다.</div>`;
+      return;
+    }
+
+    let grid = {};
+    sched.forEach(s => {
+      if (!grid[s.period]) grid[s.period] = {};
+      const cls = `${s.grade.replace('학년', '')}-${s.className.replace('반', '')}`;
+      grid[s.period][s.day] = `<b>${cls}</b><br><span style="font-size:11.5px; color:#475569;">${s.subject}</span>`;
+    });
+
+    const table = tlBuildScheduleTable((p, d) => {
+      const content = (grid[p] && grid[p][d]) || '';
+      const bg = content ? '#eff6ff' : '#fff';
+      return `<td style="background:${bg}; padding:8px; font-size:13px; text-align:center;">${content}</td>`;
+    }, (p, d) => !!(grid[p] && grid[p][d]));
+
+    document.getElementById('tlSearchResult').innerHTML =
+      `<div style="font-weight:bold; color:#334155; margin-bottom:8px; text-align:center;">${name} 선생님 주간 시간표</div>${table}`;
+  }
+
+  // 교사 조합(누가 겹치는지)에 따라 서로 다른 색을 부여합니다. 혼자 들어가는 수업은 색을 넣지 않습니다.
+  const TL_COMBO_COLORS = {
+    '박정환,문승연': { bg: '#ede9fe', text: '#6d28d9' },
+    '박정환,양서경': { bg: '#ffedd5', text: '#c2410c' },
+    '문승연,양서경': { bg: '#cffafe', text: '#0e7490' },
+    '박정환,문승연,양서경': { bg: '#fee2e2', text: '#b91c1c' }
+  };
+  const TL_DEFAULT_COLOR = { bg: '#fff', text: '#334155' };
+
+  function tlRenderPeOverlap() {
+    const peTeachers = TL_PE_TEACHERS;
+
+    let grid = {}; // grid[period][day] = [{teacher, grade, className}]
+    peTeachers.forEach(t => {
+      tlFindTeacherSchedule(t).forEach(s => {
+        if (!grid[s.period]) grid[s.period] = {};
+        if (!grid[s.period][s.day]) grid[s.period][s.day] = [];
+        grid[s.period][s.day].push({ teacher: t, grade: s.grade, className: s.className });
+      });
+    });
+
+    const table = tlBuildScheduleTable((p, d) => {
+      const entries = (grid[p] && grid[p][d]) || [];
+      const present = TL_PE_TEACHERS.filter(t => entries.some(e => e.teacher === t));
+      const comboKey = present.join(',');
+      const colors = TL_COMBO_COLORS[comboKey] || TL_DEFAULT_COLOR;
+
+      const content = entries.map(e => {
+        const cls = `${e.grade.replace('학년', '')}-${e.className.replace('반', '')}`;
+        return `<div style="color:${colors.text}; font-weight:700;">${e.teacher}(${cls})</div>`;
+      }).join('');
+      return `<td style="background:${colors.bg}; padding:6px; font-size:11.5px; text-align:center;">${content}</td>`;
+    }, (p, d) => !!(grid[p] && grid[p][d] && grid[p][d].length));
+
+    const legend = Object.keys(TL_COMBO_COLORS).map(key => {
+      const c = TL_COMBO_COLORS[key];
+      return `<span style="display:inline-flex; align-items:center; gap:5px; margin:3px 10px 3px 0; font-size:11.5px; color:#475569;">
+        <span style="width:12px; height:12px; border-radius:3px; background:${c.bg}; border:1px solid ${c.text};"></span>${key.split(',').join('+')}
+      </span>`;
+    }).join('');
+
+    document.getElementById('tlPeWrapper').innerHTML =
+      `<div style="font-size:12px; color:#94a3b8; margin-bottom:8px; text-align:center;">담당 교사: ${peTeachers.join(', ')}</div>
+       ${table}
+       <div style="margin-top:12px; text-align:center;">${legend}</div>`;
+  }
+</script>

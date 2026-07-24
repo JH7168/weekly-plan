@@ -520,6 +520,6 @@ function deleteMultipleAudiBookingsFromSheet(slotsToDelete) {
   rowsToDelete.forEach(rNum => {
     sheet.deleteRow(rNum);
   });
-  
+
   return {success: true};
 }
