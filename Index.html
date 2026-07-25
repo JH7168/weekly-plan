@@ -101,19 +101,20 @@
       <!-- 바로가기 배너: 다른 선생님들이 만든 웹앱으로 이동하는 링크 모음.
            앞으로 새 웹앱을 연결할 땐 이 안에 .shortcut-link 버튼만 추가하면 됩니다. -->
       <div class="shortcut-banner">
-        <span class="shortcut-banner-label"><i class="fas fa-thumbtack"></i>바로가기</span>
         <div class="shortcut-banner-links">
           <button class="shortcut-link" style="--accent:#e11d48;" onclick="openTimetableModal()">
             <i class="fas fa-table"></i>전체 시간표
           </button>
+          <button class="shortcut-link" style="--accent:#6366f1;" onclick="openRecordMod()">
+            <i class="fas fa-book"></i>학교생활기록부
+          </button>
+        </div>
+        <div class="shortcut-banner-links">
           <button class="shortcut-link" style="--accent:#9c27b0;" onclick="openAudiWeekly()">
             <i class="fas fa-video"></i>시청각실 예약
           </button>
           <button class="shortcut-link" style="--accent:#f97316;" onclick="window.open('https://script.google.com/macros/s/AKfycbw3g841N66dD-v82Rsufi7o3c91oeNpyu8_WBlv-OqnY9FysMMHclA-uj-Jht_P0xT3jg/exec', '_blank')">
             <i class="fas fa-chalkboard-teacher"></i>방과후 신청
-          </button>
-          <button class="shortcut-link" style="--accent:#6366f1;" onclick="openRecordMod()">
-            <i class="fas fa-book"></i>학교생활기록부
           </button>
           <button class="shortcut-link" style="--accent:#0ea5e9;" onclick="openFormsMod()">
             <i class="fas fa-file-alt"></i>서식
@@ -190,8 +191,9 @@
     <div id="timetableMod" class="modal">
       <div class="modal-content" style="max-width: 95vw; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
 
-        <div class="tt-header-bar">
+        <div class="tt-header-bar" style="position:relative;">
           <h3>전체 시간표 조회</h3>
+          <span class="tt-header-close" onclick="closeMod('timetableMod')">&times;</span>
         </div>
 
         <div class="tt-body">
@@ -225,14 +227,11 @@
                   <option value="7반">7반</option><option value="8반">8반</option><option value="9반">9반</option>
                 </select>
                 <button class="btn-search" style="padding: 7px 14px; margin: 0; background: #0ea5e9; font-size:13px;" onclick="searchClassTimetable()">검색</button>
-                <span style="color:#cbd5e1;">|</span>
-                <button class="btn-search" style="padding: 7px 14px; margin: 0; background: #94a3b8; font-size:13px;" onclick="resetTimetable()">전체 보기</button>
               </div>
 
               <div class="tt-zoom-group">
                 <button class="btn-search" style="padding: 7px 12px; background: #64748b; font-size: 13px; margin: 0; width: auto;" onclick="zoomTimetable(-0.1)"><i class="fas fa-search-minus"></i> 축소</button>
                 <button class="btn-search" style="padding: 7px 12px; background: #64748b; font-size: 13px; margin: 0; width: auto;" onclick="zoomTimetable(0.1)"><i class="fas fa-search-plus"></i> 확대</button>
-                <button class="btn-search" style="padding: 7px 12px; background: #94a3b8; font-size: 13px; color: white; margin: 0; width: auto;" onclick="resetZoomTimetable()">원래대로</button>
                 <span id="zoomLabel" style="display:none;"></span>
               </div>
 
@@ -246,7 +245,6 @@
               </table>
           </div>
 
-          <button class="btn-cancel" style="margin-top: 15px; max-width: 150px; margin-left: auto; margin-right: auto;" onclick="closeMod('timetableMod')">닫기</button>
         </div>
       </div>
     </div>

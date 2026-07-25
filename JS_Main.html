@@ -336,6 +336,35 @@
   let fullTimetableData = [];
   let fullTimetableBgs = [];
 
+  // 전체시간표가 실제로 적용되는 기간(학기 시작~방학식 등). 서버(스크립트 속성)에서 불러온 값을 캐시합니다.
+  // 결보강 계획서의 날짜 추천이 이 기간을 벗어나지 않도록 참고합니다.
+  let scheduleValidRange = null;
+
+  // 저장된 값이 없을 때 쓰는 기본값: 우리나라 학년도 관례상 3/1 ~ 다음해 2월 말일.
+  function computeDefaultSchoolYearRange(baseDate) {
+    const d = baseDate || new Date();
+    const y = d.getFullYear();
+    const startYear = (d.getMonth() >= 2) ? y : y - 1; // 3월(index 2) 이전이면 전년도 학년도
+    const endYear = startYear + 1;
+    const from = `${startYear}-03-01`;
+    const lastFebDay = new Date(endYear, 2, 0).getDate(); // 28 또는 29(윤년)
+    const to = `${endYear}-02-${String(lastFebDay).padStart(2, '0')}`;
+    return { from, to };
+  }
+
+  // scheduleValidRange를 아직 못 불러왔다면 서버에서 가져온 뒤 callback(range)을 호출합니다.
+  function ensureScheduleValidRange(callback) {
+    if (scheduleValidRange) { callback(scheduleValidRange); return; }
+    g.withSuccessHandler(res => {
+      const def = computeDefaultSchoolYearRange();
+      scheduleValidRange = { from: (res && res.from) || def.from, to: (res && res.to) || def.to };
+      callback(scheduleValidRange);
+    }).withFailureHandler(() => {
+      scheduleValidRange = computeDefaultSchoolYearRange();
+      callback(scheduleValidRange);
+    }).getScheduleValidRange();
+  }
+
   function openTimetableModal() {
     toggleLoading(true, "전체 시간표 및 배경색 로딩 중...");
     g.withSuccessHandler(res => {
@@ -449,6 +478,7 @@
 
         if (cIdx >= 2 && dataCellRenderer) {
           const custom = dataCellRenderer(r, cIdx);
+          if (custom === false) return; // colspan으로 이미 병합된 셀 - 아무것도 렌더링하지 않고 건너뜁니다.
           if (custom) { bodyHtml += custom; return; }
         }
 
@@ -691,10 +721,6 @@
     
     timetableZoom = 0.9;
     applyTimetableZoom();
-  }
-
-  function resetTimetable() {
-    selectTtAll();
   }
 
   function zoomTimetable(amount) {

@@ -1,7 +1,8 @@
 <div id="choiceMod" class="modal">
-  <div class="modal-content" style="max-width: 360px; padding: 25px;">
+  <div class="modal-content" style="max-width: 360px; padding: 25px; position:relative;">
+    <span onclick="closeMod('choiceMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
     <h3 style="text-align:center; font-size:18px; margin-bottom:20px; color:#333;">등록 유형 선택</h3>
-    <div style="display:flex; gap:15px; margin-bottom: 15px;">
+    <div style="display:flex; gap:15px;">
       <div onclick="switchTo('notMod')" class="type-select-btn">
         <i class="fas fa-bullhorn" style="color:#f5b026; font-size:24px; margin-bottom:8px;"></i>
         <span>전달사항</span>
@@ -11,13 +12,13 @@
         <span>부서업무</span>
       </div>
     </div>
-    <button class="btn-outline-wide" onclick="closeMod('choiceMod')">닫기</button>
   </div>
 </div>
 
 <div id="workMod" class="modal">
-  <div class="modal-content" style="max-width: 600px; min-height: 500px;">
-    
+  <div class="modal-content" style="max-width: 600px; min-height: 500px; position:relative;">
+    <span onclick="closeMod('workMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
+
     <div id="wzStep1">
       <h3 style="color:var(--primary); text-align:center; margin-bottom: 15px;">1단계: 부서 선택</h3>
       <p style="text-align:center; color:#666; margin-bottom:20px; font-weight:bold;">업무를 주관하는 부서를 클릭해주세요.</p>
@@ -48,7 +49,6 @@
       <div id="wzCalGrid" class="calendar-grid"></div>
       <div style="margin-top: 20px; display:flex; gap:10px;">
         <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="nextWzStep(1)">⬅ 이전으로</button>
-        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('workMod')">닫기</button>
       </div>
     </div>
 
@@ -121,10 +121,11 @@
 </div>
 
 <div id="editMod" class="modal">
-  <div class="modal-content" style="max-width: 450px; padding: 25px;">
+  <div class="modal-content" style="max-width: 450px; padding: 25px; position:relative;">
+    <span onclick="closeEditModal()" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
     <div id="editStep1">
       <h3 style="text-align:center; font-size:18px; margin-bottom:20px; color:#333;">수정 유형 선택</h3>
-      <div style="display:flex; gap:15px; margin-bottom: 15px;">
+      <div style="display:flex; gap:15px;">
         <div onclick="goToEditStep(2, 'notice')" class="type-select-btn">
           <i class="fas fa-bullhorn" style="color:#f5b026; font-size:24px; margin-bottom:8px;"></i>
           <span>전달사항</span>
@@ -134,7 +135,6 @@
           <span>부서업무</span>
         </div>
       </div>
-      <button class="btn-outline-wide" onclick="closeMod('editMod')">닫기</button>
     </div>
     
     <div id="editStep2" style="display:none;">
@@ -150,7 +150,6 @@
       <div id="editList" style="max-height: 350px; overflow-y: auto; background:#f8fafc; border:1px solid var(--border); padding:10px; border-radius:10px;"></div>
       <div style="margin-top: 15px; display:flex; gap:10px;">
         <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="goToEditStep(1)">⬅ 처음으로</button>
-        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeEditModal()">닫기</button>
       </div>
     </div>
   </div>
@@ -184,10 +183,11 @@
 </div>
 
 <div id="deleteMod" class="modal">
-  <div class="modal-content" style="max-width: 450px; padding: 25px;">
+  <div class="modal-content" style="max-width: 450px; padding: 25px; position:relative;">
+    <span onclick="closeDelModal()" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
     <div id="delStep1">
       <h3 style="text-align:center; font-size:18px; margin-bottom:20px; color:#333;">삭제 유형 선택</h3>
-      <div style="display:flex; gap:15px; margin-bottom: 15px;">
+      <div style="display:flex; gap:15px;">
         <div onclick="goToDelStep(2, 'notice')" class="type-select-btn">
           <i class="fas fa-bullhorn" style="color:#f5b026; font-size:24px; margin-bottom:8px;"></i>
           <span>전달사항</span>
@@ -197,7 +197,6 @@
           <span>부서업무</span>
         </div>
       </div>
-      <button class="btn-outline-wide" onclick="closeMod('deleteMod')">닫기</button>
     </div>
     
     <div id="delStep2" style="display:none;">
@@ -219,7 +218,6 @@
       </div>
       <div style="margin-top: 15px; display:flex; gap:10px;">
         <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="goToDelStep(1)">⬅ 처음으로</button>
-        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeDelModal()">닫기</button>
       </div>
     </div>
   </div>

@@ -21,7 +21,8 @@
 
 <!-- 관리자 패널: 자료 업로드/삭제 -->
 <div id="adminPanelMod" class="modal">
-  <div class="modal-content" style="max-width: 650px;">
+  <div class="modal-content" style="max-width: 650px; position:relative;">
+    <span onclick="closeMod('adminPanelMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
     <h3 style="text-align:center; color:var(--danger); margin-top:0;">🔐 관리자 - 자료 업로드</h3>
 
     <!-- 1단계: 학교생활기록부 / 서식 선택 -->
@@ -41,13 +42,13 @@
       <div id="adminMaterialList" style="max-height: 55vh; overflow-y:auto;"></div>
     </div>
 
-    <button class="btn-cancel" onclick="closeMod('adminPanelMod')">닫기</button>
   </div>
 </div>
 
 <!-- 서식 -->
 <div id="formsMod" class="modal">
-  <div class="modal-content" style="max-width: 480px;">
+  <div class="modal-content" style="max-width: 480px; position:relative;">
+    <span onclick="closeMod('formsMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
     <h3 style="text-align:center; margin-top:0;">📄 서식</h3>
 
     <!-- 1단계: 카테고리 버튼 목록 -->
@@ -64,16 +65,15 @@
       <div id="formsStep2Buttons" class="material-btn-row" style="justify-content:center;"></div>
     </div>
 
-    <button class="btn-cancel" onclick="closeMod('formsMod')">닫기</button>
   </div>
 </div>
 
 <!-- 학교생활기록부 -->
 <div id="recordMod" class="modal">
-  <div class="modal-content" style="max-width: 480px;">
+  <div class="modal-content" style="max-width: 480px; position:relative;">
+    <span onclick="closeMod('recordMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
     <h3 style="text-align:center; margin-top:0;">📚 학교생활기록부</h3>
     <div id="recordMaterialList" style="max-height: 65vh; overflow-y:auto;"></div>
-    <button class="btn-cancel" onclick="closeMod('recordMod')">닫기</button>
   </div>
 </div>
 
@@ -183,7 +183,7 @@
   // 다운로드 전 확인창을 띄웁니다.
   function confirmDownload(slotKey) {
     const name = MATERIAL_DISPLAY_NAMES[slotKey] || '파일';
-    showConfirm(`${name}을(를) 다운로드하시겠습니까?`, () => downloadMaterial(slotKey));
+    showConfirm(`${name}을(를)\n다운로드하시겠습니까?`, () => downloadMaterial(slotKey));
   }
 
   // --- 학교생활기록부 모달 ---

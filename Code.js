@@ -357,6 +357,51 @@ function getTimetableFromSheet() {
   }
 }
 
+/**
+ * 결보강 계획서의 추천 로직에 필요한 보조 시트 2개("교과", "담임교사")를 한 번에 읽어옵니다.
+ * "담임교사" 시트는 아직 없을 수 있어(향후 추가 예정) 없으면 null로 반환합니다.
+ */
+function getResubSupportData() {
+  const result = { subjectRoster: null, homeroom: null };
+
+  try {
+    const subjectSheet = SS.getSheetByName("교과");
+    if (subjectSheet) {
+      result.subjectRoster = subjectSheet.getDataRange().getValues();
+    }
+  } catch (e) {
+    console.error("교과 시트 읽기 실패: " + e.toString());
+  }
+
+  try {
+    const homeroomSheet = SS.getSheetByName("담임교사");
+    if (homeroomSheet) {
+      result.homeroom = homeroomSheet.getDataRange().getValues();
+    }
+  } catch (e) {
+    console.error("담임교사 시트 읽기 실패: " + e.toString());
+  }
+
+  return result;
+}
+
+// 현재 전체시간표가 실제로 적용되는 기간(학기 시작~방학식 등)을 저장/조회합니다.
+// 결보강 계획서에서 이 기간 밖의 날짜는 추천하지 않도록 사용됩니다.
+function getScheduleValidRange() {
+  const props = PropertiesService.getScriptProperties();
+  return {
+    from: props.getProperty('scheduleValidFrom') || null,
+    to: props.getProperty('scheduleValidTo') || null
+  };
+}
+
+function setScheduleValidRange(from, to) {
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('scheduleValidFrom', from);
+  props.setProperty('scheduleValidTo', to);
+  return { success: true };
+}
+
 // --- 아래부터 시청각실 전용 예약 로직 추가 ---
 
 // 지정된 날짜 배열에 해당하는 시청각실 예약 데이터를 가져옵니다.

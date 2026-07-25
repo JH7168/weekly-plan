@@ -1,27 +1,20 @@
 <div id="resubMod" class="modal">
-  <div class="modal-content" style="max-width: 480px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; padding: 22px;">
+  <div class="modal-content" style="max-width: 480px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
 
-    <!-- 0단계: 구분 선택 -->
-    <div id="rsStep0">
-      <h3 style="color:#e11d48; text-align:center; margin-bottom: 12px;">구분 선택</h3>
-      <p style="text-align:center; color:#666; font-weight:bold; margin-bottom:15px; font-size:14px;">어떤 결·보강 계획서를 작성하시겠어요?</p>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-        <button type="button" class="dept-btn" onclick="rsSelectType('수업교체')">수업교체</button>
-        <button type="button" class="dept-btn" onclick="rsSelectType('수업변경')">수업변경</button>
-        <button type="button" class="dept-btn" onclick="rsSelectType('결보강')">결보강</button>
-        <button type="button" class="dept-btn" onclick="rsSelectType('결강보충수업')">결강보충수업</button>
-      </div>
-      <div style="display:flex; gap:10px; margin-top:15px;">
-        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('resubMod')">취소</button>
-      </div>
+    <div class="rs-header-bar">
+      <h3><i class="fas fa-calendar-day"></i> 결보강 계획서 작성</h3>
+      <span class="tt-header-close" onclick="closeMod('resubMod')">&times;</span>
     </div>
 
-    <!-- 1단계: 기본 정보 (신청 교사명 / 날짜 / 사유) -->
-    <div id="rsStep1" style="display:none;">
-      <h3 style="color:#e11d48; text-align:center; margin-bottom: 18px;">결보강 계획서 - 기본 정보</h3>
-      <div class="field">
+    <div class="tt-body" style="overflow-y:auto; padding:20px 22px;">
+
+    <!-- 0단계: 기본 정보 (신청 교사명 / 날짜 / 사유) -->
+    <div id="rsStep0">
+      <div class="rs-step-title" style="margin-bottom:18px;">기본 정보</div>
+      <div class="field" style="position:relative;">
         <label>신청 교사명</label>
-        <input type="text" id="rsTeacherInput" placeholder="예: 박정환">
+        <input type="text" id="rsTeacherInput" placeholder="예: 박정환" autocomplete="off">
+        <div id="rsTeacherSuggest" style="display:none; position:absolute; left:0; right:0; top:100%; background:#fff; border:1px solid #cbd5e1; border-radius:8px; margin-top:4px; max-height:180px; overflow-y:auto; z-index:20; box-shadow:0 6px 16px rgba(0,0,0,0.12);"></div>
       </div>
       <div class="field">
         <label>날짜</label>
@@ -43,32 +36,40 @@
         <input type="text" id="rsReasonText" placeholder="예: 골절 수술">
       </div>
       <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(0)">⬅ 이전으로</button>
-        <button class="btn-search" style="flex:2; background:#e11d48;" onclick="rsInfoNext()">다음 ➡</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('resubMod')">취소</button>
+        <button class="btn-search" style="flex:2; background:#3CB878;" onclick="rsInfoNext()">다음 ➡</button>
       </div>
     </div>
 
-    <!-- 2단계: 결강(A) 수업 선택 -->
-    <div id="rsStep2" style="display:none;">
-      <h3 style="color:#e11d48; text-align:center; margin-bottom: 4px;">결강할 수업 선택</h3>
-      <p style="text-align:center; color:#666; font-weight:bold; margin-bottom:10px; font-size:14px;">교체하실 선생님의 수업을 골라주세요.</p>
+    <!-- 1단계: 결강(A) 수업 선택 -->
+    <div id="rsStep1" style="display:none;">
+      <div class="rs-step-title" style="margin-bottom:4px;">결강할 수업 선택</div>
+      <p id="rsStep2Guide" style="text-align:center; color:#666; font-weight:bold; margin-bottom:10px; font-size:14px;">빨간 테두리로 표시된 선생님의 수업을 여러 개 고를 수 있습니다 (하루 종일 출장 등).</p>
       <div style="max-height:60vh; overflow:auto; border:1px solid #cbd5e1; border-radius:8px; padding:8px;">
         <table id="rsPickerTableA" class="rs-picker-table"></table>
       </div>
       <div style="display:flex; gap:10px; margin-top:12px;">
-        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(1)">⬅ 이전으로</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(0)">⬅ 이전으로</button>
+        <button id="rsStep2NextBtn" class="btn-search" style="flex:2; background:#3CB878;" onclick="rsStep2Next()" disabled>다음 ➡</button>
+      </div>
+    </div>
+
+    <!-- 2단계: 구분 선택 (선택한 수업마다 하나씩) -->
+    <div id="rsStep2" style="display:none;">
+      <div id="rsStep2ABanner" style="font-size:14.5px; font-weight:bold; padding:10px; border-radius:8px; margin-bottom:18px; text-align:center;"></div>
+      <div id="rsStep2TypeButtons" class="rs-type-btn-row"></div>
+      <div id="rsStep2Debug" style="margin-top:12px; font-size:12.5px;"></div>
+      <div style="display:flex; gap:10px; margin-top:15px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoBackFromStep2()">⬅ 이전으로</button>
         <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('resubMod')">취소</button>
       </div>
     </div>
 
-    <!-- 3단계: 교체·보강(B) 수업 선택 -->
+    <!-- 3단계: 추천 후보 선택 -->
     <div id="rsStep3" style="display:none;">
-      <h3 style="color:#e11d48; text-align:center; margin-bottom: 4px;">교체·보강할 수업 선택</h3>
-      <p style="text-align:center; color:#666; font-weight:bold; margin-bottom:8px; font-size:14px;">수업교체 및 결보강 하실 수업을 골라주세요.</p>
-      <div id="rsStep2ABanner" style="background:#fff1f2; color:#e11d48; font-size:12.5px; font-weight:bold; padding:8px 10px; border-radius:8px; margin-bottom:10px;"></div>
-      <div style="max-height:56vh; overflow:auto; border:1px solid #cbd5e1; border-radius:8px; padding:8px;">
-        <table id="rsPickerTableB" class="rs-picker-table"></table>
-      </div>
+      <div id="rsStep3Title" class="rs-step-title" style="margin-bottom:4px;">추천 후보를 선택하세요</div>
+      <div id="rsStep3ABanner" style="background:#fff1f2; color:#e11d48; font-size:14.5px; font-weight:bold; text-align:center; padding:8px 10px; border-radius:8px; margin-bottom:10px;"></div>
+      <div id="rsCandidateList" style="max-height:55vh; overflow-y:auto;"></div>
       <div style="display:flex; gap:10px; margin-top:12px;">
         <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(2)">⬅ 이전으로</button>
         <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('resubMod')">취소</button>
@@ -77,65 +78,100 @@
 
     <!-- 4단계: 최종 확인 및 날짜(주차) 설정 -->
     <div id="rsStep4" style="display:none;">
-      <h3 style="color:#e11d48; text-align:center; margin-bottom: 12px;">최종 확인 및 날짜 설정</h3>
-      <div id="rsSummaryText" style="background:#f8fafc; border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:15px; font-size:13.5px; line-height:1.7;"></div>
-
-      <div style="display:flex; gap:12px; margin-bottom:10px;">
-        <div class="field" style="flex:1; margin-bottom:0;">
-          <label>결강 날짜</label>
-          <div class="rs-date-select" id="rsDateSelectA">
-            <div class="rs-date-select-trigger" onclick="rsToggleDateDropdown('A')">
-              <span id="rsDateLabelA"></span>
-              <i class="fas fa-caret-down"></i>
-            </div>
-            <div class="rs-date-dropdown" id="rsDateDropdownA" style="display:none;"></div>
-          </div>
-        </div>
-        <div class="field" style="flex:1; margin-bottom:0;">
-          <label>교체보강 날짜</label>
-          <div class="rs-date-select" id="rsDateSelectB">
-            <div class="rs-date-select-trigger" onclick="rsToggleDateDropdown('B')">
-              <span id="rsDateLabelB"></span>
-              <i class="fas fa-caret-down"></i>
-            </div>
-            <div class="rs-date-dropdown" id="rsDateDropdownB" style="display:none;"></div>
-          </div>
-        </div>
-      </div>
+      <div class="rs-step-title" style="margin-bottom:12px;">최종 확인 및 날짜 설정</div>
+      <div id="rsSummaryText" style="background:#f8fafc; border:1px solid var(--border); padding:14px; border-radius:8px; margin-bottom:15px; font-size:16.5px; line-height:1.7;"></div>
 
       <div style="display:flex; gap:10px; margin-top:18px;">
         <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(3)">⬅ 이전으로</button>
-        <button class="btn-search" style="flex:2; background:#e11d48;" onclick="rsGoStep(5)">📝 계획서 생성하기</button>
+        <button class="btn-search" style="flex:2; background:#3CB878;" onclick="rsConfirmEntry()">다음 ➡</button>
       </div>
     </div>
 
-    <!-- 5단계: 최종 미리보기 (수정 가능) -->
+    <!-- 5단계: 추가 여부 확인 -->
     <div id="rsStep5" style="display:none;">
-      <h3 style="color:#e11d48; text-align:center; margin-bottom: 10px;">완성된 계획서 <span style="font-weight:normal; color:#888; font-size:12.5px;">(표를 직접 클릭해 수정할 수 있습니다)</span></h3>
+      <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(4)">⬅ 이전으로</button>
+        <button class="btn-search" style="flex:1; background:#3CB878;" onclick="rsFinishAndRender()">📝 계획서 작성</button>
+      </div>
+      <div class="rs-step-title" style="margin-bottom:15px;">수업교체 및 결보강을 수정하시겠습니까?</div>
+      <div id="rsEntriesSummary" style="background:#f8fafc; border:1px solid var(--border); padding:12px; border-radius:8px; font-size:14.5px; line-height:1.8;"></div>
+    </div>
+
+    <!-- 6단계: 최종 미리보기 (수정 가능) -->
+    <div id="rsStep6" style="display:none;">
+      <div class="rs-step-title" style="margin-bottom:10px;">완성된 계획서 <span style="font-weight:normal; color:#888; font-size:12.5px;">(표를 직접 클릭해 수정할 수 있습니다)</span></div>
       <div id="rsDocWrapper" style="overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px; padding:15px; background:#fff;"></div>
       <div style="display:flex; gap:10px; margin-top:15px;">
-        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(4)">⬅ 이전으로</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(5)">⬅ 이전으로</button>
         <button class="btn-search" style="flex:1; background:#10b981;" onclick="rsPrintDoc()"><i class="fas fa-print"></i> 인쇄하기</button>
-        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="closeMod('resubMod')">닫기</button>
       </div>
     </div>
 
+    </div>
   </div>
 </div>
 
 <script>
   // ===== 결보강 계획서 상태 =====
-  let rsData = { teacher: '', anchorDate: '', reason: '', reasonText: '', A: null, B: null, type: '', aMode: 'week', aWeekOffset: 0, bMode: 'week', bWeekOffset: 0, aDateObj: null, bDateObj: null };
+  // rsShared: 여러 항목에 걸쳐 공통으로 유지되는 값 (날짜/신청교사명/사유)
+  // rsEntries: "이대로 계획서 작성"을 누르기 전까지 쌓인 확정된 항목들
+  // rsCurrent: 지금 작성 중인 항목
+  let rsShared = { teacher: '', anchorDate: '', reason: '', reasonText: '' };
+  let rsEntries = [];
+  let rsCurrent = { type: '', A: null, B: null, aMode: 'week', aWeekOffset: 0, bMode: 'week', bWeekOffset: 0, aDateObj: null, bDateObj: null, candidates: [] };
   let rsSlots = [];
+  let rsSelectedIndices = new Set(); // 1단계에서 다중 선택된 슬롯 인덱스
+  let rsPendingA = [];    // 다중 선택 후 아직 처리하지 않은 결강수업 대기열
+  let rsSubjectRoster = null; // '교과' 시트 원본
+  let rsHomeroom = null;      // '담임교사' 시트 원본
   const RS_DAY_IDX = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4 };
+  const RS_DAY_BY_JS = { 1: '월', 2: '화', 3: '수', 4: '목', 5: '금' };
 
   document.addEventListener('click', function (e) {
     if (!e.target.closest('.rs-date-select')) {
-      const a = document.getElementById('rsDateDropdownA');
-      const b = document.getElementById('rsDateDropdownB');
-      if (a) a.style.display = 'none';
-      if (b) b.style.display = 'none';
+      document.querySelectorAll('.rs-date-dropdown').forEach(el => el.style.display = 'none');
     }
+  });
+
+  // 토/일요일은 선택할 수 없도록 즉시 되돌립니다 (평일만 허용).
+  function rsNearestWeekday(d) {
+    const dow = d.getDay();
+    if (dow === 6) return rsAddDays(d, 2);
+    if (dow === 0) return rsAddDays(d, 1);
+    return d;
+  }
+
+  // 시간표 유효기간(학기 시작~방학식 등) 안으로 날짜를 보정하고, 주말이면 평일로 다시 보정합니다.
+  function rsClampToValidWeekday(iso) {
+    let result = iso;
+    if (scheduleValidRange) {
+      if (result > scheduleValidRange.to) result = scheduleValidRange.to;
+      else if (result < scheduleValidRange.from) result = scheduleValidRange.from;
+    }
+    const dow = new Date(result + 'T00:00:00').getDay();
+    if (dow === 0 || dow === 6) {
+      const d = rsNearestWeekday(new Date(result + 'T00:00:00'));
+      result = rsToISODate(d);
+      if (scheduleValidRange && result > scheduleValidRange.to) result = scheduleValidRange.to;
+    }
+    return result;
+  }
+
+  let rsLastValidDate = '';
+  document.getElementById('rsDateInput').addEventListener('change', function () {
+    if (!this.value) return;
+    const dow = new Date(this.value + 'T00:00:00').getDay();
+    if (dow === 0 || dow === 6) {
+      showAlert('평일(월~금)만 선택할 수 있습니다.');
+      this.value = rsLastValidDate;
+      return;
+    }
+    if (scheduleValidRange && (this.value < scheduleValidRange.from || this.value > scheduleValidRange.to)) {
+      showAlert(`시간표 유효기간(${scheduleValidRange.from} ~ ${scheduleValidRange.to}) 안의 날짜만 선택할 수 있습니다.`);
+      this.value = rsLastValidDate;
+      return;
+    }
+    rsLastValidDate = this.value;
   });
 
   function openResubMod() {
@@ -143,34 +179,142 @@
       showAlert('먼저 전체 시간표가 로딩된 후 이용해주세요.');
       return;
     }
-    rsData = { teacher: '', anchorDate: '', reason: '', reasonText: '', A: null, B: null, type: '', aMode: 'week', aWeekOffset: 0, bMode: 'week', bWeekOffset: 0, aDateObj: null, bDateObj: null };
+    rsShared = { teacher: '', anchorDate: '', reason: '', reasonText: '' };
+    rsEntries = [];
+    rsCurrent = { type: '', A: null, B: null, aMode: 'week', aWeekOffset: 0, bMode: 'week', bWeekOffset: 0, aDateObj: null, bDateObj: null, candidates: [] };
+    rsPendingA = [];
+
     document.getElementById('rsTeacherInput').value = '';
-    document.getElementById('rsDateInput').value = rsToISODate(new Date());
     document.querySelectorAll('#resubMod .reason-chip').forEach(b => b.classList.remove('active'));
     document.getElementById('rsReasonText').value = '';
-    openMod('resubMod');
-    rsGoStep(0);
+
+    toggleLoading(true, '자료 불러오는 중...');
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      rsSubjectRoster = (res && res.subjectRoster) || null;
+      rsHomeroom = (res && res.homeroom) || null;
+      ensureScheduleValidRange(() => {
+        // 기본 날짜는 오늘이지만, 시간표 유효기간(방학식 등)을 벗어나면 그 안의 날짜로 보정합니다.
+        rsLastValidDate = rsClampToValidWeekday(rsToISODate(rsNearestWeekday(new Date())));
+        document.getElementById('rsDateInput').value = rsLastValidDate;
+        openMod('resubMod');
+        rsGoStep(0);
+      });
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      showAlert('자료를 불러오는 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
+    }).getResubSupportData();
   }
 
   function rsGoStep(n) {
-    for (let i = 0; i <= 5; i++) {
+    for (let i = 0; i <= 6; i++) {
       const stepEl = document.getElementById('rsStep' + i);
       if (stepEl) stepEl.style.display = (i === n) ? 'block' : 'none';
     }
     const box = document.querySelector('#resubMod .modal-content');
     if (box) {
-      if (n === 2 || n === 3) { box.style.maxWidth = '95vw'; box.style.width = '95vw'; }
-      else if (n === 5) { box.style.maxWidth = '950px'; box.style.width = '95vw'; }
+      if (n === 1) { box.style.maxWidth = '95vw'; box.style.width = '95vw'; }
+      else if (n === 6) { box.style.maxWidth = '950px'; box.style.width = '95vw'; }
       else { box.style.maxWidth = '480px'; box.style.width = '100%'; }
     }
-    if (n === 2) rsRenderPicker('A');
-    if (n === 3) {
-      rsRenderPicker('B');
-      document.getElementById('rsStep2ABanner').innerHTML =
-        `<b>선택된 결강 수업(A):</b> ${rsData.A.grade} ${rsData.A.className} · ${rsData.A.day}요일 ${rsData.A.period}교시 · ${rsData.A.subject}${rsData.A.teacher ? ' (' + rsData.A.teacher + ')' : ''}`;
+    if (n === 1) rsRenderStep2Picker();
+    if (n === 2) rsRenderStep2TypeChoice();
+    if (n === 3) rsRenderStep3();
+    if (n === 4) rsRenderStep4();
+    if (n === 5) rsRenderEntriesSummary();
+    if (n === 6) rsRenderFinalDoc();
+  }
+
+  // ===== 2단계: 구분 선택 (결강수업마다 하나씩) =====
+  function rsRenderStep2TypeChoice() {
+    const A = rsCurrent.A;
+    const cls = A.classify;
+    let bannerHtml = `<span style="color:#1e293b;">${A.grade}${A.className} ${A.day}${A.period} ${A.subject}${A.teacher ? '(' + A.teacher + ')' : ''}</span>`;
+    if (cls.forceGyeolbogang) {
+      bannerHtml += `<div style="margin-top:6px; font-size:12.5px; color:#a16207; font-weight:normal;">⚠ ${cls.reasonLabel} 과목은 결보강만 가능</div>`;
     }
-    if (n === 4) rsRenderSummaryStep();
-    if (n === 5) rsRenderFinalDoc();
+
+    const gyeolCount = rsRecommendGyeolbogang(A).length;
+    const swapCount = cls.forceGyeolbogang ? 0 : rsRecommendSwap(A).length;
+    const bothImpossible = cls.forceGyeolbogang ? (gyeolCount === 0) : (swapCount === 0 && gyeolCount === 0);
+
+    const btnWrap = document.getElementById('rsStep2TypeButtons');
+    if (bothImpossible) {
+      bannerHtml += `<div style="margin-top:6px; font-size:12.5px; color:#e11d48; font-weight:bold;">⚠ 수업교체, 결보강 모두 불가능</div>`;
+      btnWrap.innerHTML = `<button type="button" class="btn-cancel" style="margin-top:0;" onclick="rsSkipCurrentA()">⏭ 건너뛰기</button>`;
+      btnWrap.classList.add('rs-single');
+    } else {
+      let html = '';
+      if (!cls.forceGyeolbogang) {
+        html += `<button type="button" class="dept-btn" onclick="rsChooseType('수업교체')">수업교체<br><span style="font-size:12px; font-weight:normal;">(1순위)</span></button>`;
+        html += `<button type="button" class="dept-btn" onclick="rsChooseType('결보강')">결보강<br><span style="font-size:12px; font-weight:normal;">(2순위)</span></button>`;
+      } else {
+        html += `<button type="button" class="dept-btn" onclick="rsChooseType('결보강')">결보강</button>`;
+      }
+      btnWrap.innerHTML = html;
+      btnWrap.classList.toggle('rs-single', cls.forceGyeolbogang);
+    }
+
+    const step2Banner = document.getElementById('rsStep2ABanner');
+    const step2Colors = cls.forceGyeolbogang ? rsTypeColors(false) : { bg: '#f1f5f9', color: '#334155' };
+    step2Banner.style.background = step2Colors.bg;
+    step2Banner.innerHTML = bannerHtml;
+
+    const debugEl = document.getElementById('rsStep2Debug');
+    if (bothImpossible && !cls.forceGyeolbogang) {
+      const rows = rsDebugSwapBreakdown(A);
+      const rowsHtml = rows.length
+        ? rows.map(r => `<div style="padding:6px 8px; border-bottom:1px solid #e2e8f0; ${r.ok ? '' : 'color:#94a3b8;'}">
+            <div><b>${r.day}${r.period}</b> ${r.subject}(${r.teacher}) ${r.ok ? '✅ 가능' : '❌'}</div>
+            ${r.conflict ? `<div style="margin-top:2px;">${r.conflict.teacher} 쌤 - ${r.conflict.day}${r.conflict.period} 수업</div>` : ''}
+          </div>`).join('')
+        : `<div style="padding:8px; color:#94a3b8;">이 반은 블럭/자율/창체/공강을 뺀 일반 수업 시간 자체가 없습니다.</div>`;
+      debugEl.innerHTML = `
+        <div style="font-weight:bold; color:#475569; margin-bottom:4px;">${A.grade} ${A.className} 주간 시간표 (블럭 제외)</div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; max-height:220px; overflow-y:auto;">${rowsHtml}</div>
+      `;
+    } else {
+      debugEl.innerHTML = '';
+    }
+  }
+
+  function rsChooseType(type) {
+    rsCurrent.type = type;
+    rsGoStep(3);
+  }
+
+  // 수업교체·결보강 모두 후보가 없을 때만 노출되는 건너뛰기 버튼
+  function rsSkipCurrentA() {
+    if (rsPendingA.length > 0) {
+      rsProcessNextA();
+    } else {
+      rsGoStep(5);
+    }
+  }
+
+  // 구분 선택(2단계)의 이전으로: 다중 선택 흐름에서는 1단계(전체 선택 화면)로 돌아가면 지금까지 고른 항목을 잃게 되므로,
+  // 직전에 확정한 항목이 있으면 그 항목의 최종 확인(4단계)으로 되돌아가 수정할 수 있게 합니다.
+  // 지금 처리 중이던 항목은 대기열 맨 앞으로 되돌려 놓아, 그 항목을 다시 확정하면 이어서 처리됩니다.
+  function rsGoBackFromStep2() {
+    if (rsEntries.length > 0) {
+      rsPendingA.unshift(rsCurrent.A);
+      const prevEntry = rsEntries.pop();
+      rsCurrent = {
+        type: prevEntry.type,
+        A: prevEntry.A,
+        B: prevEntry.B,
+        aDateObj: prevEntry.aDateObj,
+        bDateObj: prevEntry.bDateObj,
+        aMode: prevEntry.aMode,
+        aWeekOffset: prevEntry.aWeekOffset,
+        bMode: prevEntry.bMode,
+        bWeekOffset: prevEntry.bWeekOffset,
+        candidates: []
+      };
+      rsGoStep(4);
+    } else {
+      rsGoStep(1);
+    }
   }
 
   // ===== 0단계 로직 =====
@@ -179,10 +323,35 @@
     return `${y}-${m}-${day}`;
   }
 
+  // 신청 교사명 입력창: 타이핑한 글자로 시작하는 교사명을 시간표 전체 명단에서 찾아 추천합니다.
+  document.getElementById('rsTeacherInput').addEventListener('input', function () {
+    const q = this.value.trim();
+    const box = document.getElementById('rsTeacherSuggest');
+    if (!q) { box.style.display = 'none'; return; }
+    const matches = rsGetAllTeacherNames().filter(t => t.startsWith(q)).slice(0, 8);
+    if (matches.length === 0) { box.style.display = 'none'; return; }
+    box.innerHTML = matches.map(t =>
+      `<div class="rs-teacher-suggest-item" onclick="rsPickTeacherSuggest('${t}')">${t}</div>`
+    ).join('');
+    box.style.display = 'block';
+  });
+
+  function rsPickTeacherSuggest(name) {
+    document.getElementById('rsTeacherInput').value = name;
+    document.getElementById('rsTeacherSuggest').style.display = 'none';
+  }
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#rsTeacherInput') && !e.target.closest('#rsTeacherSuggest')) {
+      const box = document.getElementById('rsTeacherSuggest');
+      if (box) box.style.display = 'none';
+    }
+  });
+
   function rsSelectReason(reason, btn) {
     document.querySelectorAll('#resubMod .reason-chip').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    rsData.reason = reason;
+    rsShared.reason = reason;
   }
 
   function rsInfoNext() {
@@ -191,16 +360,22 @@
     const reasonText = document.getElementById('rsReasonText').value.trim();
     if (!teacher) { showAlert('신청 교사명을 입력해주세요.'); return; }
     if (!dateVal) { showAlert('날짜를 선택해주세요.'); return; }
-    if (!rsData.reason) { showAlert('사유를 선택해주세요 (출장/연가/병가/조퇴/외출/기타).'); return; }
+    const dow = new Date(dateVal + 'T00:00:00').getDay();
+    if (dow === 0 || dow === 6) { showAlert('평일(월~금)만 선택할 수 있습니다.'); return; }
+    if (!rsShared.reason) { showAlert('사유를 선택해주세요 (출장/연가/병가/조퇴/외출/기타).'); return; }
     if (!reasonText) { showAlert('구체적인 사유를 입력해주세요.'); return; }
-    rsData.teacher = teacher;
-    rsData.anchorDate = dateVal;
-    rsData.reasonText = reasonText;
-    rsGoStep(2);
+    rsShared.teacher = teacher;
+    rsShared.anchorDate = dateVal;
+    rsShared.reasonText = reasonText;
+    rsGoStep(1);
   }
 
-  // ===== 시간표 그리드 파싱 및 선택 버튼 렌더링 =====
+  // ===== 시간표 그리드 파싱 =====
+  // fullTimetableData가 바뀌지 않는 한(같은 결보강 계획서 작성 세션) 재사용합니다 - 매번 처음부터 다시 훑지 않도록.
+  let rsGridCache = null;
+  let rsGridCacheSource = null;
   function rsParseGrid() {
+    if (rsGridCache && rsGridCacheSource === fullTimetableData) return rsGridCache;
     const data = fullTimetableData;
     const days = ['월', '화', '수', '목', '금'];
 
@@ -234,7 +409,9 @@
       rowInfo[r] = { day: currentDay, period: pMatch[1] };
     }
 
-    return { colInfo, rowInfo };
+    rsGridCache = { colInfo, rowInfo };
+    rsGridCacheSource = fullTimetableData;
+    return rsGridCache;
   }
 
   function rsParseSubjectTeacher(raw) {
@@ -247,59 +424,454 @@
     return { subject, teacher };
   }
 
-  // 전체 시간표 조회와 동일한 병합 헤더(요일/교시 세로 병합, "1-1" 형태 학년-반 헤더) 스타일을 재사용하면서,
-  // 학년/반 데이터 셀만 클릭 가능한 버튼으로 바꿔서 렌더링합니다.
-  function rsRenderPicker(target) {
-    rsSlots = [];
-    const tableId = target === 'A' ? 'rsPickerTableA' : 'rsPickerTableB';
-    const { colInfo, rowInfo } = rsParseGrid();
+  // 과목/교사 문자열(+셀 배경색)을 보고 자율·창체·블럭·공실 여부를 판별합니다.
+  // 블럭은 과목명 뒤 A~H 표시가 있거나, 표시가 없어도 셀에 색이 칠해져 있으면 블럭으로 봅니다.
+  function rsClassify(subject, teacher, bg) {
+    const s = String(subject || '').trim();
+    const isJayul = (s === '자율');
+    const isChangche = (s === '창체');
+    const isGongsil = (String(teacher || '').trim() === '공실');
 
+    let isBlock = false, blockLetter = null;
+    const blockRoomMatch = s.match(/^공([A-H])\d+$/); // 예: 공D4
+    if (blockRoomMatch) {
+      isBlock = true; blockLetter = blockRoomMatch[1];
+    } else if (!/^공강\d*$/.test(s)) {
+      const endMatch = s.match(/([A-H])$/); // 예: 문학D
+      if (endMatch) {
+        isBlock = true; blockLetter = endMatch[1];
+      } else if (bg && String(bg).toLowerCase() !== '#ffffff') {
+        isBlock = true; // 글자 표시는 없지만 색이 칠해진 블럭
+      }
+    }
+
+    const forceGyeolbogang = isJayul || isChangche || isBlock;
+    const reasonLabel = isJayul ? '자율' : isChangche ? '창체' : isBlock ? '블럭' : '';
+
+    return { isJayul, isChangche, isGongsil, isBlock, blockLetter, forceGyeolbogang, reasonLabel };
+  }
+
+  // 학교 전체에서 특정 요일·교시에 수업 중인 교사 이름 집합을 반환
+  // 요일·교시별 '바쁜 교사' 맵을 한 번만 만들어 재사용합니다 (호출될 때마다 전체를 다시 훑지 않도록).
+  let rsBusyCache = null;
+  let rsBusyCacheSource = null;
+  function rsGetBusyTeachers(day, period) {
+    if (!rsBusyCache || rsBusyCacheSource !== fullTimetableData) {
+      const { colInfo, rowInfo } = rsParseGrid();
+      const map = {};
+      Object.keys(rowInfo).forEach(rKey => {
+        const r = parseInt(rKey, 10);
+        const info = rowInfo[r];
+        const key = info.day + '|' + info.period;
+        if (!map[key]) map[key] = new Set();
+        Object.keys(colInfo).forEach(cKey => {
+          const c = parseInt(cKey, 10);
+          const raw = String((fullTimetableData[r] || [])[c] || '').trim();
+          if (!raw) return;
+          const { teacher } = rsParseSubjectTeacher(raw);
+          if (teacher) map[key].add(teacher);
+        });
+      });
+      rsBusyCache = map;
+      rsBusyCacheSource = fullTimetableData;
+    }
+    return rsBusyCache[day + '|' + period] || new Set();
+  }
+
+  // 시간표 전체에 등장하는 교사 이름을 전부 모읍니다 ('아무나' 후보 풀).
+  let rsAllTeachersCache = null;
+  let rsAllTeachersCacheSource = null;
+  function rsGetAllTeacherNames() {
+    if (rsAllTeachersCache && rsAllTeachersCacheSource === fullTimetableData) return rsAllTeachersCache;
+    const { colInfo, rowInfo } = rsParseGrid();
+    let names = new Set();
+    Object.keys(rowInfo).forEach(rKey => {
+      const r = parseInt(rKey, 10);
+      Object.keys(colInfo).forEach(cKey => {
+        const c = parseInt(cKey, 10);
+        const raw = String((fullTimetableData[r] || [])[c] || '').trim();
+        if (!raw) return;
+        const { teacher } = rsParseSubjectTeacher(raw);
+        if (teacher && teacher !== '공실') names.add(teacher);
+      });
+    });
+    rsAllTeachersCache = Array.from(names);
+    rsAllTeachersCacheSource = fullTimetableData;
+    return rsAllTeachersCache;
+  }
+
+  // '교과' 시트에서 세부과목명(예: 문학)이 속한 교사 명단을 찾습니다.
+  function rsFindSubjectRoster(baseSubject) {
+    if (!rsSubjectRoster) return null;
+    const data = rsSubjectRoster;
+    const numCols = data[0] ? data[0].length : 0;
+    for (let c = 0; c < numCols; c++) {
+      for (let r = 11; r <= 24 && r < data.length; r++) {
+        const v = String((data[r] || [])[c] || '').trim();
+        if (v === baseSubject) {
+          let teachers = [];
+          for (let tr = 1; tr <= 9 && tr < data.length; tr++) {
+            const t = String((data[tr] || [])[c] || '').trim();
+            if (t) teachers.push(t);
+          }
+          return { col: c, teachers };
+        }
+      }
+    }
+    return null;
+  }
+
+  // "1학년 1반", "1-1", "1 - 1" 등 표기가 달라도 학년/반 숫자 두 개만 뽑아 비교할 수 있게 합니다.
+  function rsExtractGradeClassNums(str) {
+    const nums = String(str || '').match(/\d+/g);
+    if (!nums || nums.length < 2) return null;
+    return { grade: parseInt(nums[0], 10), cls: parseInt(nums[1], 10) };
+  }
+
+  // '담임교사' 시트 B열에서 학년-반의 담임 교사명을 찾습니다. (자율 시간은 셀에 교사명이 안 적혀있고 담임이 들어가므로)
+  function rsGetHomeroomTeacher(grade, className) {
+    if (!rsHomeroom) return '';
+    const target = rsExtractGradeClassNums(`${grade} ${className}`);
+    if (!target) return '';
+    for (let r = 1; r < rsHomeroom.length; r++) {
+      const rowClass = String((rsHomeroom[r] || [])[0] || '').trim();
+      const parsed = rsExtractGradeClassNums(rowClass);
+      if (parsed && parsed.grade === target.grade && parsed.cls === target.cls) {
+        return String((rsHomeroom[r] || [])[1] || '').trim();
+      }
+    }
+    return '';
+  }
+
+  // '담임교사' 시트 D열(동아리 미담당)에 없는 교사는 창체 시간에 동아리를 지도한다고 봅니다.
+  function rsGetClubUnassignedSet() {
+    let names = new Set();
+    if (!rsHomeroom) return names;
+    for (let r = 1; r < rsHomeroom.length; r++) {
+      const name = String((rsHomeroom[r] || [])[3] || '').trim();
+      if (name) names.add(name);
+    }
+    return names;
+  }
+
+  // ===== 2단계: A수업 선택 (해당 요일 + 신청교사 수업만 강조) =====
+  function rsGetDayLetter(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return RS_DAY_BY_JS[d.getDay()] || null;
+  }
+
+  function rsRenderStep2Picker() {
+    rsSlots = [];
+    rsSelectedIndices = new Set();
+    const dayLetter = rsGetDayLetter(rsShared.anchorDate);
     const totalCols = fullTimetableData[0] ? fullTimetableData[0].length : 0;
     const cols = [];
     for (let c = 0; c < totalCols; c++) cols.push(c);
+    const { colInfo, rowInfo } = rsParseGrid();
+    const clubUnassigned = rsGetClubUnassignedSet();
+    const isClubTeacher = !!rsShared.teacher && !clubUnassigned.has(rsShared.teacher);
+    const changcheRowHandled = new Set(); // 창체는 같은 시간대에 전 학년·전 반이 동시에 진행되므로, 행(시간대) 전체를 버튼 1개로 합칩니다.
 
-    const html = buildMergedTimetableHtml(cols, null, (r, cIdx) => {
+    const html = buildMergedTimetableHtml(cols, dayLetter ? [dayLetter] : null, (r, cIdx) => {
       if (!rowInfo[r] || !colInfo[cIdx]) return null;
+
+      // 이미 이 행(시간대)에 창체 병합 버튼을 만들었다면, 나머지 열은 그 버튼의 colspan에 포함되므로 완전히 건너뜁니다.
+      if (changcheRowHandled.has(r)) return false;
+
       const raw = String((fullTimetableData[r] || [])[cIdx] || '').trim();
       if (!raw) return null;
-
-      const info = rowInfo[r], col = colInfo[cIdx];
-      const idx = rsSlots.push({ rIdx: r, cIdx, grade: col.grade, className: col.className, day: info.day, period: info.period, raw }) - 1;
+      const { subject, teacher } = rsParseSubjectTeacher(raw);
       const displayCell = raw.replace(/\s+/g, '<br>');
       const bg = (fullTimetableBgs[r] && fullTimetableBgs[r][cIdx]) || '#fff';
-      return `<td style="background:${bg}; min-width:50px; padding:0;">
-        <button type="button" class="rs-slot-btn" onclick="rsSelectSlot('${target}', ${idx})">${displayCell}</button>
-      </td>`;
+      const col = colInfo[cIdx];
+
+      // 자율/창체는 셀에 교사명이 없는 경우가 많습니다.
+      // 자율은 담임교사 시트에서 해당 반 담임을 소유자로, 창체는 '동아리 미담당' 목록에 없는 신청 교사를 소유자로 봅니다.
+      let effectiveTeacher = teacher;
+      if (!teacher) {
+        if (subject === '자율') effectiveTeacher = rsGetHomeroomTeacher(col.grade, col.className);
+        else if (subject === '창체' && isClubTeacher) effectiveTeacher = rsShared.teacher;
+      }
+
+      if (effectiveTeacher && effectiveTeacher === rsShared.teacher) {
+        const info = rowInfo[r];
+        const idx = rsSlots.push({ rIdx: r, cIdx, grade: col.grade, className: col.className, day: info.day, period: info.period, raw, subject, teacher: effectiveTeacher, bg }) - 1;
+
+        if (subject === '창체') {
+          changcheRowHandled.add(r);
+          const colspan = totalCols - cIdx;
+          return `<td colspan="${colspan}" style="background:${bg}; min-width:55px; padding:0; border:3px solid #dc2626;">
+            <button type="button" class="rs-slot-btn" style="width:100%;" onclick="rsToggleASelection(${idx}, this)">창체</button>
+          </td>`;
+        }
+
+        return `<td style="background:${bg}; min-width:55px; padding:0; border:3px solid #dc2626;">
+          <button type="button" class="rs-slot-btn" onclick="rsToggleASelection(${idx}, this)">${displayCell}</button>
+        </td>`;
+      }
+      return `<td style="background:${bg}; min-width:55px; padding:6px; color:#94a3b8; font-size:12px;">${displayCell}</td>`;
     });
 
-    document.getElementById(tableId).innerHTML = html;
-  }
+    document.getElementById('rsPickerTableA').innerHTML = html;
+    rsUpdateStep2NextButton();
 
-  function rsSelectSlot(target, idx) {
-    const slot = rsSlots[idx];
-    if (!slot) return;
-    const parsed = rsParseSubjectTeacher(slot.raw);
-    const full = Object.assign({}, slot, parsed);
-    if (target === 'A') {
-      rsData.A = full;
-      rsGoStep(3);
+    const guide = document.getElementById('rsStep2Guide');
+    if (rsSlots.length === 0) {
+      guide.innerHTML = `<span style="color:#e11d48;">${dayLetter || ''}요일에 "${rsShared.teacher}" 선생님의 수업을 찾을 수 없습니다. 이름을 다시 확인해주세요.</span>`;
     } else {
-      if (rsData.A && rsData.A.rIdx === slot.rIdx && rsData.A.cIdx === slot.cIdx) {
-        showAlert('결강 수업과 동일한 수업입니다. 다른 수업을 선택해주세요.');
-        return;
-      }
-      rsData.B = full;
-      rsGoStep(4);
+      guide.innerHTML = `<b>${rsShared.teacher}</b> 선생님의 <b>${dayLetter}요일</b> 수업 중 빨간 테두리로 표시된 곳을 (여러 개) 골라주세요.`;
     }
   }
 
-  // ===== 0단계: 구분 선택 =====
-  function rsSelectType(type) {
-    rsData.type = type;
-    rsGoStep(1);
+  function rsToggleASelection(idx, btnEl) {
+    if (rsSelectedIndices.has(idx)) {
+      rsSelectedIndices.delete(idx);
+      btnEl.classList.remove('rs-slot-selected');
+    } else {
+      rsSelectedIndices.add(idx);
+      btnEl.classList.add('rs-slot-selected');
+    }
+    rsUpdateStep2NextButton();
   }
 
-  // ===== 4단계: 요약 + 주차 기반 날짜 계산 =====
+  function rsUpdateStep2NextButton() {
+    const btn = document.getElementById('rsStep2NextBtn');
+    if (!btn) return;
+    const n = rsSelectedIndices.size;
+    btn.disabled = (n === 0);
+    btn.innerText = n > 0 ? `다음 ➡ (${n}개 선택됨)` : '다음 ➡';
+  }
+
+  // 다중 선택된 결강수업들을 대기열에 넣고, 하나씩 순서대로 추천 단계로 넘깁니다.
+  function rsStep2Next() {
+    if (rsSelectedIndices.size === 0) { showAlert('결강할 수업을 하나 이상 선택해주세요.'); return; }
+    rsPendingA = Array.from(rsSelectedIndices).sort((a, b) => a - b).map(idx => rsSlots[idx]);
+    rsProcessNextA();
+  }
+
+  function rsProcessNextA() {
+    if (rsPendingA.length === 0) {
+      rsGoStep(5);
+      return;
+    }
+    const slot = rsPendingA.shift();
+    const cls = rsClassify(slot.subject, slot.teacher, slot.bg);
+    rsCurrent.A = Object.assign({}, slot, { classify: cls });
+    rsCurrent.type = '';
+    rsGoStep(2); // 구분 선택
+  }
+
+  // ===== 3단계: 추천 후보 =====
+
+  // 수업교체 추천: 같은 반 주간시간표 중 A시간에 바쁜 교사의 수업 제외 → 남은 후보의 시간에 A담당교사가 바쁘면 제외
+  function rsRecommendSwap(A) {
+    const { colInfo } = rsParseGrid();
+    let aCol = null;
+    Object.keys(colInfo).forEach(cKey => {
+      const c = parseInt(cKey, 10);
+      if (colInfo[c].grade === A.grade && colInfo[c].className === A.className) aCol = c;
+    });
+    if (aCol === null) return [];
+
+    const { rowInfo } = rsParseGrid();
+    let S = [];
+    Object.keys(rowInfo).forEach(rKey => {
+      const r = parseInt(rKey, 10);
+      if (r === A.rIdx) return;
+      const raw = String((fullTimetableData[r] || [])[aCol] || '').trim();
+      if (!raw) return;
+      const { subject, teacher } = rsParseSubjectTeacher(raw);
+      if (!teacher || teacher === A.teacher) return;
+      const bg = (fullTimetableBgs[r] && fullTimetableBgs[r][aCol]) || '';
+      const cls = rsClassify(subject, teacher, bg);
+      if (cls.isJayul || cls.isChangche || cls.isBlock || cls.isGongsil) return;
+      S.push({ rIdx: r, cIdx: aCol, grade: A.grade, className: A.className, day: rowInfo[r].day, period: rowInfo[r].period, subject, teacher, raw });
+    });
+
+    const busyAtA = rsGetBusyTeachers(A.day, A.period);
+    const Aprime = S.filter(cand => !busyAtA.has(cand.teacher));
+    const Adouble = Aprime.filter(cand => {
+      const busyAtCand = rsGetBusyTeachers(cand.day, cand.period);
+      return !busyAtCand.has(A.teacher);
+    });
+
+    return Adouble;
+  }
+
+  // 진단용: 수업교체 후보가 왜 걸러졌는지 반 시간표를 그대로 나열합니다 (블럭 제외).
+  function rsDebugSwapBreakdown(A) {
+    const { colInfo, rowInfo } = rsParseGrid();
+    let aCol = null;
+    Object.keys(colInfo).forEach(cKey => {
+      const c = parseInt(cKey, 10);
+      if (colInfo[c].grade === A.grade && colInfo[c].className === A.className) aCol = c;
+    });
+    if (aCol === null) return [];
+
+    const busyAtA = rsGetBusyTeachers(A.day, A.period);
+    let list = [];
+    Object.keys(rowInfo).forEach(rKey => {
+      const r = parseInt(rKey, 10);
+      if (r === A.rIdx) return;
+      const raw = String((fullTimetableData[r] || [])[aCol] || '').trim();
+      if (!raw) return;
+      const { subject, teacher } = rsParseSubjectTeacher(raw);
+      if (!teacher || teacher === A.teacher) return; // 자기 자신이 담당하는 다른 수업은 후보에서 제외
+      const bg = (fullTimetableBgs[r] && fullTimetableBgs[r][aCol]) || '';
+      const cls = rsClassify(subject, teacher, bg);
+      if (cls.isJayul || cls.isChangche || cls.isBlock || cls.isGongsil) return; // 블럭 등은 나열 제외
+      const info = rowInfo[r];
+      let conflict = null; // { teacher, day, period }
+      if (busyAtA.has(teacher)) {
+        conflict = { teacher: teacher, day: A.day, period: A.period };
+      } else {
+        const busyAtCand = rsGetBusyTeachers(info.day, info.period);
+        if (busyAtCand.has(A.teacher)) conflict = { teacher: A.teacher, day: info.day, period: info.period };
+      }
+      list.push({ day: info.day, period: info.period, subject, teacher, ok: !conflict, conflict });
+    });
+    return list;
+  }
+
+  // 결보강 추천: 자율/창체/블럭/일반 과목에 따라 분기
+  // 블럭 여부와 무관하게, 과목이 속한 교과(예: 기하→수학)의 등록 교사 중 이 시간에 바쁘지 않은 교사를 추천합니다.
+  function rsRecommendGyeolbogang(A) {
+    const cls = A.classify;
+    if (cls.isJayul) return rsRecommendJayulSub(A);
+    if (cls.isChangche) return rsRecommendChangcheSub(A);
+
+    let baseSubject = A.subject;
+    if (cls.isBlock && cls.blockLetter) {
+      baseSubject = A.subject.replace(new RegExp(cls.blockLetter + '$'), '');
+    }
+
+    const roster = rsFindSubjectRoster(baseSubject);
+    const busyAtA = rsGetBusyTeachers(A.day, A.period);
+
+    let pool;
+    if (roster && roster.teachers.length > 0 && roster.teachers.includes(A.teacher)) {
+      pool = roster.teachers.filter(t => t !== A.teacher);
+    } else {
+      pool = rsGetAllTeacherNames().filter(t => t !== A.teacher);
+    }
+
+    const result = pool.filter(t => !busyAtA.has(t));
+    return result.map(t => ({ teacher: t }));
+  }
+
+  // '교과' 시트에 등장하는 교사 전원(과목 구분 없이 중복 제거)을 모읍니다 - 교사 전체 명단으로 사용합니다.
+  function rsGetAllSubjectTeachers() {
+    let names = new Set();
+    if (!rsSubjectRoster) return names;
+    const data = rsSubjectRoster;
+    const numCols = data[0] ? data[0].length : 0;
+    for (let c = 0; c < numCols; c++) {
+      for (let tr = 1; tr <= 9 && tr < data.length; tr++) {
+        const t = String((data[tr] || [])[c] || '').trim();
+        if (t) names.add(t);
+      }
+    }
+    return names;
+  }
+
+  // '담임교사' 시트 B열(담임) 전체 명단을 모읍니다.
+  function rsGetHomeroomTeacherSet() {
+    let names = new Set();
+    if (!rsHomeroom) return names;
+    for (let r = 1; r < rsHomeroom.length; r++) {
+      const t = String((rsHomeroom[r] || [])[1] || '').trim();
+      if (t) names.add(t);
+    }
+    return names;
+  }
+
+  // 자율: 해당 반 부담임을 1순위로 맨 위에 두고, 그 아래로 담임을 제외한 나머지 교사 전원(교과 시트 기준) 중
+  // 이 시간에 바쁘지 않은 사람을 후보로 보여줍니다.
+  function rsRecommendJayulSub(A) {
+    if (!rsHomeroom) return [];
+    const data = rsHomeroom;
+    const target = rsExtractGradeClassNums(`${A.grade} ${A.className}`);
+    let ownDeputy = null;
+    for (let r = 1; r < data.length; r++) {
+      const rowClass = String((data[r] || [])[0] || '').trim();
+      const deputy = String((data[r] || [])[2] || '').trim();
+      if (!deputy) continue;
+      const parsed = rsExtractGradeClassNums(rowClass);
+      if (target && parsed && parsed.grade === target.grade && parsed.cls === target.cls) ownDeputy = deputy;
+    }
+
+    const homeroomSet = rsGetHomeroomTeacherSet();
+    const busyAtA = rsGetBusyTeachers(A.day, A.period);
+    const others = Array.from(rsGetAllSubjectTeachers()).filter(t =>
+      t !== A.teacher && t !== ownDeputy && !homeroomSet.has(t) && !busyAtA.has(t)
+    );
+
+    let result = [];
+    if (ownDeputy) result.push({ teacher: ownDeputy, priority: true });
+    others.forEach(t => result.push({ teacher: t }));
+    return result;
+  }
+
+  // 창체: 담임교사 시트 D열(동아리 미담당자)
+  function rsRecommendChangcheSub(A) {
+    if (!rsHomeroom) return [];
+    const data = rsHomeroom;
+    let result = [];
+    for (let r = 1; r < data.length; r++) {
+      const name = String((data[r] || [])[3] || '').trim();
+      if (name) result.push({ teacher: name });
+    }
+    return result;
+  }
+
+  function rsRenderStep3() {
+    const A = rsCurrent.A;
+    const isSwap = rsCurrent.type === '수업교체';
+    let candidates;
+
+    if (isSwap) {
+      candidates = rsRecommendSwap(A).map(c => ({
+        label: `${c.day}요일 ${c.period}교시 · ${c.subject} (${c.teacher})${c.day === A.day ? ' <span class="rs-same-day-badge">🔁 결강과 같은 요일</span>' : ''}`,
+        data: c
+      }));
+    } else {
+      candidates = rsRecommendGyeolbogang(A).map(c => ({
+        label: c.priority ? `⭐ ${c.teacher} (부담임)` : c.teacher,
+        data: c
+      }));
+    }
+    rsCurrent.candidates = candidates;
+
+    document.getElementById('rsStep3Title').innerText =
+      `${A.grade}${A.className} ${A.day}${A.period} ${A.subject}${A.teacher ? '(' + A.teacher + ')' : ''}`;
+    const step3Banner = document.getElementById('rsStep3ABanner');
+    const { bg: step3Bg, color: step3Color } = rsTypeColors(isSwap);
+    step3Banner.style.background = step3Bg;
+    step3Banner.style.color = step3Color;
+    step3Banner.innerHTML = isSwap ? '교체할 수업을 선택하세요' : '결보강 가능한 선생님을 선택하세요';
+
+    const listEl = document.getElementById('rsCandidateList');
+    if (candidates.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center; font-weight:bold; padding:20px; background:#f8fafc; border-radius:8px;">${isSwap ? '수업교체 가능 수업 없음' : '결보강 가능 인원 없음'}</div>`;
+    } else {
+      listEl.innerHTML = candidates.map((c, idx) =>
+        `<button type="button" class="rs-candidate-btn" onclick="rsSelectCandidate(${idx})">${c.label}</button>`
+      ).join('');
+    }
+  }
+
+  function rsSelectCandidate(idx) {
+    const c = rsCurrent.candidates[idx];
+    if (!c) return;
+    if (rsCurrent.type === '수업교체') {
+      rsCurrent.B = c.data;
+    } else {
+      rsCurrent.B = { teacher: c.data.teacher, subject: rsCurrent.A.subject, day: rsCurrent.A.day, period: rsCurrent.A.period };
+    }
+    rsGoStep(4);
+  }
+
+  // ===== 4단계: 최종 확인 + 날짜(주차) 선택 =====
   function rsGetMonday(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
     const day = d.getDay();
@@ -321,37 +893,164 @@
     return `${d.getMonth() + 1}/${d.getDate()}`;
   }
 
-  function rsRenderSummaryStep() {
-    const A = rsData.A, B = rsData.B;
-    document.getElementById('rsSummaryText').innerHTML = `
-      <div><b>신청 교사:</b> ${rsData.teacher}</div>
-      <div><b>사유:</b> ${rsData.reason} · ${rsData.reasonText}</div>
-      <div style="margin-top:8px;"><b>결강(A):</b> ${A.grade} ${A.className} / ${A.day}요일 ${A.period}교시 / ${A.subject}${A.teacher ? ' (' + A.teacher + ')' : ''}</div>
-      <div><b>교체·보강(B):</b> ${B.grade} ${B.className} / ${B.day}요일 ${B.period}교시 / ${B.subject}${B.teacher ? ' (' + B.teacher + ')' : ''}</div>
-      <div><b>구분:</b> ${rsData.type}</div>
-    `;
-    rsData.aMode = 'week'; rsData.aWeekOffset = 0;
-    rsData.bMode = 'week'; rsData.bWeekOffset = 0;
-    rsInitDateSelector('A');
-    rsInitDateSelector('B');
+  function rsDayLetterFromDate(d) {
+    return RS_DAY_BY_JS[d.getDay()] || '';
   }
 
-  // target의 기본(이번주) 날짜를 계산해 표시값을 세팅합니다.
+  // 구분(수업교체/결보강)별 파스텔 배지 색상 - 화면 전체에서 동일하게 재사용합니다.
+  function rsTypeColors(isSwap) {
+    return isSwap ? { bg: '#ede9fe', color: '#7c3aed' } : { bg: '#fef9c3', color: '#a16207' };
+  }
+
+  function rsRenderStep4() {
+    const A = rsCurrent.A, B = rsCurrent.B;
+    const isSwap = rsCurrent.type === '수업교체';
+
+    // 결강 날짜는 1단계에서 입력한 날짜로 고정 (선택할 필요 없음)
+    rsCurrent.aDateObj = new Date(rsShared.anchorDate + 'T00:00:00');
+
+    const { bg: typeBg, color: typeColor } = rsTypeColors(isSwap);
+
+    document.getElementById('rsSummaryText').innerHTML = `
+      <div style="text-align:center; background:${typeBg}; color:${typeColor}; font-weight:800; font-size:17px; padding:8px; border-radius:8px; margin-bottom:12px;">${rsCurrent.type}</div>
+      <div style="padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed #cbd5e1;">
+        <div><b>신청 교사:</b> ${rsShared.teacher}</div>
+        <div><b>사유:</b> ${rsShared.reason} · ${rsShared.reasonText}</div>
+      </div>
+      <div>
+        <div style="display:inline-block; background:${typeBg}; color:${typeColor}; font-weight:800; font-size:14px; padding:4px 10px; border-radius:6px;">${A.grade} ${A.className}</div>
+        ${isSwap
+          ? `<div style="margin-top:8px;"><b>결강</b></div><div>${rsFormatDate(rsCurrent.aDateObj)}(${A.day}) ${A.period}교시 ${A.subject}</div>`
+          : `<div style="margin-top:8px;"><b>결강:</b> ${rsFormatDate(rsCurrent.aDateObj)}(${A.day}) ${A.period}교시 ${A.subject}</div>`}
+        ${isSwap ? `
+          <div style="margin-top:8px;"><b>교체보강</b></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+            <div class="rs-date-select" id="rsDateSelectB" style="max-width:200px;">
+              <div class="rs-date-select-trigger" style="font-size:14px;" onclick="rsToggleDateDropdown('B')">
+                <span id="rsDateLabelB"></span>
+                <i class="fas fa-caret-down"></i>
+              </div>
+              <div class="rs-date-dropdown" id="rsDateDropdownB" style="display:none;"></div>
+            </div>
+            <span id="rsDateFieldBSubject" style="font-weight:600;"></span>
+          </div>
+        ` : `<div style="margin-top:8px;"><b>결보강 교사:</b> ${B.teacher || '(미입력)'}</div>`}
+      </div>
+    `;
+
+    if (isSwap) {
+      document.getElementById('rsDateFieldBSubject').innerText = `${B.period}교시 ${B.subject}${B.teacher ? '(' + B.teacher + ')' : ''}`;
+      rsCurrent.bMode = 'week'; rsCurrent.bWeekOffset = 0;
+      rsInitDateSelector('B');
+    }
+  }
+
+  // 날짜 선택기는 진행 중인 항목('A'/'B')뿐 아니라, 요약 화면에 쌓인 항목들(예: 'e0A','e0B','e1A'...)에도
+  // 그대로 재사용합니다. key로 어느 데이터를 읽고 쓸지 결정합니다.
+  function rsResolveDateTarget(key) {
+    if (key === 'A' || key === 'B') {
+      const isA = (key === 'A');
+      return { store: rsCurrent, dateKey: isA ? 'aDateObj' : 'bDateObj', modeKey: isA ? 'aMode' : 'bMode', offsetKey: isA ? 'aWeekOffset' : 'bWeekOffset', person: isA ? rsCurrent.A : rsCurrent.B };
+    }
+    const m = String(key).match(/^e(\d+)(A|B)$/);
+    if (m) {
+      const entry = rsEntries[parseInt(m[1], 10)];
+      if (!entry) return null;
+      const isA = (m[2] === 'A');
+      return { store: entry, dateKey: isA ? 'aDateObj' : 'bDateObj', modeKey: isA ? 'aMode' : 'bMode', offsetKey: isA ? 'aWeekOffset' : 'bWeekOffset', person: isA ? entry.A : entry.B };
+    }
+    return null;
+  }
+
+  // dateObj(같은 날짜) + period(같은 교시)가 이미 다른 항목에서 쓰이고 있는지 확인합니다. excludeKey는 지금 수정 중인 대상이라 비교에서 뺍니다.
+  function rsIsDateCollision(dateObj, period, excludeKey) {
+    if (!dateObj || !period) return false;
+    const targets = [];
+    // rsCurrent(작성 중인 항목)는 지금 그 항목을 다룰 때만 비교 대상에 넣습니다.
+    // 이미 확정된 항목(eXA/eXB)을 5단계에서 수정할 때는 rsCurrent에 남아있는 예전 값과 비교하면 안 됩니다.
+    const isCurrentContext = (excludeKey === 'A' || excludeKey === 'B');
+    if (isCurrentContext) {
+      if (excludeKey !== 'A' && rsCurrent.A && rsCurrent.aDateObj) targets.push({ date: rsCurrent.aDateObj, period: rsCurrent.A.period });
+      if (excludeKey !== 'B' && rsCurrent.type === '수업교체' && rsCurrent.B && rsCurrent.bDateObj) targets.push({ date: rsCurrent.bDateObj, period: rsCurrent.B.period });
+    }
+    rsEntries.forEach((e, i) => {
+      if (excludeKey !== ('e' + i + 'A') && e.aDateObj) targets.push({ date: e.aDateObj, period: e.A.period });
+      if (excludeKey !== ('e' + i + 'B') && e.type === '수업교체' && e.bDateObj) targets.push({ date: e.bDateObj, period: e.B.period });
+    });
+    return targets.some(t =>
+      String(t.period) === String(period) &&
+      t.date.getFullYear() === dateObj.getFullYear() &&
+      t.date.getMonth() === dateObj.getMonth() &&
+      t.date.getDate() === dateObj.getDate()
+    );
+  }
+
+  // 기본값(이번주)이 이미 다른 항목과 겹치면, 나중에 선택된 쪽을 다음주로 자동 조정합니다.
+  // 이번 계획서에서 선택된 모든 결강(A) 교시의 최소~최대 범위를 구합니다.
+  // (신청 교사가 그 사이 시간에도 대체로 자리를 비웠을 가능성이 높다고 보기 위함)
+  // 시간표 유효기간(학기 시작~방학식 등) 안의 날짜인지 확인합니다. 아직 설정을 못 불러왔으면 제한하지 않습니다.
+  function rsIsDateInValidRange(dateObj) {
+    if (!scheduleValidRange) return true;
+    const iso = rsToISODate(dateObj);
+    return iso >= scheduleValidRange.from && iso <= scheduleValidRange.to;
+  }
+
+  function rsGetAbsencePeriodRange() {
+    let periods = [];
+    if (rsCurrent.A) periods.push(parseInt(rsCurrent.A.period, 10));
+    rsPendingA.forEach(a => periods.push(parseInt(a.period, 10)));
+    rsEntries.forEach(e => periods.push(parseInt(e.A.period, 10)));
+    if (periods.length === 0) return null;
+    return { min: Math.min(...periods), max: Math.max(...periods) };
+  }
+
   function rsInitDateSelector(target) {
-    const monday0 = rsGetMonday(rsData.anchorDate);
-    const person = target === 'A' ? rsData.A : rsData.B;
-    const dateObj = rsAddDays(monday0, RS_DAY_IDX[person.day]);
-    if (target === 'A') rsData.aDateObj = dateObj; else rsData.bDateObj = dateObj;
-    document.getElementById('rsDateDropdown' + target).style.display = 'none';
+    const ctx = rsResolveDateTarget(target);
+    if (!ctx) return;
+    const monday0 = rsGetMonday(rsShared.anchorDate);
+
+    // 교체보강(B) 후보가 결강일과 같은 요일이면서, 결강 교시들 사이(또는 그 안)에 낀 교시라면
+    // 그 시간에도 자리를 비웠을 가능성이 높으므로 기본값을 다음 주로 미룹니다.
+    let baseOffset = 0;
+    const anchorDayLetter = rsDayLetterFromDate(new Date(rsShared.anchorDate + 'T00:00:00'));
+    if (target === 'B' && ctx.person.day === anchorDayLetter) {
+      const range = rsGetAbsencePeriodRange();
+      const bPeriod = parseInt(ctx.person.period, 10);
+      if (range && bPeriod >= range.min && bPeriod <= range.max) baseOffset = 1;
+    }
+
+    // baseOffset을 기준으로 가까운 순서(+1주, -1주, +2주, -2주 ...)로 찾습니다.
+    // 다음 주가 시간표 유효기간 밖이면(예: 방학식 직전) 다음주 대신 전주(7일 전)로 자연스럽게 넘어갑니다.
+    const tryOffsets = [baseOffset];
+    for (let d = 1; d <= 8; d++) { tryOffsets.push(baseOffset + d); tryOffsets.push(baseOffset - d); }
+
+    function pick(respectValidRange) {
+      for (const o of tryOffsets) {
+        const d = rsAddDays(rsAddDays(monday0, o * 7), RS_DAY_IDX[ctx.person.day]);
+        if (rsIsDateCollision(d, ctx.person.period, target)) continue;
+        if (respectValidRange && !rsIsDateInValidRange(d)) continue;
+        return { offset: o, dateObj: d };
+      }
+      return null;
+    }
+
+    // 유효기간 안에서 못 찾으면(설정 범위가 너무 좁은 경우) 유효기간 제약은 풀고 충돌만 피해서 다시 찾습니다.
+    const result = pick(true) || pick(false)
+      || { offset: baseOffset, dateObj: rsAddDays(rsAddDays(monday0, baseOffset * 7), RS_DAY_IDX[ctx.person.day]) };
+
+    ctx.store[ctx.dateKey] = result.dateObj;
+    ctx.store[ctx.modeKey] = 'week';
+    ctx.store[ctx.offsetKey] = result.offset;
+    const dd = document.getElementById('rsDateDropdown' + target);
+    if (dd) dd.style.display = 'none';
     rsUpdateDateLabel(target);
   }
 
-  // 결강/교체보강 날짜 선택용 드롭다운을 열고 닫습니다 (한 번에 하나만 열림).
   function rsToggleDateDropdown(target) {
     const dd = document.getElementById('rsDateDropdown' + target);
+    if (!dd) return;
     const willOpen = dd.style.display !== 'block';
-    document.getElementById('rsDateDropdownA').style.display = 'none';
-    document.getElementById('rsDateDropdownB').style.display = 'none';
+    document.querySelectorAll('.rs-date-dropdown').forEach(el => el.style.display = 'none');
     if (willOpen) {
       rsRenderDateDropdown(target);
       rsPositionDropdown(target);
@@ -359,7 +1058,6 @@
     }
   }
 
-  // 모달의 overflow-y:auto에 의해 드롭다운이 잘리지 않도록, 뷰포트(화면) 좌표 기준으로 위치를 계산합니다.
   function rsPositionDropdown(target) {
     const trigger = document.querySelector('#rsDateSelect' + target + ' .rs-date-select-trigger');
     const dd = document.getElementById('rsDateDropdown' + target);
@@ -369,7 +1067,7 @@
     const spaceBelow = window.innerHeight - rect.bottom;
 
     dd.style.left = rect.left + 'px';
-    dd.style.width = rect.width + 'px';
+    dd.style.width = Math.max(rect.width, 200) + 'px';
     if (spaceBelow < maxDropdownHeight && rect.top > spaceBelow) {
       dd.style.top = Math.max(8, rect.top - maxDropdownHeight - 4) + 'px';
     } else {
@@ -377,89 +1075,194 @@
     }
   }
 
-  // 모달 내부를 스크롤하면 트리거 위치가 바뀌어 어긋나므로, 열려있던 드롭다운은 닫습니다.
   document.addEventListener('DOMContentLoaded', function () {
     const modContent = document.querySelector('#resubMod .modal-content');
     if (modContent) {
       modContent.addEventListener('scroll', function () {
-        document.getElementById('rsDateDropdownA').style.display = 'none';
-        document.getElementById('rsDateDropdownB').style.display = 'none';
+        document.querySelectorAll('.rs-date-dropdown').forEach(el => el.style.display = 'none');
       });
     }
   });
 
-  // 해당 요일 기준으로 앞뒤 3주씩, 총 7개 날짜 후보 + 직접입력 항목을 그려줍니다.
   function rsRenderDateDropdown(target) {
+    const ctx = rsResolveDateTarget(target);
     const dd = document.getElementById('rsDateDropdown' + target);
-    const person = target === 'A' ? rsData.A : rsData.B;
-    const mode = target === 'A' ? rsData.aMode : rsData.bMode;
-    const curOffset = target === 'A' ? rsData.aWeekOffset : rsData.bWeekOffset;
-    const monday0 = rsGetMonday(rsData.anchorDate);
+    if (!ctx || !dd) return;
+    const person = ctx.person;
+    const mode = ctx.store[ctx.modeKey];
+    const curOffset = ctx.store[ctx.offsetKey];
+    const monday0 = rsGetMonday(rsShared.anchorDate);
 
     let html = '';
     for (let off = -3; off <= 3; off++) {
       const d = rsAddDays(rsAddDays(monday0, off * 7), RS_DAY_IDX[person.day]);
+      if (!rsIsDateInValidRange(d)) continue; // 시간표 유효기간(학기 시작~방학식 등) 밖의 날짜는 추천하지 않습니다.
       const active = (mode === 'week' && off === curOffset) ? 'active' : '';
       html += `<div class="rs-date-option ${active}" onclick="rsPickWeekDate('${target}', ${off})">${rsFormatDate(d)} (${person.day})</div>`;
     }
     const manualActive = (mode === 'manual');
-    const manualDateObj = target === 'A' ? rsData.aDateObj : rsData.bDateObj;
+    const manualDateObj = ctx.store[ctx.dateKey];
+    const manualLabelText = (manualActive && manualDateObj)
+      ? `${rsFormatDate(manualDateObj)} (${rsDayLetterFromDate(manualDateObj)})`
+      : '직접입력';
     html += `<div class="rs-date-option rs-date-manual-row ${manualActive ? 'active' : ''}">
-      <span class="rs-manual-label" onclick="rsOpenManualPicker('${target}', event)" style="display:${manualActive ? 'none' : 'inline'};">직접입력</span>
-      <input type="date" id="rsManualInput${target}" class="rs-manual-input" style="display:${manualActive ? 'block' : 'none'};" value="${manualActive && manualDateObj ? rsToISODate(manualDateObj) : ''}" onclick="event.stopPropagation()" onchange="rsPickManualDate('${target}', this.value)">
+      <span class="rs-manual-label">${manualLabelText}</span>
+      <input type="date" id="rsManualInput${target}" class="rs-manual-input-hidden" value="${manualDateObj ? rsToISODate(manualDateObj) : ''}" onchange="rsPickManualDate('${target}', this.value)" onclick="event.stopPropagation()">
     </div>`;
     dd.innerHTML = html;
   }
 
   function rsPickWeekDate(target, off) {
-    const monday0 = rsGetMonday(rsData.anchorDate);
-    const person = target === 'A' ? rsData.A : rsData.B;
-    const dateObj = rsAddDays(rsAddDays(monday0, off * 7), RS_DAY_IDX[person.day]);
-    if (target === 'A') { rsData.aMode = 'week'; rsData.aWeekOffset = off; rsData.aDateObj = dateObj; }
-    else { rsData.bMode = 'week'; rsData.bWeekOffset = off; rsData.bDateObj = dateObj; }
+    const ctx = rsResolveDateTarget(target);
+    if (!ctx) return;
+    const monday0 = rsGetMonday(rsShared.anchorDate);
+    const dateObj = rsAddDays(rsAddDays(monday0, off * 7), RS_DAY_IDX[ctx.person.day]);
+    if (rsIsDateCollision(dateObj, ctx.person.period, target)) {
+      showAlert('중복입니다.');
+      return;
+    }
+    ctx.store[ctx.modeKey] = 'week';
+    ctx.store[ctx.offsetKey] = off;
+    ctx.store[ctx.dateKey] = dateObj;
     rsUpdateDateLabel(target);
-    document.getElementById('rsDateDropdown' + target).style.display = 'none';
-  }
-
-  function rsOpenManualPicker(target, evt) {
-    if (evt) evt.stopPropagation();
     const dd = document.getElementById('rsDateDropdown' + target);
-    const label = dd.querySelector('.rs-manual-label');
-    const input = document.getElementById('rsManualInput' + target);
-    if (label) label.style.display = 'none';
-    if (!input) return;
-    input.style.display = 'block';
-    const dateObj = target === 'A' ? rsData.aDateObj : rsData.bDateObj;
-    input.value = rsToISODate(dateObj || new Date());
-    input.focus();
-    if (input.showPicker) { try { input.showPicker(); } catch (e) {} }
+    if (dd) dd.style.display = 'none';
   }
 
-  function rsPickManualDate(target, val) {
+function rsPickManualDate(target, val) {
     if (!val) return;
+    const ctx = rsResolveDateTarget(target);
+    if (!ctx) return;
     const d = new Date(val + 'T00:00:00');
-    if (target === 'A') { rsData.aMode = 'manual'; rsData.aDateObj = d; }
-    else { rsData.bMode = 'manual'; rsData.bDateObj = d; }
+    if (rsIsDateCollision(d, ctx.person.period, target)) {
+      showAlert('중복입니다.');
+      return;
+    }
+    ctx.store[ctx.modeKey] = 'manual';
+    ctx.store[ctx.dateKey] = d;
     rsUpdateDateLabel(target);
-    document.getElementById('rsDateDropdown' + target).style.display = 'none';
+    const dd = document.getElementById('rsDateDropdown' + target);
+    if (dd) dd.style.display = 'none';
   }
 
   function rsUpdateDateLabel(target) {
-    const dateObj = target === 'A' ? rsData.aDateObj : rsData.bDateObj;
-    document.getElementById('rsDateLabel' + target).innerText = rsFormatDate(dateObj);
+    const ctx = rsResolveDateTarget(target);
+    if (!ctx) return;
+    const dateObj = ctx.store[ctx.dateKey];
+    const el = document.getElementById('rsDateLabel' + target);
+    if (!el) return;
+    el.innerText = `${rsFormatDate(dateObj)}(${ctx.person.day})`;
   }
 
-  // ===== 5단계: 최종 문서 생성 (수정 가능) =====
-  function rsRenderFinalDoc() {
-    const A = rsData.A, B = rsData.B, aDate = rsData.aDateObj, bDate = rsData.bDateObj;
-    const reasonList = ['출장', '연가', '병가', '조퇴', '외출', '기타'];
-    const reasonBoxes = reasonList.map(r => `${r} ${r === rsData.reason ? '☑' : '□'}`).join(' , ');
-    const aClass = `${A.grade.replace('학년', '')}-${A.className.replace('반', '')}`;
-    const bClass = `${B.grade.replace('학년', '')}-${B.className.replace('반', '')}`;
-    // "결보강" 유형은 대신 수업을 진행해줄 뿐, 본인이 나중에 따로 보충하지 않으므로 본인보강 칸은 비워둡니다.
-    const skipSelfMakeup = rsData.type === '결보강';
+  // ===== 4→5단계: 항목 확정 =====
+  function rsConfirmEntry() {
+    rsEntries.push({
+      type: rsCurrent.type,
+      A: rsCurrent.A,
+      B: rsCurrent.B,
+      aDateObj: rsCurrent.aDateObj,
+      bDateObj: rsCurrent.bDateObj,
+      aMode: rsCurrent.aMode,
+      aWeekOffset: rsCurrent.aWeekOffset,
+      bMode: rsCurrent.bMode,
+      bWeekOffset: rsCurrent.bWeekOffset
+    });
+    if (rsPendingA.length > 0) {
+      rsProcessNextA(); // 다중 선택했던 다음 결강수업을 이어서 처리
+    } else {
+      rsGoStep(5);
+    }
+  }
 
-    const blankRows = Array(5).fill('<tr>' + Array(11).fill('<td contenteditable="true">&nbsp;</td>').join('') + '</tr>').join('');
+  function rsRenderEntriesSummary() {
+    const html = rsEntries.map((e, i) => {
+      const A = e.A, B = e.B;
+      const keyB = 'e' + i + 'B';
+      const aDateText = `${rsFormatDate(e.aDateObj)}(${A.day})`;
+
+      let lineHtml;
+      if (e.type === '수업교체') {
+        lineHtml = `${aDateText} ${A.period}교시 ${A.subject}<br>
+          →
+          <span class="rs-date-select" id="rsDateSelect${keyB}" style="display:inline-block; width:auto; vertical-align:middle;">
+            <span class="rs-date-select-trigger" onclick="rsToggleDateDropdown('${keyB}')" style="display:inline-flex; align-items:center; padding:3px 8px; font-size:13px; font-weight:bold; border-radius:6px; background:#fff1f2; color:#e11d48; border:1px solid #fecdd3; cursor:pointer;">
+              <span id="rsDateLabel${keyB}"></span>
+              <i class="fas fa-caret-down" style="margin-left:4px;"></i>
+            </span>
+            <div class="rs-date-dropdown" id="rsDateDropdown${keyB}" style="display:none;"></div>
+          </span>
+          ${B.period}교시 ${B.subject}(${B.teacher})`;
+      } else {
+        lineHtml = `${aDateText} ${A.period}교시 ${A.subject} → ${B.teacher || '(미입력)'} 선생님`;
+      }
+
+      if (e.disabled) {
+        return `<div style="position:relative; margin-bottom:10px; padding:10px; border-radius:8px; background:#e2e8f0; cursor:pointer;" onclick="rsToggleEntryDisabled(${i})" title="눌러서 되살리기">
+          <div style="opacity:0.35;">
+            <div><b>${i + 1}. [${e.type}]</b> ${A.grade} ${A.className}</div>
+            <div style="margin-top:4px; text-decoration:line-through;">${lineHtml}</div>
+          </div>
+          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:32px; pointer-events:none;">↩️</div>
+        </div>`;
+      }
+      return `<div class="rs-entry-card" style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed #e2e8f0;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div><b>${i + 1}. [${e.type}]</b> ${A.grade} ${A.className}</div>
+          <button type="button" class="rs-entry-del-btn" onclick="rsToggleEntryDisabled(${i})" title="이 항목 비활성화" style="background:none; border:none; color:#94a3b8; font-size:15px; cursor:pointer; padding:2px 6px;">🗑</button>
+        </div>
+        <div style="margin-top:4px;">${lineHtml}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('rsEntriesSummary').innerHTML = html || '<div style="color:#888;">작성된 항목이 없습니다.</div>';
+
+    // 교체보강 날짜는 이미 저장된 값(4단계에서 확정한 값)을 그대로 표시만 합니다 (초기화하지 않음).
+    rsEntries.forEach((e, i) => {
+      if (e.type === '수업교체') rsUpdateDateLabel('e' + i + 'B');
+    });
+  }
+
+
+  function rsFinishAndRender() {
+    if (rsEntries.filter(e => !e.disabled).length === 0) { showAlert('작성된 항목이 없습니다. 먼저 결강 수업을 선택해주세요.'); return; }
+    rsGoStep(6);
+  }
+
+  // 실수로 지우는 걸 막기 위해 바로 삭제하지 않고 비활성화(취소선 표시)만 합니다. 다시 누르면 되살아납니다.
+  function rsToggleEntryDisabled(idx) {
+    rsEntries[idx].disabled = !rsEntries[idx].disabled;
+    rsRenderEntriesSummary();
+  }
+
+  // ===== 6단계: 최종 문서 생성 (수정 가능) =====
+  function rsBuildEntryRow(entry) {
+    const A = entry.A, B = entry.B, aDate = entry.aDateObj, bDate = entry.bDateObj;
+    const skipSelfMakeup = entry.type === '결보강';
+    const aClass = `${A.grade.replace('학년', '')}-${A.className.replace('반', '')}`;
+    return `<tr>
+      <td contenteditable="true">${rsFormatDateShort(aDate)}</td>
+      <td contenteditable="true">${aClass}</td>
+      <td contenteditable="true">${A.period}교시</td>
+      <td contenteditable="true">${A.subject}</td>
+      <td contenteditable="true">${B.teacher || ''}</td>
+      <td contenteditable="true">${skipSelfMakeup ? A.subject : (B.subject || '')}</td>
+      <td contenteditable="true">&nbsp;</td>
+      <td contenteditable="true">${skipSelfMakeup ? '&nbsp;' : rsFormatDateShort(bDate)}</td>
+      <td contenteditable="true">${skipSelfMakeup ? '&nbsp;' : (B.period + '교시')}</td>
+      <td contenteditable="true">${skipSelfMakeup ? '&nbsp;' : A.subject}</td>
+      <td contenteditable="true">${entry.type}</td>
+    </tr>`;
+  }
+
+  function rsRenderFinalDoc() {
+    const reasonList = ['출장', '연가', '병가', '조퇴', '외출', '기타'];
+    const reasonBoxes = reasonList.map(r => `${r} ${r === rsShared.reason ? '☑' : '□'}`).join(' , ');
+    const headerDate = new Date(rsShared.anchorDate + 'T00:00:00');
+    const headerDay = rsDayLetterFromDate(headerDate);
+
+    const activeEntries = rsEntries.filter(e => !e.disabled);
+    const entryRows = activeEntries.map(rsBuildEntryRow).join('');
+    const blankCount = Math.max(0, 6 - activeEntries.length);
+    const blankRows = Array(blankCount).fill('<tr>' + Array(11).fill('<td contenteditable="true">&nbsp;</td>').join('') + '</tr>').join('');
 
     const html = `
       <div class="resub-doc" id="resubDocContent">
@@ -481,14 +1284,14 @@
           <thead>
             <tr>
               <th style="white-space:normal; overflow:visible; line-height:1.3;">일자<br>(요일)</th>
-              <td contenteditable="true" colspan="2">${rsFormatDate(aDate)} (${A.day}요일)</td>
+              <td contenteditable="true" colspan="2" style="font-size:14.5px;">${rsFormatDate(headerDate)} (${headerDay}요일)</td>
               <th>사유</th>
-              <td contenteditable="true" colspan="5" class="resub-reason-cell">
+              <td contenteditable="true" colspan="5" class="resub-reason-cell" style="font-size:14.5px;">
                 <div class="resub-reason-line1">${reasonBoxes}</div>
-                <div class="resub-reason-line2">· ${rsData.reasonText}</div>
+                <div class="resub-reason-line2">· ${rsShared.reasonText}</div>
               </td>
               <th>교사</th>
-              <td contenteditable="true">${rsData.teacher} (인)</td>
+              <td contenteditable="true" style="font-size:14.5px;">${rsShared.teacher} (인)</td>
             </tr>
             <tr>
               <th rowspan="2">일자</th>
@@ -504,19 +1307,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td contenteditable="true">${rsFormatDateShort(aDate)}</td>
-              <td contenteditable="true">${aClass}</td>
-              <td contenteditable="true">${A.period}교시</td>
-              <td contenteditable="true">${A.subject}</td>
-              <td contenteditable="true">${B.teacher}</td>
-              <td contenteditable="true">${skipSelfMakeup ? A.subject : B.subject}</td>
-              <td contenteditable="true">&nbsp;</td>
-              <td contenteditable="true">${skipSelfMakeup ? '&nbsp;' : rsFormatDateShort(bDate)}</td>
-              <td contenteditable="true">${skipSelfMakeup ? '&nbsp;' : B.period + '교시'}</td>
-              <td contenteditable="true">${skipSelfMakeup ? '&nbsp;' : A.subject}</td>
-              <td contenteditable="true">${rsData.type}</td>
-            </tr>
+            ${entryRows}
             ${blankRows}
           </tbody>
         </table>
