@@ -90,7 +90,7 @@
     <!-- 5단계: 추가 여부 확인 -->
     <div id="rsStep5" style="display:none;">
       <div style="display:flex; gap:10px; margin-bottom:15px;">
-        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoStep(4)">⬅ 이전으로</button>
+        <button class="btn-cancel" style="flex:1; margin-top:0;" onclick="rsGoBackFromStep5()">⬅ 이전으로</button>
         <button class="btn-search" style="flex:1; background:#3CB878;" onclick="rsFinishAndRender()">📝 계획서 작성</button>
       </div>
       <div class="rs-step-title" style="margin-bottom:15px;">수업교체 및 결보강을 수정하시겠습니까?</div>
@@ -126,6 +126,37 @@
   let rsHomeroom = null;      // '담임교사' 시트 원본
   const RS_DAY_IDX = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4 };
   const RS_DAY_BY_JS = { 1: '월', 2: '화', 3: '수', 4: '목', 5: '금' };
+
+  // ===== 결보강 모달 드래그 이동 (헤더를 잡고 옆으로 치워서 뒤 시간표를 볼 수 있게) =====
+  (function () {
+    const modalEl = document.getElementById('resubMod');
+    const header = modalEl.querySelector('.rs-header-bar');
+    const content = modalEl.querySelector('.modal-content');
+    let dragging = false, startX = 0, startY = 0, startTx = 0, startTy = 0;
+
+    function getTranslate() {
+      const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(content.style.transform);
+      return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : { x: 0, y: 0 };
+    }
+
+    header.addEventListener('pointerdown', e => {
+      if (e.target.closest('.tt-header-close')) return;
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const t = getTranslate();
+      startTx = t.x;
+      startTy = t.y;
+      header.setPointerCapture(e.pointerId);
+    });
+
+    header.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      content.style.transform = `translate(${startTx + (e.clientX - startX)}px, ${startTy + (e.clientY - startY)}px)`;
+    });
+
+    ['pointerup', 'pointercancel'].forEach(evt => header.addEventListener(evt, () => { dragging = false; }));
+  })();
 
   document.addEventListener('click', function (e) {
     if (!e.target.closest('.rs-date-select')) {
@@ -184,6 +215,7 @@
     rsCurrent = { type: '', A: null, B: null, aMode: 'week', aWeekOffset: 0, bMode: 'week', bWeekOffset: 0, aDateObj: null, bDateObj: null, candidates: [] };
     rsPendingA = [];
 
+    document.querySelector('#resubMod .modal-content').style.transform = '';
     document.getElementById('rsTeacherInput').value = '';
     document.querySelectorAll('#resubMod .reason-chip').forEach(b => b.classList.remove('active'));
     document.getElementById('rsReasonText').value = '';
@@ -315,6 +347,20 @@
     } else {
       rsGoStep(1);
     }
+  }
+
+  // 5단계(항목 요약)의 이전으로: rsCurrent는 방금 확정한 항목을 그대로 들고 있으므로 그걸 다시 4단계에서 보여주면 되지만,
+  // rsEntries에도 이미 같은 항목이 들어가 있어서 그대로 두면 "자기 자신과 날짜가 겹친다"고 오판하게 됩니다.
+  // 그래서 rsEntries에서 그 항목을 잠깐 빼두고, 다시 확정할 때(rsConfirmEntry) 새로 들어갑니다.
+  function rsGoBackFromStep5() {
+    if (rsCurrent.A) {
+      const idx = rsEntries.findIndex(e =>
+        e.A.grade === rsCurrent.A.grade && e.A.className === rsCurrent.A.className &&
+        e.A.day === rsCurrent.A.day && e.A.period === rsCurrent.A.period
+      );
+      if (idx >= 0) rsEntries.splice(idx, 1);
+    }
+    rsGoStep(4);
   }
 
   // ===== 0단계 로직 =====
@@ -868,6 +914,7 @@
     } else {
       rsCurrent.B = { teacher: c.data.teacher, subject: rsCurrent.A.subject, day: rsCurrent.A.day, period: rsCurrent.A.period };
     }
+    rsCurrent.bDateObj = null; // 새로 고른 후보이므로 이전 항목에서 남아있던 날짜를 지우고 다시 추천받게 합니다.
     rsGoStep(4);
   }
 
@@ -934,14 +981,20 @@
             </div>
             <span id="rsDateFieldBSubject" style="font-weight:600;"></span>
           </div>
+          <div id="rsDateWarnB" style="display:none; color:#dc2626; font-size:12.5px; font-weight:bold; margin-top:6px;">⚠ 결보강 계획서 작성 날짜와 같습니다. 확인 후 진행하세요.</div>
         ` : `<div style="margin-top:8px;"><b>결보강 교사:</b> ${B.teacher || '(미입력)'}</div>`}
       </div>
     `;
 
     if (isSwap) {
       document.getElementById('rsDateFieldBSubject').innerText = `${B.period}교시 ${B.subject}${B.teacher ? '(' + B.teacher + ')' : ''}`;
-      rsCurrent.bMode = 'week'; rsCurrent.bWeekOffset = 0;
-      rsInitDateSelector('B');
+      // 이미 날짜가 설정돼 있으면(뒤로 갔다가 다시 돌아온 경우 등) 다시 임의로 추천하지 않고 그대로 유지합니다.
+      if (!rsCurrent.bDateObj) {
+        rsCurrent.bMode = 'week'; rsCurrent.bWeekOffset = 0;
+        rsInitDateSelector('B');
+      } else {
+        rsUpdateDateLabel('B');
+      }
     }
   }
 
@@ -1004,6 +1057,17 @@
     return { min: Math.min(...periods), max: Math.max(...periods) };
   }
 
+  // 후보 날짜가 결강일(anchorDate) 그 자체이고, 그 교시가 신청 교사의 결강 교시 범위(min~max) 안에 든다면
+  // 신청 교사가 그 시간에도 자리를 비웠을 가능성이 높으므로 대체 수업 후보에서 아예 제외합니다.
+  function rsIsAbsenceDayBlocked(dateObj, period) {
+    if (!rsShared.anchorDate || !dateObj) return false;
+    if (rsToISODate(dateObj) !== rsShared.anchorDate) return false;
+    const range = rsGetAbsencePeriodRange();
+    if (!range) return false;
+    const p = parseInt(period, 10);
+    return p >= range.min && p <= range.max;
+  }
+
   function rsInitDateSelector(target) {
     const ctx = rsResolveDateTarget(target);
     if (!ctx) return;
@@ -1028,6 +1092,7 @@
       for (const o of tryOffsets) {
         const d = rsAddDays(rsAddDays(monday0, o * 7), RS_DAY_IDX[ctx.person.day]);
         if (rsIsDateCollision(d, ctx.person.period, target)) continue;
+        if (rsIsAbsenceDayBlocked(d, ctx.person.period)) continue;
         if (respectValidRange && !rsIsDateInValidRange(d)) continue;
         return { offset: o, dateObj: d };
       }
@@ -1097,6 +1162,7 @@
     for (let off = -3; off <= 3; off++) {
       const d = rsAddDays(rsAddDays(monday0, off * 7), RS_DAY_IDX[person.day]);
       if (!rsIsDateInValidRange(d)) continue; // 시간표 유효기간(학기 시작~방학식 등) 밖의 날짜는 추천하지 않습니다.
+      if (rsIsAbsenceDayBlocked(d, person.period)) continue; // 신청 교사가 자리를 비우는 결강일 자체는 후보에서 제외합니다.
       const active = (mode === 'week' && off === curOffset) ? 'active' : '';
       html += `<div class="rs-date-option ${active}" onclick="rsPickWeekDate('${target}', ${off})">${rsFormatDate(d)} (${person.day})</div>`;
     }
@@ -1105,11 +1171,21 @@
     const manualLabelText = (manualActive && manualDateObj)
       ? `${rsFormatDate(manualDateObj)} (${rsDayLetterFromDate(manualDateObj)})`
       : '직접입력';
-    html += `<div class="rs-date-option rs-date-manual-row ${manualActive ? 'active' : ''}">
-      <span class="rs-manual-label">${manualLabelText}</span>
+    html += `<div class="rs-date-option rs-date-manual-row ${manualActive ? 'active' : ''}" onclick="rsOpenManualDatePicker('${target}')">
+      <span class="rs-manual-label"><i class="fas fa-calendar-alt" style="margin-right:6px; color:#64748b;"></i>${manualLabelText}</span>
       <input type="date" id="rsManualInput${target}" class="rs-manual-input-hidden" value="${manualDateObj ? rsToISODate(manualDateObj) : ''}" onchange="rsPickManualDate('${target}', this.value)" onclick="event.stopPropagation()">
     </div>`;
     dd.innerHTML = html;
+  }
+
+  // "직접입력" 행 어디를 눌러도(투명 input이 정확히 눌리지 않는 경우 대비) 달력이 뜨도록 명시적으로 picker를 엽니다.
+  function rsOpenManualDatePicker(target) {
+    const input = document.getElementById('rsManualInput' + target);
+    if (!input) return;
+    if (typeof input.showPicker === 'function') {
+      try { input.showPicker(); return; } catch (e) { /* fall through */ }
+    }
+    input.focus();
   }
 
   function rsPickWeekDate(target, off) {
@@ -1119,6 +1195,10 @@
     const dateObj = rsAddDays(rsAddDays(monday0, off * 7), RS_DAY_IDX[ctx.person.day]);
     if (rsIsDateCollision(dateObj, ctx.person.period, target)) {
       showAlert('중복입니다.');
+      return;
+    }
+    if (rsIsAbsenceDayBlocked(dateObj, ctx.person.period)) {
+      showAlert('신청 교사가 자리를 비우는 결강일이라 선택할 수 없습니다.');
       return;
     }
     ctx.store[ctx.modeKey] = 'week';
@@ -1138,6 +1218,7 @@ function rsPickManualDate(target, val) {
       showAlert('중복입니다.');
       return;
     }
+    // 직접입력은 막지 않되, 결강일 그 자체를 고른 경우 rsUpdateDateLabel에서 경고 문구를 보여줍니다.
     ctx.store[ctx.modeKey] = 'manual';
     ctx.store[ctx.dateKey] = d;
     rsUpdateDateLabel(target);
@@ -1150,13 +1231,22 @@ function rsPickManualDate(target, val) {
     if (!ctx) return;
     const dateObj = ctx.store[ctx.dateKey];
     const el = document.getElementById('rsDateLabel' + target);
-    if (!el) return;
-    el.innerText = `${rsFormatDate(dateObj)}(${ctx.person.day})`;
+    if (el) el.innerText = `${rsFormatDate(dateObj)}(${ctx.person.day})`;
+    rsRefreshDateWarning(target);
+  }
+
+  // 직접입력으로 결강일 그 자체(결강 교시 범위 안)를 골랐다면, 막지는 않되 눈에 띄게 경고를 보여줍니다.
+  function rsRefreshDateWarning(target) {
+    const ctx = rsResolveDateTarget(target);
+    const el = document.getElementById('rsDateWarn' + target);
+    if (!ctx || !el) return;
+    const blocked = rsIsAbsenceDayBlocked(ctx.store[ctx.dateKey], ctx.person.period);
+    el.style.display = blocked ? 'block' : 'none';
   }
 
   // ===== 4→5단계: 항목 확정 =====
   function rsConfirmEntry() {
-    rsEntries.push({
+    const newEntry = {
       type: rsCurrent.type,
       A: rsCurrent.A,
       B: rsCurrent.B,
@@ -1166,7 +1256,18 @@ function rsPickManualDate(target, val) {
       aWeekOffset: rsCurrent.aWeekOffset,
       bMode: rsCurrent.bMode,
       bWeekOffset: rsCurrent.bWeekOffset
-    });
+    };
+    // 뒤로 가서 수정한 뒤 다시 확정하는 경우, 같은 결강 수업(학년/반/요일/교시)이 이미 등록돼 있으면
+    // 별도 항목으로 추가하지 않고 기존 항목을 덮어씁니다. (한 수업을 두 번 교체할 수는 없으므로)
+    const dupIdx = rsEntries.findIndex(e =>
+      e.A.grade === newEntry.A.grade && e.A.className === newEntry.A.className &&
+      e.A.day === newEntry.A.day && e.A.period === newEntry.A.period
+    );
+    if (dupIdx >= 0) {
+      rsEntries[dupIdx] = newEntry;
+    } else {
+      rsEntries.push(newEntry);
+    }
     if (rsPendingA.length > 0) {
       rsProcessNextA(); // 다중 선택했던 다음 결강수업을 이어서 처리
     } else {
@@ -1191,7 +1292,8 @@ function rsPickManualDate(target, val) {
             </span>
             <div class="rs-date-dropdown" id="rsDateDropdown${keyB}" style="display:none;"></div>
           </span>
-          ${B.period}교시 ${B.subject}(${B.teacher})`;
+          ${B.period}교시 ${B.subject}(${B.teacher})
+          <div id="rsDateWarn${keyB}" style="display:none; color:#dc2626; font-size:12px; font-weight:bold; margin-top:4px;">⚠ 결보강 계획서 작성 날짜와 같습니다. 확인 후 진행하세요.</div>`;
       } else {
         lineHtml = `${aDateText} ${A.period}교시 ${A.subject} → ${B.teacher || '(미입력)'} 선생님`;
       }
@@ -1202,13 +1304,16 @@ function rsPickManualDate(target, val) {
             <div><b>${i + 1}. [${e.type}]</b> ${A.grade} ${A.className}</div>
             <div style="margin-top:4px; text-decoration:line-through;">${lineHtml}</div>
           </div>
-          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:32px; pointer-events:none;">↩️</div>
+          <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; pointer-events:none;">
+            <span style="font-size:26px;">↩️</span>
+            <span style="font-size:13px; font-weight:bold; color:#1e293b; background:#fff; padding:2px 10px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.15);">되돌리기</span>
+          </div>
         </div>`;
       }
       return `<div class="rs-entry-card" style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed #e2e8f0;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div><b>${i + 1}. [${e.type}]</b> ${A.grade} ${A.className}</div>
-          <button type="button" class="rs-entry-del-btn" onclick="rsToggleEntryDisabled(${i})" title="이 항목 비활성화" style="background:none; border:none; color:#94a3b8; font-size:15px; cursor:pointer; padding:2px 6px;">🗑</button>
+          <button type="button" class="rs-entry-del-btn" onclick="rsToggleEntryDisabled(${i})" title="이 항목 비활성화" style="display:inline-flex; align-items:center; gap:4px; background:none; border:1px solid #fecaca; color:#dc2626; font-size:12.5px; font-weight:bold; cursor:pointer; padding:3px 8px; border-radius:6px;">🗑 삭제</button>
         </div>
         <div style="margin-top:4px;">${lineHtml}</div>
       </div>`;
