@@ -234,7 +234,21 @@
   .rs-date-option.active { background:#e11d48; color:#fff; }
   .rs-manual-input { width:100%; padding:7px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; box-sizing:border-box; }
   .rs-date-manual-row { position:relative; }
-  .rs-manual-input-hidden { position:absolute; inset:0; width:100%; height:100%; opacity:0; border:none; cursor:pointer; padding:0; margin:0; }
+  .rs-manual-cal {
+    position:fixed; background:#fff; border:1px solid #cbd5e1;
+    border-radius:8px; box-shadow:0 8px 20px rgba(0,0,0,0.25); padding:8px; width:220px; z-index:10060;
+  }
+  .rs-manual-cal-head { display:flex; align-items:center; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+  .rs-manual-cal-head span { cursor:pointer; padding:2px 8px; border-radius:4px; color:#64748b; font-weight:bold; }
+  .rs-manual-cal-head span:hover { background:#f1f5f9; color:#e11d48; }
+  .rs-manual-cal-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; }
+  .rs-manual-cal-dow { text-align:center; font-size:11px; color:#94a3b8; font-weight:bold; padding:2px 0; }
+  .rs-manual-cal-day { text-align:center; font-size:12.5px; padding:5px 0; border-radius:5px; cursor:pointer; color:#333; }
+  .rs-manual-cal-day:hover { background:#fee2e2; color:#e11d48; }
+  .rs-manual-cal-day.today { font-weight:bold; color:#0ea5e9; }
+  .rs-manual-cal-day.active { background:#e11d48; color:#fff; font-weight:bold; }
+  .rs-manual-cal-day.disabled { color:#d1d5db; cursor:default; }
+  .rs-manual-cal-day.disabled:hover { background:none; color:#d1d5db; }
 
   /* 결보강 계획서: 시간표 선택 그리드 버튼 */
   .rs-picker-table { border-collapse: collapse; background: white; }

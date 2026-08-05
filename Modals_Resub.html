@@ -126,6 +126,7 @@
   let rsHomeroom = null;      // '담임교사' 시트 원본
   const RS_DAY_IDX = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4 };
   const RS_DAY_BY_JS = { 1: '월', 2: '화', 3: '수', 4: '목', 5: '금' };
+  let rsManualCalMonth = {}; // "직접입력" 자체 달력이 target별로 지금 보여주는 연/월 { y, m }
 
   // ===== 결보강 모달 드래그 이동 (헤더를 잡고 옆으로 치워서 뒤 시간표를 볼 수 있게) =====
   // transform으로 옮기면 그 안의 position:fixed 요소(날짜 선택 팝업 등)가 화면이 아니라
@@ -165,8 +166,9 @@
   })();
 
   document.addEventListener('click', function (e) {
-    if (!e.target.closest('.rs-date-select')) {
+    if (!e.target.closest('.rs-date-select') && !e.target.closest('.rs-manual-cal')) {
       document.querySelectorAll('.rs-date-dropdown').forEach(el => el.style.display = 'none');
+      rsHideManualCalendar();
     }
   });
 
@@ -1125,6 +1127,7 @@
     if (!dd) return;
     const willOpen = dd.style.display !== 'block';
     document.querySelectorAll('.rs-date-dropdown').forEach(el => el.style.display = 'none');
+    rsHideManualCalendar();
     if (willOpen) {
       rsRenderDateDropdown(target);
       rsPositionDropdown(target);
@@ -1154,6 +1157,7 @@
     if (modContent) {
       modContent.addEventListener('scroll', function () {
         document.querySelectorAll('.rs-date-dropdown').forEach(el => el.style.display = 'none');
+        rsHideManualCalendar();
       });
     }
   });
@@ -1181,21 +1185,114 @@
     const manualLabelText = (manualActive && manualDateObj)
       ? `${rsFormatDate(manualDateObj)} (${rsDayLetterFromDate(manualDateObj)})`
       : '직접입력';
-    html += `<div class="rs-date-option rs-date-manual-row ${manualActive ? 'active' : ''}" onclick="rsOpenManualDatePicker('${target}')">
+    // 네이티브 달력(showPicker/기본 클릭)이 이 환경(Apps Script 샌드박스 iframe)에서 안 열리는 경우가 있어,
+    // 브라우저 기본 달력에 의존하지 않는 자체 제작 미니 달력을 붙입니다. 드롭다운 안에 넣으면
+    // overflow:auto에 잘려서 안 보일 수 있어, body에 붙는 별도의 고정 위치 팝업으로 띄웁니다.
+    html += `<div class="rs-date-option rs-date-manual-row ${manualActive ? 'active' : ''}" id="rsManualRow${target}" onclick="event.stopPropagation(); rsToggleManualCalendar('${target}')">
       <span class="rs-manual-label"><i class="fas fa-calendar-alt" style="margin-right:6px; color:#64748b;"></i>${manualLabelText}</span>
-      <input type="date" id="rsManualInput${target}" class="rs-manual-input-hidden" value="${manualDateObj ? rsToISODate(manualDateObj) : ''}" onchange="rsPickManualDate('${target}', this.value)" onclick="event.stopPropagation(); rsOpenManualDatePicker('${target}')">
     </div>`;
     dd.innerHTML = html;
   }
 
-  // "직접입력" 행 어디를 눌러도(투명 input이 정확히 눌리지 않는 경우 대비) 달력이 뜨도록 명시적으로 picker를 엽니다.
-  function rsOpenManualDatePicker(target) {
-    const input = document.getElementById('rsManualInput' + target);
-    if (!input) return;
-    if (typeof input.showPicker === 'function') {
-      try { input.showPicker(); return; } catch (e) { /* fall through */ }
+  let rsManualCalTarget = null; // 지금 미니 달력이 어느 날짜 선택 대상을 위한 것인지
+
+  function rsGetManualCalPopup() {
+    let el = document.getElementById('rsManualCalPopup');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'rsManualCalPopup';
+      el.className = 'rs-manual-cal';
+      el.style.display = 'none';
+      el.onclick = function (e) { e.stopPropagation(); };
+      document.body.appendChild(el);
     }
-    input.focus();
+    return el;
+  }
+
+  function rsHideManualCalendar() {
+    const el = document.getElementById('rsManualCalPopup');
+    if (el) el.style.display = 'none';
+    rsManualCalTarget = null;
+  }
+
+  function rsToggleManualCalendar(target) {
+    const el = rsGetManualCalPopup();
+    const willOpen = !(el.style.display === 'block' && rsManualCalTarget === target);
+    rsHideManualCalendar();
+    if (!willOpen) return;
+    rsManualCalTarget = target;
+    if (!rsManualCalMonth[target]) {
+      const ctx = rsResolveDateTarget(target);
+      const base = (ctx && ctx.store[ctx.dateKey]) || new Date(rsShared.anchorDate + 'T00:00:00');
+      rsManualCalMonth[target] = { y: base.getFullYear(), m: base.getMonth() };
+    }
+    rsRenderManualCalendar();
+    el.style.display = 'block';
+
+    const row = document.getElementById('rsManualRow' + target);
+    if (row) {
+      const rect = row.getBoundingClientRect();
+      const calWidth = 220;
+      let left = rect.left;
+      if (left + calWidth > window.innerWidth - 8) left = window.innerWidth - calWidth - 8;
+      el.style.left = Math.max(8, left) + 'px';
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 260 && rect.top > spaceBelow) {
+        el.style.top = Math.max(8, rect.top - 260) + 'px';
+      } else {
+        el.style.top = (rect.bottom + 4) + 'px';
+      }
+    }
+  }
+
+  function rsShiftManualCalendar(delta) {
+    const target = rsManualCalTarget;
+    const cur = rsManualCalMonth[target];
+    if (!cur) return;
+    let m = cur.m + delta, y = cur.y;
+    if (m < 0) { m = 11; y--; } else if (m > 11) { m = 0; y++; }
+    rsManualCalMonth[target] = { y, m };
+    rsRenderManualCalendar();
+  }
+
+  function rsRenderManualCalendar() {
+    const target = rsManualCalTarget;
+    const el = document.getElementById('rsManualCalPopup');
+    const cur = rsManualCalMonth[target];
+    if (!el || !cur) return;
+    const { y, m } = cur;
+    const ctx = rsResolveDateTarget(target);
+    const selIso = (ctx && ctx.store[ctx.dateKey]) ? rsToISODate(ctx.store[ctx.dateKey]) : '';
+    const todayIso = rsToISODate(new Date());
+    const firstDow = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    // 대체보강은 원래 수업의 요일에 열리는 시간표 칸으로 옮기는 것이라, 그 요일이 아닌 날짜는 고를 수 없게 막습니다.
+    const allowedJsDow = ctx ? RS_DAY_IDX[ctx.person.day] + 1 : null;
+
+    let cells = '';
+    for (let i = 0; i < firstDow; i++) cells += '<div></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const jsDow = new Date(y, m, d).getDay();
+      const isAllowedDow = allowedJsDow === null || jsDow === allowedJsDow;
+      const cls = ['rs-manual-cal-day'];
+      if (iso === selIso) cls.push('active');
+      if (iso === todayIso) cls.push('today');
+      if (!isAllowedDow) cls.push('disabled');
+      const clickAttr = isAllowedDow ? `onclick="event.stopPropagation(); rsPickManualDate('${target}', '${iso}')"` : '';
+      cells += `<div class="${cls.join(' ')}" ${clickAttr}>${d}</div>`;
+    }
+
+    el.innerHTML = `
+      <div class="rs-manual-cal-head">
+        <span onclick="event.stopPropagation(); rsShiftManualCalendar(-1)">‹</span>
+        <b>${y}. ${m + 1}</b>
+        <span onclick="event.stopPropagation(); rsShiftManualCalendar(1)">›</span>
+      </div>
+      <div class="rs-manual-cal-grid">
+        ${['일', '월', '화', '수', '목', '금', '토'].map(d => `<div class="rs-manual-cal-dow">${d}</div>`).join('')}
+        ${cells}
+      </div>`;
   }
 
   function rsPickWeekDate(target, off) {
@@ -1233,6 +1330,7 @@ function rsPickManualDate(target, val) {
     rsUpdateDateLabel(target);
     const dd = document.getElementById('rsDateDropdown' + target);
     if (dd) dd.style.display = 'none';
+    rsHideManualCalendar();
     if (rsIsAbsenceDayBlocked(d, ctx.person.period)) {
       showAlert('결보강 계획서 작성 날짜(결강일)와 같습니다. 확인 후 진행하세요.');
     }
