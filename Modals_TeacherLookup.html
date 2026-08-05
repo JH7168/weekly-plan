@@ -271,22 +271,23 @@
   }
 
   function tlRenderTeacherResult(name, sched) {
+    // 같은 교시/요일에 두 반에 겹쳐 잡힌 경우(시간표 오류) 하나로 덮어쓰지 않고 배열로 쌓아서 전부 보여줍니다.
     let grid = {};
     sched.forEach(s => {
       if (!grid[s.period]) grid[s.period] = {};
-      if (s.grade) {
-        const cls = `${s.grade.replace('학년', '')}-${s.className.replace('반', '')}`;
-        grid[s.period][s.day] = `<b>${cls}</b><br><span style="font-size:11.5px; color:#475569;">${s.subject}</span>`;
-      } else {
-        grid[s.period][s.day] = `<b>${s.subject}</b>`;
-      }
+      if (!grid[s.period][s.day]) grid[s.period][s.day] = [];
+      const entryHtml = s.grade
+        ? `<b>${s.grade.replace('학년', '')}-${s.className.replace('반', '')}</b><br><span style="font-size:11.5px; color:#475569;">${s.subject}</span>`
+        : `<b>${s.subject}</b>`;
+      grid[s.period][s.day].push(entryHtml);
     });
 
     const table = tlBuildScheduleTable((p, d) => {
-      const content = (grid[p] && grid[p][d]) || '';
-      const bg = content ? '#eff6ff' : '#fff';
-      return `<td style="background:${bg}; padding:8px; font-size:13px; text-align:center;">${content}</td>`;
-    }, (p, d) => !!(grid[p] && grid[p][d]));
+      const entries = (grid[p] && grid[p][d]) || [];
+      const bg = entries.length ? '#eff6ff' : '#fff';
+      const conflictMark = entries.length > 1 ? '<div style="color:#e11d48; font-size:11px; font-weight:bold;">⚠ 중복</div>' : '';
+      return `<td style="background:${bg}; padding:8px; font-size:13px; text-align:center;">${conflictMark}${entries.join('<hr style="margin:4px 0; border-color:#cbd5e1;">')}</td>`;
+    }, (p, d) => !!(grid[p] && grid[p][d] && grid[p][d].length));
 
     document.getElementById('tlSearchResult').innerHTML =
       `<div style="font-weight:bold; color:#334155; margin-bottom:8px; text-align:center;">${name} 선생님 주간 시간표</div>${table}`;

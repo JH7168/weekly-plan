@@ -128,15 +128,27 @@
   const RS_DAY_BY_JS = { 1: '월', 2: '화', 3: '수', 4: '목', 5: '금' };
 
   // ===== 결보강 모달 드래그 이동 (헤더를 잡고 옆으로 치워서 뒤 시간표를 볼 수 있게) =====
+  // transform으로 옮기면 그 안의 position:fixed 요소(날짜 선택 팝업 등)가 화면이 아니라
+  // 이 모달 기준으로 위치가 어긋나고 화질도 흐려지는 부작용이 있어, left/top으로 옮깁니다.
+  // setPointerCapture도 놓치면 이후 클릭이 전부 헤더로만 전달되는 문제가 있어 쓰지 않습니다.
   (function () {
     const modalEl = document.getElementById('resubMod');
     const header = modalEl.querySelector('.rs-header-bar');
     const content = modalEl.querySelector('.modal-content');
-    let dragging = false, startX = 0, startY = 0, startTx = 0, startTy = 0;
+    content.style.position = 'relative';
+    let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
-    function getTranslate() {
-      const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(content.style.transform);
-      return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : { x: 0, y: 0 };
+    function onMove(e) {
+      if (!dragging) return;
+      content.style.left = (startLeft + (e.clientX - startX)) + 'px';
+      content.style.top = (startTop + (e.clientY - startY)) + 'px';
+    }
+
+    function onUp() {
+      dragging = false;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
     }
 
     header.addEventListener('pointerdown', e => {
@@ -144,18 +156,12 @@
       dragging = true;
       startX = e.clientX;
       startY = e.clientY;
-      const t = getTranslate();
-      startTx = t.x;
-      startTy = t.y;
-      header.setPointerCapture(e.pointerId);
+      startLeft = parseFloat(content.style.left) || 0;
+      startTop = parseFloat(content.style.top) || 0;
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
     });
-
-    header.addEventListener('pointermove', e => {
-      if (!dragging) return;
-      content.style.transform = `translate(${startTx + (e.clientX - startX)}px, ${startTy + (e.clientY - startY)}px)`;
-    });
-
-    ['pointerup', 'pointercancel'].forEach(evt => header.addEventListener(evt, () => { dragging = false; }));
   })();
 
   document.addEventListener('click', function (e) {
@@ -248,6 +254,9 @@
       if (n === 1) { box.style.maxWidth = '95vw'; box.style.width = '95vw'; }
       else if (n === 6) { box.style.maxWidth = '950px'; box.style.width = '95vw'; }
       else { box.style.maxWidth = '480px'; box.style.width = '100%'; }
+      // 단계가 바뀌면 화면 중앙으로 다시 맞추고, 이동은 그 단계에서 다시 드래그했을 때만 적용합니다.
+      box.style.left = '';
+      box.style.top = '';
     }
     if (n === 1) rsRenderStep2Picker();
     if (n === 2) rsRenderStep2TypeChoice();
@@ -1162,9 +1171,10 @@
     for (let off = -3; off <= 3; off++) {
       const d = rsAddDays(rsAddDays(monday0, off * 7), RS_DAY_IDX[person.day]);
       if (!rsIsDateInValidRange(d)) continue; // 시간표 유효기간(학기 시작~방학식 등) 밖의 날짜는 추천하지 않습니다.
-      if (rsIsAbsenceDayBlocked(d, person.period)) continue; // 신청 교사가 자리를 비우는 결강일 자체는 후보에서 제외합니다.
+      // 결강일 자체도 아주 낮은 확률로 수업이 있을 수 있으므로 목록에서 완전히 빼지는 않고, 고를 때 확인 문구만 띄웁니다.
       const active = (mode === 'week' && off === curOffset) ? 'active' : '';
-      html += `<div class="rs-date-option ${active}" onclick="rsPickWeekDate('${target}', ${off})">${rsFormatDate(d)} (${person.day})</div>`;
+      const warnMark = rsIsAbsenceDayBlocked(d, person.period) ? ' ⚠' : '';
+      html += `<div class="rs-date-option ${active}" onclick="rsPickWeekDate('${target}', ${off})">${rsFormatDate(d)} (${person.day})${warnMark}</div>`;
     }
     const manualActive = (mode === 'manual');
     const manualDateObj = ctx.store[ctx.dateKey];
@@ -1173,7 +1183,7 @@
       : '직접입력';
     html += `<div class="rs-date-option rs-date-manual-row ${manualActive ? 'active' : ''}" onclick="rsOpenManualDatePicker('${target}')">
       <span class="rs-manual-label"><i class="fas fa-calendar-alt" style="margin-right:6px; color:#64748b;"></i>${manualLabelText}</span>
-      <input type="date" id="rsManualInput${target}" class="rs-manual-input-hidden" value="${manualDateObj ? rsToISODate(manualDateObj) : ''}" onchange="rsPickManualDate('${target}', this.value)" onclick="event.stopPropagation()">
+      <input type="date" id="rsManualInput${target}" class="rs-manual-input-hidden" value="${manualDateObj ? rsToISODate(manualDateObj) : ''}" onchange="rsPickManualDate('${target}', this.value)" onclick="event.stopPropagation(); rsOpenManualDatePicker('${target}')">
     </div>`;
     dd.innerHTML = html;
   }
@@ -1197,16 +1207,15 @@
       showAlert('중복입니다.');
       return;
     }
-    if (rsIsAbsenceDayBlocked(dateObj, ctx.person.period)) {
-      showAlert('신청 교사가 자리를 비우는 결강일이라 선택할 수 없습니다.');
-      return;
-    }
     ctx.store[ctx.modeKey] = 'week';
     ctx.store[ctx.offsetKey] = off;
     ctx.store[ctx.dateKey] = dateObj;
     rsUpdateDateLabel(target);
     const dd = document.getElementById('rsDateDropdown' + target);
     if (dd) dd.style.display = 'none';
+    if (rsIsAbsenceDayBlocked(dateObj, ctx.person.period)) {
+      showAlert('결보강 계획서 작성 날짜(결강일)와 같습니다. 확인 후 진행하세요.');
+    }
   }
 
 function rsPickManualDate(target, val) {
@@ -1218,12 +1227,15 @@ function rsPickManualDate(target, val) {
       showAlert('중복입니다.');
       return;
     }
-    // 직접입력은 막지 않되, 결강일 그 자체를 고른 경우 rsUpdateDateLabel에서 경고 문구를 보여줍니다.
+    // 직접입력은 막지 않되, 결강일 그 자체를 고른 경우 팝업과 경고 문구로 확인을 유도합니다.
     ctx.store[ctx.modeKey] = 'manual';
     ctx.store[ctx.dateKey] = d;
     rsUpdateDateLabel(target);
     const dd = document.getElementById('rsDateDropdown' + target);
     if (dd) dd.style.display = 'none';
+    if (rsIsAbsenceDayBlocked(d, ctx.person.period)) {
+      showAlert('결보강 계획서 작성 날짜(결강일)와 같습니다. 확인 후 진행하세요.');
+    }
   }
 
   function rsUpdateDateLabel(target) {
