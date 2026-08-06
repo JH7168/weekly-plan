@@ -4,9 +4,7 @@
   let isEdited = false;
   let currentDelType = 'data';
   let currentEditType = 'data';
-  let currentWorkList = []; // 전체 업무 데이터를 임시 보관
-  let currentViewMode = 'date'; 
-  
+
   let wzCalDate = new Date();
   let wzStartD = '', wzEndD = '', wzClickCount = 0;
   let currentWzTimeType = 'period';
@@ -366,6 +364,16 @@
   }
 
   function openTimetableModal() {
+    // 이미 불러온 시간표가 있으면 다시 서버에 요청하지 않고 그대로 재사용합니다.
+    if (fullTimetableData && fullTimetableData.length > 0) {
+      ttSelectedGrade = null;
+      ttActiveDays = ['월', '화', '수', '목', '금'];
+      renderTtGradeBar();
+      renderFullTimetable();
+      openMod('timetableMod');
+      return;
+    }
+
     toggleLoading(true, "전체 시간표 및 배경색 로딩 중...");
     g.withSuccessHandler(res => {
       toggleLoading(false);
@@ -488,7 +496,15 @@
 
         let displayCell = String((fullTimetableData[r] || [])[cIdx] || '');
         if (cIdx >= 2 && displayCell.trim()) {
-          displayCell = displayCell.trim().replace(/\s+/g, '<br>');
+          // 공백마다 다 줄바꿈하면 "생Ⅱ E 신윤지"처럼 블럭 문자가 붙은 과목은 3줄이 되어
+          // 다른 행보다 부쩍 높아지므로, 마지막 단어(교사명)만 따로 떼어 2줄로 통일합니다.
+          const tokens = displayCell.trim().split(/\s+/);
+          if (tokens.length > 1) {
+            const teacher = tokens.pop();
+            displayCell = tokens.join(' ') + '<br>' + teacher;
+          } else {
+            displayCell = tokens[0];
+          }
         }
 
         const style = (cIdx === 1) ? labelColStyle : dataColStyle;

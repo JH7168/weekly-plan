@@ -123,7 +123,8 @@
   let rsSelectedIndices = new Set(); // 1단계에서 다중 선택된 슬롯 인덱스
   let rsPendingA = [];    // 다중 선택 후 아직 처리하지 않은 결강수업 대기열
   let rsSubjectRoster = null; // '교과' 시트 원본
-  let rsHomeroom = null;      // '담임교사' 시트 원본
+  let rsHomeroom = null;      // '담임교사' 시트 원본 (시트가 없으면 계속 null일 수 있어 아래 플래그로 로딩 여부를 따로 추적)
+  let rsSupportDataLoaded = false;
   const RS_DAY_IDX = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4 };
   const RS_DAY_BY_JS = { 1: '월', 2: '화', 3: '수', 4: '목', 5: '금' };
   let rsManualCalMonth = {}; // "직접입력" 자체 달력이 target별로 지금 보여주는 연/월 { y, m }
@@ -223,16 +224,29 @@
     rsCurrent = { type: '', A: null, B: null, aMode: 'week', aWeekOffset: 0, bMode: 'week', bWeekOffset: 0, aDateObj: null, bDateObj: null, candidates: [] };
     rsPendingA = [];
 
-    document.querySelector('#resubMod .modal-content').style.transform = '';
+    document.querySelector('#resubMod .modal-content').style.left = '';
+    document.querySelector('#resubMod .modal-content').style.top = '';
     document.getElementById('rsTeacherInput').value = '';
     document.querySelectorAll('#resubMod .reason-chip').forEach(b => b.classList.remove('active'));
     document.getElementById('rsReasonText').value = '';
+
+    // 교과/담임교사 자료가 이미 불러와져 있으면 다시 서버에 요청하지 않고 그대로 재사용합니다.
+    if (rsSupportDataLoaded) {
+      ensureScheduleValidRange(() => {
+        rsLastValidDate = rsClampToValidWeekday(rsToISODate(rsNearestWeekday(new Date())));
+        document.getElementById('rsDateInput').value = rsLastValidDate;
+        openMod('resubMod');
+        rsGoStep(0);
+      });
+      return;
+    }
 
     toggleLoading(true, '자료 불러오는 중...');
     g.withSuccessHandler(res => {
       toggleLoading(false);
       rsSubjectRoster = (res && res.subjectRoster) || null;
       rsHomeroom = (res && res.homeroom) || null;
+      rsSupportDataLoaded = true;
       ensureScheduleValidRange(() => {
         // 기본 날짜는 오늘이지만, 시간표 유효기간(방학식 등)을 벗어나면 그 안의 날짜로 보정합니다.
         rsLastValidDate = rsClampToValidWeekday(rsToISODate(rsNearestWeekday(new Date())));
@@ -1065,6 +1079,7 @@
       if (excludeKey !== 'B' && rsCurrent.type === '수업교체' && rsCurrent.B && rsCurrent.bDateObj) targets.push({ date: rsCurrent.bDateObj, period: rsCurrent.B.period });
     }
     rsEntries.forEach((e, i) => {
+      if (e.disabled) return; // 삭제(비활성화)된 항목은 중복 검사 대상에서 제외합니다.
       if (excludeKey !== ('e' + i + 'A') && e.aDateObj) targets.push({ date: e.aDateObj, period: e.A.period });
       if (excludeKey !== ('e' + i + 'B') && e.type === '수업교체' && e.bDateObj) targets.push({ date: e.bDateObj, period: e.B.period });
     });

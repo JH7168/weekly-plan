@@ -369,6 +369,9 @@
     g.withSuccessHandler(() => {
       toggleLoading(false); closeMod('workMod'); loadAll();
       showAlert(isRepeat ? `${weeks}주간 반복 등록이 완료되었습니다.` : "등록이 완료되었습니다.");
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      showAlert('저장 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
     }).saveRangeToSheet(wzStartD, wzEndD || wzStartD, dept, finalContent, '', weeks, grades);
   }
 
@@ -393,6 +396,9 @@
     g.withSuccessHandler(() => {
       toggleLoading(false); closeMod('notMod'); loadAll();
       showAlert(isRepeat ? `${weeks}주간 반복 등록되었습니다.` : "저장됨");
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      showAlert('저장 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
     }).saveNoticeToSheet(sDVal, isRange ? eDVal : sDVal, text, '', weeks, grades);
   }
 

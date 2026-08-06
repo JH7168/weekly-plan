@@ -80,12 +80,19 @@
 
   function tlCheckPassword() {
     const val = document.getElementById('tlPassInput').value;
-    if (val === 'PY4312') {
-      closeMod('tlPassMod');
-      tlOpenLookup();
-    } else {
-      showAlert('비밀번호가 올바르지 않습니다.');
-    }
+    toggleLoading(true, '확인 중...');
+    g.withSuccessHandler(ok => {
+      toggleLoading(false);
+      if (ok) {
+        closeMod('tlPassMod');
+        tlOpenLookup();
+      } else {
+        showAlert('비밀번호가 올바르지 않습니다.');
+      }
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      showAlert('확인 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
+    }).verifyLookupPassword(val);
   }
 
   function tlOpenLookup() {
@@ -101,11 +108,12 @@
     tlApplyZoom();
     openMod('teacherLookupMod');
 
-    // 자율/창체 소유자 판별에 필요한 '담임교사' 시트를 아직 안 불러왔다면 여기서도 불러옵니다.
-    if (!rsHomeroom) {
+    // 자율/창체 소유자 판별에 필요한 '교과'/'담임교사' 시트를 아직 안 불러왔다면 여기서도 불러옵니다.
+    if (!rsSupportDataLoaded) {
       g.withSuccessHandler(res => {
         rsSubjectRoster = (res && res.subjectRoster) || rsSubjectRoster;
         rsHomeroom = (res && res.homeroom) || rsHomeroom;
+        rsSupportDataLoaded = true;
       }).getResubSupportData();
     }
 

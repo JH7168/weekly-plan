@@ -3,6 +3,11 @@
   <head>
     <base target="_top">
 
+    <!-- Font Awesome을 CDN에서 가져오는데, 미리 연결(preconnect)해두면 실제 <link>가 실행되기 전에
+         DNS 조회/TLS 핸드셰이크를 먼저 끝내둘 수 있어 첫 화면 표시가 그만큼 빨라집니다. -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+
     <!-- 홈 화면에 추가했을 때 표시될 이름/아이콘 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
