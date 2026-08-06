@@ -418,7 +418,9 @@
     }
 
     const labelColStyle = 'width:30px; padding:4px; font-size:13px; line-height:1.2; white-space:normal;';
-    const dataColStyle = 'min-width:50px; padding:6px; font-size:14px; line-height:1.4; white-space:normal;';
+    // width(고정 기준값)로 지정해야 auto 테이블 레이아웃이 모든 열에 이 너비를 기본값으로 맞추고,
+    // 내용이 이 너비 안에 줄바꿈으로 다 안 들어갈 때만 그 열만 더 넓어집니다. (min-width는 표에서 무시되는 경우가 있음)
+    const dataColStyle = 'width:52px; padding:6px; font-size:14px; line-height:1.4; white-space:normal;';
 
     // 헤더 1행: 요일 / 교시 (아래 반 번호 행까지 세로 병합)
     let headHtml = '<tr>';
@@ -463,9 +465,11 @@
       }
     }
 
+    // 너비와 같은 원리로, 행도 height(고정 기준값)를 줘서 기본 높이를 통일하고
+    // 줄바꿈된 내용이 그 안에 다 안 들어가는 행만 자동으로 더 높아지게 합니다.
     let bodyHtml = '';
     rowsToRender.forEach(({ r, day }) => {
-      bodyHtml += '<tr>';
+      bodyHtml += '<tr style="height:52px;">';
       cols.forEach(cIdx => {
         const originalBg = (fullTimetableBgs[r] || [])[cIdx];
 
