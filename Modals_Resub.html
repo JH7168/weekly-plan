@@ -989,7 +989,7 @@
   }
 
   function rsFormatDateShort(d) {
-    return `${d.getMonth() + 1}/${d.getDate()}`;
+    return `${d.getMonth() + 1}/${d.getDate()}(${rsDayLetterFromDate(d)})`;
   }
 
   function rsDayLetterFromDate(d) {
