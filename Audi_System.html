@@ -67,24 +67,22 @@
     updateAudiWeeksAndLoad();
   }
 
+  // 주차 목록 계산은 JS_Main.html의 getWeekMondaysForMonth()(월~금 중 수요일이 속한 달 기준)를 그대로 재사용합니다.
   function updateAudiWeeksAndLoad() {
     const y = parseInt(document.getElementById('audiYearSel').value);
     const m = parseInt(document.getElementById('audiMonthSel').value);
     const d = new Date();
-    const l = new Date(y, m, 0).getDate();
-    
-    let wCount = 0;
+    const mondays = getWeekMondaysForMonth(y, m);
+
     let currentWeekNum = 1;
-    let weeksMap = [];
-    
-    for (let i = 1; i <= l; i++) {
-      const cur = new Date(y, m - 1, i);
-      if (i === 1 || cur.getDay() === 1) { wCount++; weeksMap.push(wCount); }
-      if (y === d.getFullYear() && m === (d.getMonth() + 1) && i === d.getDate()) currentWeekNum = wCount;
-    }
-    
+    mondays.forEach((mon, idx) => {
+      const fri = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 4, 23, 59, 59, 999);
+      if (d >= mon && d <= fri) currentWeekNum = idx + 1;
+    });
+
     let wH = '';
-    weeksMap.forEach(w => {
+    mondays.forEach((mon, idx) => {
+      const w = idx + 1;
       wH += `<option value="${w}" ${w === currentWeekNum ? 'selected' : ''}>${w}주차</option>`;
     });
     document.getElementById('audiWeekSel').innerHTML = wH;
@@ -95,20 +93,16 @@
     const y = parseInt(document.getElementById('audiYearSel').value);
     const m = parseInt(document.getElementById('audiMonthSel').value);
     const targetW = parseInt(document.getElementById('audiWeekSel').value);
-    const l = new Date(y, m, 0).getDate();
-    
-    let wCount = 0;
-    let dates = [];
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    const mondays = getWeekMondaysForMonth(y, m);
+    const mon = mondays[targetW - 1];
+    if (!mon) return [];
 
-    for (let i = 1; i <= l; i++) {
-      const cur = new Date(y, m - 1, i);
-      if (i === 1 || cur.getDay() === 1) wCount++;
-      
-      if (wCount === targetW && cur.getDay() >= 1 && cur.getDay() <= 5) {
-        let dStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
-        dates.push({ full: dStr, short: `${cur.getMonth() + 1}/${cur.getDate()}`, day: days[cur.getDay()] });
-      }
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    let dates = [];
+    for (let i = 0; i < 5; i++) {
+      const cur = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
+      const dStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+      dates.push({ full: dStr, short: `${cur.getMonth() + 1}/${cur.getDate()}`, day: days[cur.getDay()] });
     }
     return dates;
   }

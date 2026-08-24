@@ -30,29 +30,41 @@
     upWeeks();
   }
 
+  // 한 주(월~금 5일) 중 수요일이 속한 달을 그 주의 '소속 달'로 봅니다.
+  // (평일 5일 중 최소 3일이 그 달에 속하는 것과 항상 같은 결과이며, 5일이 홀수라 동률 없이 한쪽으로 정해집니다.)
+  // 예: 6/29(월)~7/3(금) 주는 수요일이 7/1이라 "7월 1주차"가 되고, 6월 쪽 주차 목록에는 포함되지 않습니다.
+  // 이 기준으로 해당 (year, month)에 속하는 주차들의 월요일 날짜를 순서대로 반환합니다.
+  function getWeekMondaysForMonth(year, month) {
+    const mondays = [];
+    let probe = new Date(year, month - 1, 1);
+    probe.setDate(probe.getDate() - 10); // 전달 마지막 주까지 여유 있게 앞에서부터 탐색
+    for (let i = 0; i < 60; i++) {
+      if (probe.getDay() === 1) {
+        const wed = new Date(probe.getFullYear(), probe.getMonth(), probe.getDate() + 2);
+        if (wed.getFullYear() === year && wed.getMonth() === month - 1) {
+          mondays.push(new Date(probe.getFullYear(), probe.getMonth(), probe.getDate()));
+        }
+      }
+      probe.setDate(probe.getDate() + 1);
+    }
+    return mondays;
+  }
+
   function upWeeks() {
     const d = new Date();
     const y = parseInt(el.y().value), m = parseInt(el.m().value);
-    const l = new Date(y, m, 0);
-    
-    let wCount = 0;
-    let currentWeekNum = 1; // 기본값 1주차
-    let weeksMap = [];
-    
-    // 오늘 날짜가 몇 주차에 속하는지 동적으로 계산합니다.
-    for (let i = 1; i <= l.getDate(); i++) {
-      const cur = new Date(y, m-1, i);
-      if (i === 1 || cur.getDay() === 1) {
-        wCount++;
-        weeksMap.push(wCount);
-      }
-      if (y === d.getFullYear() && m === (d.getMonth() + 1) && i === d.getDate()) {
-        currentWeekNum = wCount;
-      }
-    }
-    
+    const mondays = getWeekMondaysForMonth(y, m);
+
+    // 오늘 날짜가 몇 주차(월~금)에 속하는지 계산합니다.
+    let currentWeekNum = 1;
+    mondays.forEach((mon, idx) => {
+      const fri = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 4, 23, 59, 59, 999);
+      if (d >= mon && d <= fri) currentWeekNum = idx + 1;
+    });
+
     let html = '';
-    weeksMap.forEach(w => {
+    mondays.forEach((mon, idx) => {
+      const w = idx + 1;
       html += `<option value="${w}" ${w === currentWeekNum ? 'selected' : ''}>${w}주차</option>`;
     });
     el.w().innerHTML = html;

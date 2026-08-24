@@ -158,15 +158,40 @@ function doGet() {
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+// 한 주(월~금 5일) 중 수요일이 속한 달을 그 주의 '소속 달'로 봅니다. (클라이언트 upWeeks()와 동일한 규칙)
+// 예: 6/29(월)~7/3(금) 주는 수요일이 7/1이라 "7월 1주차"가 됩니다.
+function getWeekMondaysForMonth_(year, month) {
+  // 클라이언트에서 문자열로 넘어올 수 있어(예: "2026"), 아래 getFullYear()와의 엄격 비교(===)가
+  // 항상 실패하지 않도록 숫자로 명시 변환합니다.
+  year = Number(year);
+  month = Number(month);
+  const mondays = [];
+  let probe = new Date(year, month - 1, 1);
+  probe.setDate(probe.getDate() - 10);
+  for (let i = 0; i < 60; i++) {
+    if (probe.getDay() === 1) {
+      const wed = new Date(probe.getFullYear(), probe.getMonth(), probe.getDate() + 2);
+      if (wed.getFullYear() === year && wed.getMonth() === month - 1) {
+        mondays.push(new Date(probe.getFullYear(), probe.getMonth(), probe.getDate()));
+      }
+    }
+    probe.setDate(probe.getDate() + 1);
+  }
+  return mondays;
+}
+
 /**
  * 데이터 통합 조회 (가장 안정적이고 빠른 버전)
  */
 function getCombinedData(year, month, week) {
+  // 클라이언트 <select>의 value는 문자열로 넘어오므로(예: "2026"), 이후 계산이 꼬이지 않도록 숫자로 변환합니다.
+  year = Number(year);
+  month = Number(month);
+  week = Number(week);
   const res = { schedule: [], noticeItems: [], list: [], rangeText: "" };
-  
-  const firstDay = new Date(year, month - 1, 1);
-  const diffToMonday = (firstDay.getDay() === 0) ? 1 : (1 - firstDay.getDay());
-  const weekStart = new Date(year, month - 1, 1 + diffToMonday + (week - 1) * 7);
+
+  const mondays = getWeekMondaysForMonth_(year, month);
+  const weekStart = mondays[week - 1] || mondays[0] || new Date(year, month - 1, 1);
   weekStart.setHours(0,0,0,0);
   
   const weekEnd = new Date(weekStart);
