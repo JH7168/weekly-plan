@@ -2,6 +2,9 @@
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 const TZ = "GMT+9";
 
+// 한영고 로고 파비콘 주소: GitHub 저장소(logo.png)를 jsDelivr CDN으로 서빙 (.png 확장자·정확한 content-type).
+const FAVICON_URL = 'https://cdn.jsdelivr.net/gh/JH7168/weekly-plan@main/logo.png';
+
 // --- 시트 조회 캐싱 (여러 교사가 동시에 같은 시트를 반복 조회할 때 매번 전체를 다시 읽지 않도록) ---
 // CacheService는 스크립트 단위로 공유되어(모든 사용자 공통) 여기서 캐싱하면 실제 체감 효과가 큽니다.
 // Date 셀은 JSON으로 오가면서 문자열로 바뀌어버리므로, replacer/reviver로 감싸서 Date를 그대로 복원합니다.
@@ -311,6 +314,11 @@ function doGet() {
   const template = HtmlService.createTemplateFromFile('Index');
   const now = new Date();
 
+  // 한영고 로고 아이콘(파비콘) 주소. setFaviconUrl은 .png 등 실제 이미지 확장자 주소만 받으므로
+  // GitHub 저장소의 로고를 CDN(jsDelivr)으로 서빙합니다. (모든 사용자 공통)
+  const faviconUrl = FAVICON_URL;
+  template.faviconUrl = faviconUrl; // Index.html 홈화면/아이콘 링크에 사용
+
   // 초기 UI 구성에 필요한 최소 데이터만 전달 (속도 향상의 핵심)
   template.initialData = {
     deptList: getDeptList(),
@@ -318,10 +326,20 @@ function doGet() {
     currentMonth: now.getMonth() + 1
   };
 
-  return template.evaluate()
+  const output = template.evaluate()
       .setTitle('주간 계획서')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+
+  // 브라우저 탭/북마크/바탕화면 바로가기 아이콘을 한영고 로고로 (모든 사용자 공통).
+  // 파비콘 주소가 잘못되어도 앱 자체는 반드시 정상 로드되도록 예외를 삼킵니다.
+  try {
+    if (faviconUrl) output.setFaviconUrl(faviconUrl);
+  } catch (e) {
+    console.error('파비콘 설정 실패(앱 로드에는 영향 없음): ' + e);
+  }
+
+  return output;
 }
 
 // 한 주(월~금 5일) 중 수요일이 속한 달을 그 주의 '소속 달'로 봅니다. (클라이언트 upWeeks()와 동일한 규칙)

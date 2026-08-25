@@ -15,9 +15,14 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="주간계획서">
     <meta name="theme-color" content="#3b82f6">
+    <!-- 홈 화면/북마크/탭 아이콘: 한영고 로고 (publishLogoFavicon() 실행 후 faviconUrl이 채워집니다).
+         아직 로고 주소가 없으면 기존처럼 캘린더 이모지 아이콘을 즉석에서 그립니다. -->
+    <? if (faviconUrl) { ?>
+      <link rel="apple-touch-icon" href="<?= faviconUrl ?>">
+      <link rel="icon" type="image/png" href="<?= faviconUrl ?>">
+      <link rel="shortcut icon" type="image/png" href="<?= faviconUrl ?>">
+    <? } else { ?>
     <script>
-      // 별도 이미지 파일 없이, 앱 브랜드 컬러(파란색)를 배경으로 한 캘린더 아이콘을
-      // 캔버스로 즉석에서 그려 홈 화면 추가 아이콘(apple-touch-icon 등)으로 등록합니다.
       (function setupHomeScreenIcon() {
         try {
           const size = 180;
@@ -55,6 +60,7 @@
         }
       })();
     </script>
+    <? } ?>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
