@@ -3,7 +3,7 @@ const SS = SpreadsheetApp.getActiveSpreadsheet();
 const TZ = "GMT+9";
 
 // 한영고 로고 파비콘 주소: GitHub 저장소(logo.png)를 jsDelivr CDN으로 서빙 (.png 확장자·정확한 content-type).
-const FAVICON_URL = 'https://cdn.jsdelivr.net/gh/JH7168/weekly-plan@main/logo.png';
+const FAVICON_URL = 'https://cdn.jsdelivr.net/gh/JH7168/weekly-plan@main/logo.png?v=2';
 
 // --- 시트 조회 캐싱 (여러 교사가 동시에 같은 시트를 반복 조회할 때 매번 전체를 다시 읽지 않도록) ---
 // CacheService는 스크립트 단위로 공유되어(모든 사용자 공통) 여기서 캐싱하면 실제 체감 효과가 큽니다.
