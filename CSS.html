@@ -63,18 +63,59 @@
   .shortcut-link:hover { background: var(--accent); color: #ffffff; }
 
   /* 3. 조회 필터 박스 (무조건 한 줄 유지) */
-  .search-box { 
-    display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 10px; 
-    background: #ffffff; padding: 15px 20px; border-radius: 12px; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 25px; border: 1px solid #f1f5f9;
+  /* 상단 패널: (윗줄) 학년+조회 컨트롤 한 줄, (아랫줄) 오늘 급식 오른쪽 정렬 */
+  .top-panel { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
+
+  .search-box {
+    display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 10px;
+    background: #ffffff; padding: 15px 20px; border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 0; border: 1px solid #f1f5f9;
   }
+  /* 학년(왼쪽) · 컨트롤(가운데) · 여백(오른쪽)을 좌우 대칭으로 두어 가운데 그룹이 정확히 중앙에 오게 함 */
+  .search-center { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 10px; flex: 0 0 auto; }
+  .search-spacer { flex: 1 1 0; min-width: 0; }
+  .search-box .grade-filter { flex: 1 1 0; min-width: 0; }
+
+  /* 등록/수정/삭제/인쇄 버튼 묶음: 항상 정중앙 */
+  .btn-cluster { display: flex; flex: 0 0 auto; justify-content: center; gap: 15px; }
+
+  /* 등록 버튼 줄 왼쪽의 오늘 한 끼 급식 */
+  .meal-inline {
+    flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center;
+    padding: 0 6px;
+  }
+  .meal-inline-left { align-items: flex-start; text-align: left; }
+  .meal-inline-right { align-items: flex-end; }
+  /* 날짜 라벨은 흰 칸 밖 위쪽에 표시 */
+  .meal-inline-label { font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 6px; white-space: nowrap; padding-left: 14px; }
+  /* 연한 파스텔 녹색 카드(흰 듯 녹색인 느낌): 높이는 등록 버튼(90px)과 동일, 안에는 메뉴만 */
+  .meal-card-box {
+    background: #f2fbf6; border: 1px solid #d8f0e3; border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02); padding: 8px 14px;
+    height: 90px; display: inline-flex; align-items: center;
+  }
+  /* 2열 그리드: 왼쪽/오른쪽 열이 각각 가지런히 맞아 '보이지 않는 구분선'이 생기고,
+     긴 항목이 있어도 열 정렬이 흐트러지지 않아 가독성이 좋아집니다. */
+  .meal-inline-menu {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: auto auto;
+    gap: 3px 18px; /* 세로 간격 / 가로 간격(가상의 구분선 여백) */
+    justify-content: start;
+  }
+  .meal-inline-menu li { font-size: 12.5px; color: #334155; line-height: 1.5; white-space: nowrap; }
+  .meal-inline-menu li.meal-holiday { color: #dc2626; font-weight: bold; }
+  .meal-inline-menu li.meal-empty { color: #94a3b8; }
   .search-box select {
     padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1;
     font-size: 15px; font-weight: 600; color: #333; outline: none; flex: 1; max-width: 150px;
   }
+  /* 년/월/주차 드롭다운을 조회 버튼 왼쪽에서 각각 다른 폭으로 축소 (기준 150px) */
+  .search-box select#ySel { flex: 0 0 auto; width: 100px; }  /* 년: 2/3 */
+  .search-box select#mSel { flex: 0 0 auto; width: 88px; }   /* 월: 두 자리(11·12월)도 안 짤리게 */
+  .search-box select#wSel { flex: 0 0 auto; width: 90px; }   /* 주차: 3/5 */
 
   /* 학년 필터 칩 */
-  .grade-filter { display: flex; justify-content: center; gap: 8px; margin-bottom: 25px; flex-wrap: wrap; }
+  .grade-filter { display: flex; justify-content: flex-start; gap: 8px; margin-bottom: 0; flex-wrap: wrap; }
   .grade-chip { background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 8px 20px; border-radius: 20px; font-size: 13.5px; font-weight: bold; cursor: pointer; transition: 0.2s; }
   .grade-chip:hover { border-color: var(--primary); color: var(--primary); }
   .grade-chip.active { background: var(--primary); border-color: var(--primary); color: #ffffff; }
@@ -197,7 +238,7 @@
   .print-only-title { display: none; text-align: center; font-size: 26px; font-weight: bold; margin-bottom: 25px; color: black; }
   @media print {
     body { padding: 0; background: white; }
-    .btn-group, .search-box, .modal, .shortcut-banner, .notice-container, .grade-filter { display: none !important; }
+    .btn-group, .search-box, .modal, .shortcut-banner, .notice-container, .grade-filter, .top-panel, .meal-panel { display: none !important; }
     .print-only-title { display: block !important; }
     table, th, td { border: 1px solid black !important; }
     .event-bar { border-left: 4px solid black !important; background: transparent !important; color: black !important; }

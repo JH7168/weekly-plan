@@ -41,6 +41,27 @@ function invalidateSheetCache_(sheetName) {
   CacheService.getScriptCache().remove('sheetvals_' + sheetName);
 }
 
+// 사람이 시트를 직접 수정하면(예: 학사일정표에서 일정 이동) 해당 시트 캐시를 즉시 비워
+// 앱에 바로 반영되도록 합니다. (단순 onEdit 트리거는 수동 편집 시 자동 실행됩니다.)
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    const name = e.range.getSheet().getName();
+    invalidateSheetCache_(name);
+    // 전체시간표는 별도 캐시 키를 쓰므로 함께 비워줍니다.
+    if (name === '전체시간표') CacheService.getScriptCache().remove('timetable_values_bgs');
+  } catch (err) {
+    // 편집 자체를 방해하지 않도록 오류는 조용히 무시합니다.
+  }
+}
+
+// 캐시를 즉시 전부 비웁니다. (편집기에서 수동 실행하면 변경 사항을 곧바로 반영시킬 수 있습니다.)
+function refreshCaches() {
+  ['학사일정표', 'Notice', 'Data', '시청각실예약'].forEach(invalidateSheetCache_);
+  CacheService.getScriptCache().remove('timetable_values_bgs'); // 전체 시간표 캐시도 함께 비웁니다.
+  return '캐시를 모두 비웠습니다.';
+}
+
 // --- 관리자 자료실 (서식/학교생활기록부 자료 업로드·다운로드) ---
 const ADMIN_PASSWORD = 'HY4312';
 const MATERIALS_FOLDER_NAME = '주간계획서_자료실';
@@ -76,6 +97,151 @@ function getMaterialsStatus() {
     }
   });
   return result;
+}
+
+// --- 급식 식단 (NEIS 나이스 급식식단정보 오픈API) ---
+// 한영고등학교(전남 여수) 기준. 인증키 없이는 조회가 막혀 있어 발급받은 키를 사용합니다.
+const NEIS_KEY = '84a9408cb89e4077b87574fd8606dd52';
+const NEIS_ATPT = 'Q10';        // 전남교육청
+const NEIS_SCHUL = '7140217';   // 한영고등학교
+
+// NEIS에서 from~to 기간의 급식을 가져와 { 'yyyyMMdd': { '중식':[...], '석식':[...] } } 형태로 반환합니다.
+// 알레르기 번호(괄호)는 제거하고 메뉴 이름만 남깁니다. 하루치는 자주 안 바뀌므로 캐시로 호출을 줄입니다.
+function fetchMeals_(fromYmd, toYmd) {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'meals_' + fromYmd + '_' + toYmd;
+  const cached = cache.get(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  const url = 'https://open.neis.go.kr/hub/mealServiceDietInfo'
+    + '?KEY=' + NEIS_KEY + '&Type=json'
+    + '&ATPT_OFCDC_SC_CODE=' + NEIS_ATPT
+    + '&SD_SCHUL_CODE=' + NEIS_SCHUL
+    + '&MLSV_FROM_YMD=' + fromYmd + '&MLSV_TO_YMD=' + toYmd
+    + '&pSize=100';
+
+  const out = {};
+  try {
+    const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    const json = JSON.parse(res.getContentText());
+    const rows = json.mealServiceDietInfo[1].row; // 데이터 없으면 여기서 예외 → 빈 객체 반환
+    rows.forEach(r => {
+      const ymd = r.MLSV_YMD;
+      const meal = r.MMEAL_SC_NM; // 조식/중식/석식
+      const items = String(r.DDISH_NM)
+        .split(/<br\s*\/?>/i)
+        .map(s => s.replace(/\([0-9.\s]*\)/g, '').trim()) // 알레르기 번호 제거
+        .filter(s => s.length);
+      if (!out[ymd]) out[ymd] = {};
+      out[ymd][meal] = items;
+    });
+  } catch (e) {
+    // 데이터가 없거나 조회 실패 시 빈 결과로 처리합니다.
+  }
+
+  cache.put(cacheKey, JSON.stringify(out), 6 * 60 * 60); // 6시간 캐시
+  return out;
+}
+
+// '8. 25.(화) 점심' 형식의 라벨을 만듭니다. (년도 제외, 중식=점심 / 석식=저녁)
+function mealLabel_(dateObj, meal) {
+  const m = Number(Utilities.formatDate(dateObj, TZ, 'M'));
+  const day = Number(Utilities.formatDate(dateObj, TZ, 'd'));
+  const wkArr = ['월', '화', '수', '목', '금', '토', '일']; // 'u': 1=월 ~ 7=일
+  const wk = wkArr[Number(Utilities.formatDate(dateObj, TZ, 'u')) - 1];
+  const kind = (meal === '중식') ? '점심' : '저녁';
+  return '<' + m + '. ' + day + '.(' + wk + ') ' + kind + '>';
+}
+
+// NEIS 학사일정에서 from~to 기간의 공휴일을 { 'yyyyMMdd': '공휴일명' } 으로 반환합니다.
+function fetchHolidays_(fromYmd, toYmd) {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'holiday_' + fromYmd + '_' + toYmd;
+  const cached = cache.get(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  const url = 'https://open.neis.go.kr/hub/SchoolSchedule'
+    + '?KEY=' + NEIS_KEY + '&Type=json'
+    + '&ATPT_OFCDC_SC_CODE=' + NEIS_ATPT
+    + '&SD_SCHUL_CODE=' + NEIS_SCHUL
+    + '&AA_FROM_YMD=' + fromYmd + '&AA_TO_YMD=' + toYmd
+    + '&pSize=100';
+
+  const out = {};
+  try {
+    const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    const json = JSON.parse(res.getContentText());
+    const rows = json.SchoolSchedule[1].row;
+    rows.forEach(r => {
+      // SBTR_DD_SC_NM === '공휴일' 인 날만 공휴일로 취급합니다. (방학·재량휴업일 등은 제외)
+      if (r.SBTR_DD_SC_NM === '공휴일') out[r.AA_YMD] = r.EVENT_NM || '공휴일';
+    });
+  } catch (e) {
+    // 데이터 없거나 실패 시 빈 결과.
+  }
+
+  cache.put(cacheKey, JSON.stringify(out), 6 * 60 * 60);
+  return out;
+}
+
+// 토/일 여부 ('u': 6=토, 7=일)
+function isWeekend_(d) {
+  const u = Number(Utilities.formatDate(d, TZ, 'u'));
+  return u === 6 || u === 7;
+}
+// 주어진 날짜가 주말이면 다음 평일(월)로 밀어 반환합니다. (공휴일은 밀지 않음 → '공휴일'로 표시)
+function schoolDayOnOrAfter_(d) {
+  let x = new Date(d.getTime());
+  while (isWeekend_(x)) x = new Date(x.getTime() + 24 * 60 * 60 * 1000);
+  return x;
+}
+// 주어진 날짜 '이후' 첫 평일을 반환합니다. (금요일의 다음 등교일 = 월요일)
+function nextSchoolDay_(d) {
+  let x = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+  while (isWeekend_(x)) x = new Date(x.getTime() + 24 * 60 * 60 * 1000);
+  return x;
+}
+
+// 현재 시각(한국시간) 기준으로 점심/저녁 두 카드를 반환합니다.
+//  - 13:30 이전 : [오늘 점심, 오늘 저녁]
+//  - 13:30~18:15: [오늘 저녁, 다음 등교일 점심]
+//  - 18:15 이후 : [다음 등교일 점심, 다음 등교일 저녁]
+//  주말은 건너뛰어 다음 등교일(예: 금요일 → 월요일)을 사용합니다.
+//  각 카드: { label, items:[...], status:'ok'|'holiday'|'none', holidayName }
+function getMealCards() {
+  const now = new Date();
+  let hm = Number(Utilities.formatDate(now, TZ, 'HHmm')); // 예: 1330
+  if (isWeekend_(now)) hm = 0; // 주말에 열면 다음 등교일의 점심/저녁을 보여줍니다.
+
+  const date0 = schoolDayOnOrAfter_(now); // 오늘(평일) 또는 다음 등교일
+  const date1 = nextSchoolDay_(date0);    // date0 다음 등교일
+
+  let slots;
+  if (hm < 1330) {
+    slots = [{ date: date0, meal: '중식' }, { date: date0, meal: '석식' }];
+  } else if (hm < 1815) {
+    slots = [{ date: date0, meal: '석식' }, { date: date1, meal: '중식' }];
+  } else {
+    slots = [{ date: date1, meal: '중식' }, { date: date1, meal: '석식' }];
+  }
+
+  const ymds = slots.map(s => Utilities.formatDate(s.date, TZ, 'yyyyMMdd'));
+  const sorted = ymds.slice().sort();
+  const from = sorted[0];
+  const to = sorted[sorted.length - 1];
+  const meals = fetchMeals_(from, to);
+  const holidays = fetchHolidays_(from, to);
+
+  return slots.map((s, i) => {
+    const ymd = ymds[i];
+    const items = (meals[ymd] && meals[ymd][s.meal]) ? meals[ymd][s.meal] : [];
+    let status = 'ok', holidayName = '';
+    if (items.length === 0) {
+      if (holidays[ymd]) { status = 'holiday'; holidayName = holidays[ymd]; }
+      else { status = 'none'; }
+    }
+    return { label: mealLabel_(s.date, s.meal), items: items, status: status, holidayName: holidayName };
+  });
 }
 
 // slotKey에 해당하는 파일을 Drive에 저장하고, 기존 파일이 있으면 휴지통으로 보냅니다.

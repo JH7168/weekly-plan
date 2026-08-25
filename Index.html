@@ -81,18 +81,19 @@
       <button class="admin-btn" onclick="openAdminLogin()"><i class="fas fa-lock"></i> 관리자</button>
       <h2>주간 계획서</h2>
 
-      <div class="btn-group" style="display: flex; width: 100%; justify-content: center; gap: 0; flex-wrap: nowrap;">
-        
-        <div style="display: flex; flex: 1; justify-content: flex-end; gap: 15px; padding-right: 7.5px;">
+      <div class="btn-group" style="display: flex; width: 100%; justify-content: center; align-items: flex-end; gap: 0; flex-wrap: nowrap;">
+
+        <!-- 왼쪽: 지금 보여줄 한 끼 (시간에 따라 점심 또는 저녁) -->
+        <div class="meal-inline meal-inline-left" id="mealNow"></div>
+
+        <!-- 가운데: 등록/수정/삭제/인쇄 (항상 정중앙) -->
+        <div class="btn-cluster">
           <div class="card-btn" onclick="openMod('choiceMod')" style="border-color: var(--primary); width: 100px; flex: none;">
             <i class="fas fa-edit" style="color:var(--primary)"></i>등록
           </div>
           <div class="card-btn" onclick="openEditMod()" style="border-color: var(--edit); width: 100px; flex: none;">
             <i class="fas fa-pen" style="color:var(--edit)"></i>수정
           </div>
-        </div>
-
-        <div style="display: flex; flex: 1; justify-content: flex-start; gap: 15px; padding-left: 7.5px;">
           <div class="card-btn" onclick="openDeleteMod()" style="border-color: var(--danger); width: 100px; flex: none;">
             <i class="fas fa-trash-alt" style="color:var(--danger)"></i>삭제
           </div>
@@ -100,6 +101,9 @@
             <i class="fas fa-print" style="color:#666"></i>인쇄
           </div>
         </div>
+
+        <!-- 오른쪽: 버튼을 정중앙에 두기 위한 여백 (급식은 하루 1개만, 왼쪽에만 표시) -->
+        <div class="meal-inline meal-inline-right" aria-hidden="true"></div>
 
       </div>
 
@@ -131,19 +135,26 @@
     <!-- 시청각실 주간 시간표 및 예약 시스템 모듈 연결 -->
     <?!= HtmlService.createHtmlOutputFromFile('Audi_System').getContent(); ?>
 
-    <div class="search-box">
-      <select id="ySel" onchange="upWeeks()"></select>
-      <select id="mSel" onchange="upWeeks()"></select>
-      <select id="wSel"></select>
-      <button class="btn-search" onclick="loadAll()">조회</button>
-    </div>
-
-    <!-- 학년 필터: 등록할 때 지정한 대상 학년에 맞춰 전달사항/부서별 업무를 걸러 봅니다. -->
-    <div class="grade-filter" id="gradeFilter">
-      <button class="grade-chip active" onclick="setGradeFilter('all', this)">전체 학년</button>
-      <button class="grade-chip" onclick="setGradeFilter('1', this)">1학년</button>
-      <button class="grade-chip" onclick="setGradeFilter('2', this)">2학년</button>
-      <button class="grade-chip" onclick="setGradeFilter('3', this)">3학년</button>
+    <!-- 상단: (윗줄) 학년 필터 + 조회 컨트롤 한 줄, (아랫줄 오른쪽) 오늘 급식 카드 2개 -->
+    <div class="top-panel">
+      <div class="search-box">
+        <!-- 왼쪽: 학년 필터 (조회 버튼과 같은 줄, 맨 왼쪽) -->
+        <div class="grade-filter" id="gradeFilter">
+          <button class="grade-chip active" onclick="setGradeFilter('all', this)">전체</button>
+          <button class="grade-chip" onclick="setGradeFilter('1', this)">1학년</button>
+          <button class="grade-chip" onclick="setGradeFilter('2', this)">2학년</button>
+          <button class="grade-chip" onclick="setGradeFilter('3', this)">3학년</button>
+        </div>
+        <!-- 가운데: 년/월/주차/조회 -->
+        <div class="search-center">
+          <select id="ySel" onchange="upWeeks()"></select>
+          <select id="mSel" onchange="upWeeks()"></select>
+          <select id="wSel"></select>
+          <button class="btn-search" onclick="loadAll()">조회</button>
+        </div>
+        <!-- 오른쪽: 가운데 정렬용 여백 -->
+        <div class="search-spacer"></div>
+      </div>
     </div>
 
     <div id="printTitle" class="print-only-title"></div>

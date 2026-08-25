@@ -1,3 +1,18 @@
+<!-- 결보강 계획서 작성 창과 함께 뜨는 안내 팝업: 나이스(NEIS) 미연동 고지 -->
+<div id="resubNeisNoticeMod" class="modal" style="z-index: 10020;">
+  <div class="modal-content" style="text-align:center; max-width:340px; width:100%;">
+    <div style="font-size:34px; line-height:1; margin-bottom:12px;">📢</div>
+    <h3 style="margin-top:0; margin-bottom:12px;">안내</h3>
+    <p style="margin:0 0 8px; font-weight:bold; color:#333;">이 프로그램은 나이스(NEIS)와 연동되어 있지 않습니다.</p>
+    <p style="margin:0 0 20px; font-size:13.5px; color:#64748b; line-height:1.6;">
+      여기서 작성한 결보강 계획서는 나이스에 자동으로 반영되지 않으며,<br>
+      수업 교체·복무 사용 여부도 확인되지 않습니다.<br>
+      결강·보강 및 복무 신청은 반드시 나이스에서 직접 확인·진행해 주세요.
+    </p>
+    <button class="btn-search" style="width:100%;" onclick="closeMod('resubNeisNoticeMod')">확인했습니다</button>
+  </div>
+</div>
+
 <div id="resubMod" class="modal">
   <div class="modal-content" style="max-width: 480px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
 
@@ -236,6 +251,7 @@
         rsLastValidDate = rsClampToValidWeekday(rsToISODate(rsNearestWeekday(new Date())));
         document.getElementById('rsDateInput').value = rsLastValidDate;
         openMod('resubMod');
+        openMod('resubNeisNoticeMod'); // 나이스(NEIS) 미연동 안내 팝업을 함께 띄웁니다.
         rsGoStep(0);
       });
       return;
@@ -252,6 +268,7 @@
         rsLastValidDate = rsClampToValidWeekday(rsToISODate(rsNearestWeekday(new Date())));
         document.getElementById('rsDateInput').value = rsLastValidDate;
         openMod('resubMod');
+        openMod('resubNeisNoticeMod'); // 나이스(NEIS) 미연동 안내 팝업을 함께 띄웁니다.
         rsGoStep(0);
       });
     }).withFailureHandler(err => {
