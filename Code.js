@@ -310,14 +310,22 @@ function getMaterialContent(slotKey) {
   }
 }
 
-function doGet() {
-  const template = HtmlService.createTemplateFromFile('Index');
+function doGet(e) {
+  // 조회 위주 별도 모바일 버전 라우팅.
+  //  - ?view=mobile → 모바일 화면(MobileIndex)
+  //  - ?view=pc     → PC 화면 강제(자동감지 리다이렉트 끔)
+  //  - 파라미터 없음 → PC 화면(Index) + 클라이언트에서 모바일이면 ?view=mobile로 자동 이동
+  const view = (e && e.parameter && e.parameter.view) || '';
+  const isMobileView = (view === 'mobile');
+  const template = HtmlService.createTemplateFromFile(isMobileView ? 'MobileIndex' : 'Index');
   const now = new Date();
 
   // 한영고 로고 아이콘(파비콘) 주소. setFaviconUrl은 .png 등 실제 이미지 확장자 주소만 받으므로
   // GitHub 저장소의 로고를 CDN(jsDelivr)으로 서빙합니다. (모든 사용자 공통)
   const faviconUrl = FAVICON_URL;
-  template.faviconUrl = faviconUrl; // Index.html 홈화면/아이콘 링크에 사용
+  template.faviconUrl = faviconUrl; // 홈화면/아이콘 링크에 사용
+  template.forcePC = (view === 'pc'); // 자동감지 스크립트가 리다이렉트하지 않도록
+  template.appUrl = ScriptApp.getService().getUrl(); // 모바일/PC 전환 링크용 앱 주소
 
   // 초기 UI 구성에 필요한 최소 데이터만 전달 (속도 향상의 핵심)
   template.initialData = {

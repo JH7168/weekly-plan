@@ -3,6 +3,49 @@
   <head>
     <base target="_top">
 
+    <!-- 모바일 자동감지: 좁은 화면(핸드폰)이면 조회 위주 모바일 버전(?view=mobile)으로 자동 이동.
+         ?view=pc 로 들어온 경우(forcePC)엔 이동하지 않아 핸드폰에서도 PC 화면을 볼 수 있습니다. -->
+    <script>
+      (function () {
+        try {
+          var forcePC = <?= forcePC ? 'true' : 'false' ?>;
+          // GAS는 앱을 iframe에서 렌더링해 innerWidth가 부정확하므로, 기기 화면(screen)+UA로 판단합니다.
+          var minDim = Math.min(screen.width || 9999, screen.height || 9999);
+          var ua = navigator.userAgent || '';
+          var isPhone = (minDim < 768) || /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(ua);
+          var u = '<?= appUrl ?>';
+          var mobileUrl = u ? (u + (u.indexOf('?') > -1 ? '&' : '?') + 'view=mobile') : '';
+
+          function floatBtn(text, href, delay) {
+            var add = function () {
+              if (!document.body || !href) { setTimeout(add, 200); return; }
+              var b = document.createElement('a');
+              b.href = href; b.target = '_top'; b.textContent = text;
+              b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:99999;'
+                + 'background:#3b82f6;color:#fff;padding:12px 20px;border-radius:24px;font-size:15px;font-weight:800;'
+                + 'text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:nowrap;';
+              document.body.appendChild(b);
+            };
+            setTimeout(add, delay || 500);
+          }
+
+          if (forcePC) {
+            // 핸드폰에서 'PC 버전'을 선택해 본 경우 → 모바일로 돌아가는 버튼 제공
+            if (isPhone && mobileUrl) floatBtn('📱 모바일 버전으로 돌아가기', mobileUrl, 400);
+            return;
+          }
+          if (!isPhone || !mobileUrl) return;
+
+          // 핸드폰 접속 → 모바일로 자동 이동.
+          // GAS는 로드 시 '최상위 창' 자동 이동을 막으므로(탭해야 허용), 대신 '앱 프레임 자체'를
+          // 모바일 주소로 교체합니다(self navigation은 탭 없이 허용됨). 이러면 탭 없이 바로 모바일로 넘어갑니다.
+          try { window.location.replace(mobileUrl); return; } catch (e) {}
+          // 혹시 위가 막히는 환경이면 탭 버튼으로 이동.
+          floatBtn('📱 모바일 화면으로 보기', mobileUrl, 1500);
+        } catch (err) { /* 이동 실패해도 PC 화면 그대로 표시 */ }
+      })();
+    </script>
+
     <!-- Font Awesome을 CDN에서 가져오는데, 미리 연결(preconnect)해두면 실제 <link>가 실행되기 전에
          DNS 조회/TLS 핸드셰이크를 먼저 끝내둘 수 있어 첫 화면 표시가 그만큼 빨라집니다. -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>

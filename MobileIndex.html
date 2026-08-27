@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <base target="_top">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="주간계획서">
+    <meta name="theme-color" content="#3b82f6">
+    <? if (faviconUrl) { ?>
+      <link rel="apple-touch-icon" href="<?= faviconUrl ?>">
+      <link rel="icon" type="image/png" href="<?= faviconUrl ?>">
+    <? } ?>
+    <style>
+      :root{
+        --primary:#3b82f6; --primary-hover:#2563eb; --danger:#ef4444;
+        --notice:#f5b026; --bg:#f5f6f8; --border:#e2e8f0; --muted:#64748b;
+      }
+      *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+      body{
+        font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+        margin:0; padding:0 0 40px; background:var(--bg); color:#1f2937; line-height:1.55;
+        font-size:15px;
+      }
+      .wrap{max-width:520px; margin:0 auto; padding:12px;}
+
+      /* 헤더 */
+      .m-header{position:relative; display:flex; align-items:center; justify-content:center; padding:6px 2px 12px; min-height:44px;}
+      .m-title{display:flex; align-items:center; gap:10px;}
+      .m-header img{width:40px; height:40px; object-fit:contain;}
+      .m-header h1{font-size:20px; font-weight:800; margin:0; color:#111827;}
+      .pc-link{position:absolute; right:2px; top:50%; transform:translateY(-50%);
+        font-size:12px; color:var(--muted); text-decoration:none; border:1px solid var(--border);
+        background:#fff; padding:6px 10px; border-radius:8px; white-space:nowrap;}
+
+      /* 카드 공통 */
+      .card{background:#fff; border:1px solid #eef2f7; border-radius:14px; padding:14px;
+        box-shadow:0 1px 3px rgba(0,0,0,.04); margin-bottom:12px;}
+      .card-title{font-size:13px; font-weight:800; color:var(--primary); margin:0 0 10px;
+        display:flex; align-items:center; gap:6px;}
+
+      /* 급식 */
+      .meal-wrap{margin-bottom:12px;}
+      .meal-card{background:#f2fbf6; border-color:#d8f0e3; margin-bottom:0;}
+      /* 날짜 라벨: 녹색 박스 밖 위쪽 */
+      .meal-label{font-size:14px; font-weight:800; color:var(--primary); margin:0 0 6px 16px;}
+      .meal-menu{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:4px 14px;}
+      .meal-menu li{font-size:14px; color:#334155;}
+      .meal-menu li.holiday{color:var(--danger); font-weight:bold; grid-column:1 / -1;}
+      .meal-menu li.empty{color:#94a3b8; grid-column:1 / -1;}
+
+      /* 조회 컨트롤 */
+      .controls{display:flex; gap:8px; align-items:center; margin-bottom:12px;}
+      .controls select{flex:1; padding:11px 8px; border:1px solid #cbd5e1; border-radius:10px;
+        font-size:15px; font-weight:600; background:#fff; color:#1f2937;}
+      .controls .btn{background:var(--primary); color:#fff; border:none; border-radius:10px;
+        padding:11px 16px; font-size:15px; font-weight:700; white-space:nowrap;}
+      .controls .btn:active{background:var(--primary-hover);}
+
+      /* 학년 필터 */
+      .grades{display:flex; gap:6px; margin-bottom:12px;}
+      .grades button{flex:1; background:#fff; border:1px solid #cbd5e1; color:var(--muted);
+        padding:9px 0; border-radius:20px; font-size:14px; font-weight:700;}
+      .grades button.active{background:var(--primary); border-color:var(--primary); color:#fff;}
+
+      .range-text{text-align:center; color:var(--muted); font-size:13px; margin:2px 0 12px; font-weight:600;}
+
+      /* 학사일정 */
+      .sched-row{display:flex; gap:10px; padding:7px 0; border-bottom:1px dashed #eef2f7; font-size:14px;}
+      .sched-row:last-child{border-bottom:none;}
+      .sched-date{width:66px; flex:none; font-weight:700; color:#334155;}
+      .sched-content{flex:1; color:#111827;}
+      .sched-content.empty{color:#cbd5e1;}
+
+      /* 전달사항 */
+      .notice-card{background:#fffdf0; border-color:#fde08b;}
+      .notice-card .card-title{color:#b7791f;}
+      .notice-line{margin-bottom:4px;}
+      #noticeBox{font-size:14.5px; color:#3f3f46;}
+
+      /* 부서별 업무 */
+      .dept{border:1px solid #eef2f7; border-radius:12px; margin-bottom:10px; overflow:hidden;}
+      .dept:last-child{margin-bottom:0;}
+      .dept-head{background:#f8fafc; padding:9px 12px; font-weight:800; font-size:14.5px; color:#111827;
+        border-bottom:1px solid #eef2f7;}
+      .dept-item{display:flex; gap:10px; padding:9px 12px; border-bottom:1px dashed #f1f5f9; font-size:14px;}
+      .dept-item:last-child{border-bottom:none;}
+      .dept-item .d-date{flex:none; min-width:74px; color:var(--primary); font-weight:700; font-size:13px;}
+      /* 작성된 줄바꿈(Enter)을 그대로 표시 */
+      .dept-item .d-text{flex:1; color:#1f2937; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word;}
+      .empty-box{text-align:center; color:#94a3b8; padding:22px 0; font-size:14px;}
+
+      /* 바로가기 */
+      .links{display:flex; flex-wrap:wrap; gap:8px;}
+      .links a{flex:1 1 45%; text-align:center; text-decoration:none; border:1px solid var(--border);
+        background:#fff; color:#334155; border-radius:10px; padding:11px 6px; font-size:13.5px; font-weight:700;}
+
+      .foot-note{text-align:center; color:#94a3b8; font-size:12.5px; margin-top:6px;}
+
+      /* 로딩 */
+      #loading{position:fixed; inset:0; background:rgba(255,255,255,.7); display:none;
+        align-items:center; justify-content:center; z-index:50;}
+      .spin{width:38px; height:38px; border:4px solid #dbeafe; border-top-color:var(--primary);
+        border-radius:50%; animation:sp 0.9s linear infinite;}
+      @keyframes sp{to{transform:rotate(360deg);}}
+    </style>
+  </head>
+  <body>
+    <div id="loading"><div class="spin"></div></div>
+
+    <div class="wrap">
+      <div class="m-header">
+        <div class="m-title">
+          <? if (faviconUrl) { ?><img src="<?= faviconUrl ?>" alt="로고"><? } ?>
+          <h1>주간 계획서</h1>
+        </div>
+        <a class="pc-link" href="<?= appUrl ?>?view=pc">PC 버전</a>
+      </div>
+
+      <!-- 오늘 급식: 날짜 라벨은 녹색 박스 밖(위), 박스 안에는 메뉴만 -->
+      <div class="meal-wrap">
+        <div class="meal-label" id="mealLabel">급식 불러오는 중…</div>
+        <div class="card meal-card">
+          <ul class="meal-menu" id="mealMenu"></ul>
+        </div>
+      </div>
+
+      <!-- 조회 컨트롤 -->
+      <div class="controls">
+        <select id="ySel" onchange="upWeeks()"></select>
+        <select id="mSel" onchange="upWeeks()"></select>
+        <select id="wSel"></select>
+        <button class="btn" onclick="loadAll()">조회</button>
+      </div>
+
+      <!-- 학년 필터 -->
+      <div class="grades" id="grades">
+        <button class="active" data-g="all" onclick="setGrade('all', this)">전체</button>
+        <button data-g="1" onclick="setGrade('1', this)">1학년</button>
+        <button data-g="2" onclick="setGrade('2', this)">2학년</button>
+        <button data-g="3" onclick="setGrade('3', this)">3학년</button>
+      </div>
+
+      <div class="range-text" id="rangeText"></div>
+
+      <!-- 학사일정 -->
+      <div class="card">
+        <div class="card-title">📅 학사일정</div>
+        <div id="schedBox"></div>
+      </div>
+
+      <!-- 전달사항 -->
+      <div class="card notice-card">
+        <div class="card-title">📌 전달사항</div>
+        <div id="noticeBox">조회 버튼을 눌러주세요.</div>
+      </div>
+
+      <!-- 부서별 업무 -->
+      <div class="card">
+        <div class="card-title">🗂️ 부서별 업무</div>
+        <div id="deptBox"><div class="empty-box">상단에서 조회해 주세요.</div></div>
+      </div>
+
+      <p class="foot-note">등록·수정·삭제, 결보강 계획서는 PC 버전에서 이용해 주세요.</p>
+    </div>
+
+    <script>
+      const g = google.script.run;
+      const serverData = <?!= JSON.stringify(initialData) ?>;
+      let gradeFilter = 'all';
+      let weekSchedule = [], weekList = [], noticeItems = [];
+
+      const el = (id) => document.getElementById(id);
+      function toggleLoading(s){ el('loading').style.display = s ? 'flex' : 'none'; }
+
+      window.onload = () => { initSelects(); loadMeals(); loadAll(); };
+
+      // ---- 주차 계산 (PC 버전과 동일 규칙: 수요일이 속한 달 기준) ----
+      function initSelects(){
+        const y = serverData.currentYear, m = serverData.currentMonth;
+        let yH='', mH='';
+        for(let i=y-2;i<=y+2;i++) yH += `<option value="${i}" ${i===y?'selected':''}>${i}년</option>`;
+        for(let i=1;i<=12;i++) mH += `<option value="${i}" ${i===m?'selected':''}>${i}월</option>`;
+        el('ySel').innerHTML = yH; el('mSel').innerHTML = mH;
+        upWeeks();
+      }
+      function getWeekMondaysForMonth(year, month){
+        const mondays = [];
+        let probe = new Date(year, month-1, 1);
+        probe.setDate(probe.getDate()-10);
+        for(let i=0;i<60;i++){
+          if(probe.getDay()===1){
+            const wed = new Date(probe.getFullYear(), probe.getMonth(), probe.getDate()+2);
+            if(wed.getFullYear()===year && wed.getMonth()===month-1){
+              mondays.push(new Date(probe.getFullYear(), probe.getMonth(), probe.getDate()));
+            }
+          }
+          probe.setDate(probe.getDate()+1);
+        }
+        return mondays;
+      }
+      function upWeeks(){
+        const d = new Date();
+        const y = parseInt(el('ySel').value), m = parseInt(el('mSel').value);
+        const mondays = getWeekMondaysForMonth(y, m);
+        let cur = 1;
+        mondays.forEach((mon, idx) => {
+          const fri = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate()+4, 23,59,59,999);
+          if(d>=mon && d<=fri) cur = idx+1;
+        });
+        el('wSel').innerHTML = mondays.map((_,idx) => {
+          const w = idx+1;
+          return `<option value="${w}" ${w===cur?'selected':''}>${w}주차</option>`;
+        }).join('');
+      }
+
+      // ---- 학년 필터 (PC 버전과 동일) ----
+      function matchesGrade(grades){
+        if(gradeFilter==='all') return true;
+        if(!grades) return true;
+        return String(grades).split(',').map(s=>s.trim()).includes(gradeFilter);
+      }
+      function setGrade(gr, btn){
+        gradeFilter = gr;
+        document.querySelectorAll('#grades button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        renderNotices(); renderDepts();
+      }
+
+      // ---- 데이터 조회 ----
+      function loadAll(){
+        const y = el('ySel').value, m = el('mSel').value, w = el('wSel').value;
+        toggleLoading(true);
+        g.withSuccessHandler(res => {
+          toggleLoading(false);
+          weekSchedule = res.schedule || [];
+          weekList = res.list || [];
+          noticeItems = res.noticeItems || [];
+          el('rangeText').innerText = res.rangeText || '';
+          renderSchedule(); renderNotices(); renderDepts();
+        }).withFailureHandler(err => {
+          toggleLoading(false);
+          el('noticeBox').innerText = '데이터를 불러오지 못했습니다.';
+        }).getCombinedData(y, m, w);
+      }
+
+      function renderSchedule(){
+        el('schedBox').innerHTML = weekSchedule.map(s =>
+          `<div class="sched-row"><div class="sched-date">${s.date}</div>`+
+          `<div class="sched-content ${s.content?'':'empty'}">${s.content || '-'}</div></div>`
+        ).join('') || '<div class="empty-box">학사일정이 없습니다.</div>';
+      }
+
+      function renderNotices(){
+        const vis = (noticeItems||[]).filter(it => matchesGrade(it.grades));
+        el('noticeBox').innerHTML = vis.map(it => it.html).join('<div style="height:12px"></div>')
+          || '전달사항이 없습니다.';
+      }
+
+      function renderDepts(){
+        const depts = (weekList||[])
+          .map(d => ({ name:d.name, items:(d.items||[]).filter(it => matchesGrade(it.grades)) }))
+          .filter(d => d.items.length>0);
+        if(!depts.length){ el('deptBox').innerHTML = '<div class="empty-box">데이터가 없습니다.</div>'; return; }
+        el('deptBox').innerHTML = depts.map(d =>
+          `<div class="dept"><div class="dept-head">${d.name}</div>`+
+          d.items.map(it => `<div class="dept-item"><div class="d-date">${it.date}</div><div class="d-text">${it.text}</div></div>`).join('')+
+          `</div>`
+        ).join('');
+      }
+
+      // ---- 오늘 급식 ----
+      function loadMeals(){
+        g.withSuccessHandler(cards => renderMeal(cards && cards[0]))
+         .withFailureHandler(() => renderMeal(null))
+         .getMealCards();
+      }
+      function renderMeal(card){
+        if(!card){ el('mealLabel').innerText='급식 정보'; el('mealMenu').innerHTML=''; return; }
+        el('mealLabel').innerText = card.label; // innerText라 <, > 그대로 안전하게 표시됨
+        let body;
+        if(card.status==='ok' && card.items && card.items.length){
+          body = card.items.map(i=>`<li>${i}</li>`).join('');
+        } else if(card.status==='holiday'){
+          const nm = (card.holidayName && card.holidayName!=='공휴일') ? `공휴일 (${card.holidayName})` : '공휴일';
+          body = `<li class="holiday">${nm}</li>`;
+        } else {
+          body = '<li class="empty">급식 정보가 없습니다.</li>';
+        }
+        el('mealMenu').innerHTML = body;
+      }
+    </script>
+  </body>
+</html>
