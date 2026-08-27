@@ -12,10 +12,13 @@
         try {
           var forcePC = <?= forcePC ? 'true' : 'false' ?>;
           var forceMobile = <?= forceMobile ? 'true' : 'false' ?>;
-          // GAS는 앱을 iframe에서 렌더링해 innerWidth가 부정확하므로, 기기 화면(screen)+UA로 판단합니다.
-          var minDim = Math.min(screen.width || 9999, screen.height || 9999);
+          // 폰 판별은 '기기 종류(UA)' 위주로 합니다. 화면 크기 단독 판별은 데스크톱 디스플레이 배율(예: 150%)로
+          // 논리 해상도가 작아져(예: 1280x720) PC를 모바일로 오인하므로, 화면 기준은 '터치 + 아주 좁은 화면(<600)'일 때만 보조로 씁니다.
           var ua = navigator.userAgent || '';
-          var isPhone = (minDim < 768) || /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(ua);
+          var isTouch = (navigator.maxTouchPoints > 0) || ('ontouchstart' in window);
+          var minDim = Math.min(screen.width || 9999, screen.height || 9999);
+          var isPhone = /iPhone|iPod|Android.*Mobile|Windows Phone|IEMobile|BlackBerry|Opera Mini/i.test(ua)
+                     || (isTouch && minDim < 600);
 
           if (forceMobile || (!forcePC && isPhone)) {
             // 모바일 모드: 데스크톱 UI를 숨기고 모바일 화면을 표시 (MobileView.html의 CSS가 처리)

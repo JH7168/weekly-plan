@@ -1,67 +1,70 @@
 <!-- 반응형 모바일 화면 모듈: Index에 포함되어, 핸드폰이면 이 #mbRoot만 보이고 데스크톱 UI는 숨깁니다.
      페이지 이동이 전혀 없어(같은 문서 안에서 렌더) 모든 폰에서 확실히 동작합니다. -->
 <style>
-  #mbRoot{ font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; color:#1f2937; }
+  /* 글자·요소가 폰 폭에 따라 함께 유동적으로 축소/확대되도록 기준 글꼴을 화면폭(vw)에 연동하고,
+     모든 크기를 em(상대단위)으로 지정합니다. 핀치 줌(확대)은 그대로 사용 가능합니다. */
+  #mbRoot{ font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; color:#1f2937;
+    font-size:clamp(12px, 3.9vw, 16px); width:100%; display:none; }
   #mbRoot *{ box-sizing:border-box; }
-  #mbRoot .mb-wrap{ max-width:520px; margin:0 auto; padding:12px; }
 
-  #mbRoot .mb-header{ position:relative; display:flex; align-items:center; justify-content:center; padding:6px 2px 12px; min-height:44px; }
-  #mbRoot .mb-title{ display:flex; align-items:center; gap:10px; }
-  #mbRoot .mb-header img{ width:40px; height:40px; object-fit:contain; }
-  #mbRoot .mb-header h1{ font-size:20px; font-weight:800; margin:0; color:#111827; }
-  #mbRoot .mb-pc{ position:absolute; right:2px; top:50%; transform:translateY(-50%); font-size:12px; color:#64748b;
-    text-decoration:none; border:1px solid #e2e8f0; background:#fff; padding:6px 10px; border-radius:8px; white-space:nowrap; }
+  /* 핸드폰 모드: 데스크톱 UI 전부 숨기고 모바일만 표시 (가로 넘침 방지) */
+  html.mb-on body{ overflow-x:hidden; background:#f5f6f8; }
+  html.mb-on body > *:not(#mbRoot){ display:none !important; }
+  html.mb-on #mbRoot{ display:block; }
 
-  #mbRoot .mb-card{ background:#fff; border:1px solid #eef2f7; border-radius:14px; padding:14px; box-shadow:0 1px 3px rgba(0,0,0,.04); margin-bottom:12px; }
-  #mbRoot .mb-ctitle{ font-size:13px; font-weight:800; color:#3b82f6; margin:0 0 10px; }
+  #mbRoot .mb-wrap{ width:100%; max-width:560px; margin:0 auto; padding:0.8em; }
 
-  #mbRoot .mb-mealwrap{ margin-bottom:12px; }
-  #mbRoot .mb-meallabel{ font-size:14px; font-weight:800; color:#3b82f6; margin:0 0 6px 16px; }
-  #mbRoot .mb-mealbox{ background:#f2fbf6; border:1px solid #d8f0e3; border-radius:14px; padding:14px; }
-  #mbRoot .mb-meal{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:4px 14px; }
-  #mbRoot .mb-meal li{ font-size:14px; color:#334155; }
+  #mbRoot .mb-header{ position:relative; display:flex; align-items:center; justify-content:center; padding:0.4em 0.2em 0.8em; min-height:2.6em; }
+  #mbRoot .mb-title{ display:flex; align-items:center; gap:0.6em; }
+  #mbRoot .mb-header img{ width:2.6em; height:2.6em; object-fit:contain; }
+  #mbRoot .mb-header h1{ font-size:1.33em; font-weight:800; margin:0; color:#111827; }
+  #mbRoot .mb-pc{ position:absolute; right:0.15em; top:50%; transform:translateY(-50%); font-size:0.8em; color:#64748b;
+    text-decoration:none; border:1px solid #e2e8f0; background:#fff; padding:0.45em 0.7em; border-radius:0.55em; white-space:nowrap; }
+
+  #mbRoot .mb-card{ background:#fff; border:1px solid #eef2f7; border-radius:0.9em; padding:0.95em; box-shadow:0 1px 3px rgba(0,0,0,.04); margin-bottom:0.8em; }
+  #mbRoot .mb-ctitle{ font-size:0.87em; font-weight:800; color:#3b82f6; margin:0 0 0.7em; }
+
+  #mbRoot .mb-mealwrap{ margin-bottom:0.8em; }
+  #mbRoot .mb-meallabel{ font-size:0.95em; font-weight:800; color:#3b82f6; margin:0 0 0.4em 1.1em; }
+  #mbRoot .mb-mealbox{ background:#f2fbf6; border:1px solid #d8f0e3; border-radius:0.9em; padding:0.95em; }
+  #mbRoot .mb-meal{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:0.3em 1em; }
+  #mbRoot .mb-meal li{ font-size:0.95em; color:#334155; }
   #mbRoot .mb-meal li.hol{ color:#dc2626; font-weight:bold; grid-column:1/-1; }
   #mbRoot .mb-meal li.emp{ color:#94a3b8; grid-column:1/-1; }
 
-  #mbRoot .mb-ctrl{ display:flex; gap:8px; align-items:center; margin-bottom:12px; }
-  #mbRoot .mb-ctrl select{ flex:1; padding:11px 8px; border:1px solid #cbd5e1; border-radius:10px; font-size:15px; font-weight:600; background:#fff; color:#1f2937; }
-  #mbRoot .mb-ctrl button{ background:#3b82f6; color:#fff; border:none; border-radius:10px; padding:11px 16px; font-size:15px; font-weight:700; white-space:nowrap; }
+  #mbRoot .mb-ctrl{ display:flex; gap:0.55em; align-items:center; margin-bottom:0.8em; }
+  #mbRoot .mb-ctrl select{ flex:1; min-width:0; padding:0.7em 0.5em; border:1px solid #cbd5e1; border-radius:0.65em; font-size:1em; font-weight:600; background:#fff; color:#1f2937; }
+  #mbRoot .mb-ctrl button{ flex:none; background:#3b82f6; color:#fff; border:none; border-radius:0.65em; padding:0.7em 1em; font-size:1em; font-weight:700; white-space:nowrap; }
 
-  #mbRoot .mb-grades{ display:flex; gap:6px; margin-bottom:12px; }
-  #mbRoot .mb-grades button{ flex:1; background:#fff; border:1px solid #cbd5e1; color:#64748b; padding:9px 0; border-radius:20px; font-size:14px; font-weight:700; }
+  #mbRoot .mb-grades{ display:flex; gap:0.4em; margin-bottom:0.8em; }
+  #mbRoot .mb-grades button{ flex:1; min-width:0; background:#fff; border:1px solid #cbd5e1; color:#64748b; padding:0.6em 0; border-radius:1.3em; font-size:0.93em; font-weight:700; }
   #mbRoot .mb-grades button.on{ background:#3b82f6; border-color:#3b82f6; color:#fff; }
 
-  #mbRoot .mb-range{ text-align:center; color:#64748b; font-size:13px; margin:2px 0 12px; font-weight:600; }
+  #mbRoot .mb-range{ text-align:center; color:#64748b; font-size:0.87em; margin:0.15em 0 0.8em; font-weight:600; }
 
-  #mbRoot .mb-srow{ display:flex; gap:10px; padding:7px 0; border-bottom:1px dashed #eef2f7; font-size:14px; }
+  #mbRoot .mb-srow{ display:flex; gap:0.65em; padding:0.45em 0; border-bottom:1px dashed #eef2f7; font-size:0.93em; }
   #mbRoot .mb-srow:last-child{ border-bottom:none; }
-  #mbRoot .mb-sdate{ width:66px; flex:none; font-weight:700; color:#334155; }
+  #mbRoot .mb-sdate{ width:4.6em; flex:none; font-weight:700; color:#334155; }
   #mbRoot .mb-scont{ flex:1; color:#111827; } #mbRoot .mb-scont.emp{ color:#cbd5e1; }
 
   #mbRoot .mb-noticecard{ background:#fffdf0; border-color:#fde08b; }
   #mbRoot .mb-noticecard .mb-ctitle{ color:#b7791f; }
-  #mbRoot .notice-line{ margin-bottom:4px; }
-  #mbRoot #mbNotice{ font-size:14.5px; color:#3f3f46; }
+  #mbRoot .notice-line{ margin-bottom:0.27em; }
+  #mbRoot #mbNotice{ font-size:0.97em; color:#3f3f46; }
 
-  #mbRoot .mb-dept{ border:1px solid #eef2f7; border-radius:12px; margin-bottom:10px; overflow:hidden; }
+  #mbRoot .mb-dept{ border:1px solid #eef2f7; border-radius:0.8em; margin-bottom:0.65em; overflow:hidden; }
   #mbRoot .mb-dept:last-child{ margin-bottom:0; }
-  #mbRoot .mb-dhead{ background:#f8fafc; padding:9px 12px; font-weight:800; font-size:14.5px; color:#111827; border-bottom:1px solid #eef2f7; }
-  #mbRoot .mb-ditem{ display:flex; gap:10px; padding:9px 12px; border-bottom:1px dashed #f1f5f9; font-size:14px; }
+  #mbRoot .mb-dhead{ background:#f8fafc; padding:0.6em 0.8em; font-weight:800; font-size:0.97em; color:#111827; border-bottom:1px solid #eef2f7; }
+  #mbRoot .mb-ditem{ display:flex; gap:0.65em; padding:0.6em 0.8em; border-bottom:1px dashed #f1f5f9; font-size:0.93em; }
   #mbRoot .mb-ditem:last-child{ border-bottom:none; }
-  #mbRoot .mb-ddate{ flex:none; min-width:74px; color:#3b82f6; font-weight:700; font-size:13px; }
+  #mbRoot .mb-ddate{ flex:none; min-width:5em; color:#3b82f6; font-weight:700; font-size:0.9em; }
   #mbRoot .mb-dtext{ flex:1; color:#1f2937; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word; }
-  #mbRoot .mb-empty{ text-align:center; color:#94a3b8; padding:22px 0; font-size:14px; }
-  #mbRoot .mb-foot{ text-align:center; color:#94a3b8; font-size:12.5px; margin-top:6px; }
+  #mbRoot .mb-empty{ text-align:center; color:#94a3b8; padding:1.5em 0; font-size:0.93em; }
+  #mbRoot .mb-foot{ text-align:center; color:#94a3b8; font-size:0.83em; margin-top:0.4em; }
 
   #mbRoot .mb-loading{ position:fixed; inset:0; background:rgba(255,255,255,.7); display:none; align-items:center; justify-content:center; z-index:50; }
-  #mbRoot .mb-spin{ width:38px; height:38px; border:4px solid #dbeafe; border-top-color:#3b82f6; border-radius:50%; animation:mbsp .9s linear infinite; }
+  #mbRoot .mb-spin{ width:2.5em; height:2.5em; border:0.27em solid #dbeafe; border-top-color:#3b82f6; border-radius:50%; animation:mbsp .9s linear infinite; }
   @keyframes mbsp{ to{ transform:rotate(360deg); } }
-
-  /* 핸드폰 모드: 데스크톱 UI 전부 숨기고 모바일만 표시 (페이지 이동 없이) */
-  #mbRoot{ display:none; }
-  html.mb-on body{ background:#f5f6f8; }
-  html.mb-on body > *:not(#mbRoot){ display:none !important; }
-  html.mb-on #mbRoot{ display:block; }
 </style>
 
 <div id="mbRoot">
