@@ -1,0 +1,219 @@
+<!-- 반응형 모바일 화면 모듈: Index에 포함되어, 핸드폰이면 이 #mbRoot만 보이고 데스크톱 UI는 숨깁니다.
+     페이지 이동이 전혀 없어(같은 문서 안에서 렌더) 모든 폰에서 확실히 동작합니다. -->
+<style>
+  #mbRoot{ font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; color:#1f2937; }
+  #mbRoot *{ box-sizing:border-box; }
+  #mbRoot .mb-wrap{ max-width:520px; margin:0 auto; padding:12px; }
+
+  #mbRoot .mb-header{ position:relative; display:flex; align-items:center; justify-content:center; padding:6px 2px 12px; min-height:44px; }
+  #mbRoot .mb-title{ display:flex; align-items:center; gap:10px; }
+  #mbRoot .mb-header img{ width:40px; height:40px; object-fit:contain; }
+  #mbRoot .mb-header h1{ font-size:20px; font-weight:800; margin:0; color:#111827; }
+  #mbRoot .mb-pc{ position:absolute; right:2px; top:50%; transform:translateY(-50%); font-size:12px; color:#64748b;
+    text-decoration:none; border:1px solid #e2e8f0; background:#fff; padding:6px 10px; border-radius:8px; white-space:nowrap; }
+
+  #mbRoot .mb-card{ background:#fff; border:1px solid #eef2f7; border-radius:14px; padding:14px; box-shadow:0 1px 3px rgba(0,0,0,.04); margin-bottom:12px; }
+  #mbRoot .mb-ctitle{ font-size:13px; font-weight:800; color:#3b82f6; margin:0 0 10px; }
+
+  #mbRoot .mb-mealwrap{ margin-bottom:12px; }
+  #mbRoot .mb-meallabel{ font-size:14px; font-weight:800; color:#3b82f6; margin:0 0 6px 16px; }
+  #mbRoot .mb-mealbox{ background:#f2fbf6; border:1px solid #d8f0e3; border-radius:14px; padding:14px; }
+  #mbRoot .mb-meal{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:4px 14px; }
+  #mbRoot .mb-meal li{ font-size:14px; color:#334155; }
+  #mbRoot .mb-meal li.hol{ color:#dc2626; font-weight:bold; grid-column:1/-1; }
+  #mbRoot .mb-meal li.emp{ color:#94a3b8; grid-column:1/-1; }
+
+  #mbRoot .mb-ctrl{ display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+  #mbRoot .mb-ctrl select{ flex:1; padding:11px 8px; border:1px solid #cbd5e1; border-radius:10px; font-size:15px; font-weight:600; background:#fff; color:#1f2937; }
+  #mbRoot .mb-ctrl button{ background:#3b82f6; color:#fff; border:none; border-radius:10px; padding:11px 16px; font-size:15px; font-weight:700; white-space:nowrap; }
+
+  #mbRoot .mb-grades{ display:flex; gap:6px; margin-bottom:12px; }
+  #mbRoot .mb-grades button{ flex:1; background:#fff; border:1px solid #cbd5e1; color:#64748b; padding:9px 0; border-radius:20px; font-size:14px; font-weight:700; }
+  #mbRoot .mb-grades button.on{ background:#3b82f6; border-color:#3b82f6; color:#fff; }
+
+  #mbRoot .mb-range{ text-align:center; color:#64748b; font-size:13px; margin:2px 0 12px; font-weight:600; }
+
+  #mbRoot .mb-srow{ display:flex; gap:10px; padding:7px 0; border-bottom:1px dashed #eef2f7; font-size:14px; }
+  #mbRoot .mb-srow:last-child{ border-bottom:none; }
+  #mbRoot .mb-sdate{ width:66px; flex:none; font-weight:700; color:#334155; }
+  #mbRoot .mb-scont{ flex:1; color:#111827; } #mbRoot .mb-scont.emp{ color:#cbd5e1; }
+
+  #mbRoot .mb-noticecard{ background:#fffdf0; border-color:#fde08b; }
+  #mbRoot .mb-noticecard .mb-ctitle{ color:#b7791f; }
+  #mbRoot .notice-line{ margin-bottom:4px; }
+  #mbRoot #mbNotice{ font-size:14.5px; color:#3f3f46; }
+
+  #mbRoot .mb-dept{ border:1px solid #eef2f7; border-radius:12px; margin-bottom:10px; overflow:hidden; }
+  #mbRoot .mb-dept:last-child{ margin-bottom:0; }
+  #mbRoot .mb-dhead{ background:#f8fafc; padding:9px 12px; font-weight:800; font-size:14.5px; color:#111827; border-bottom:1px solid #eef2f7; }
+  #mbRoot .mb-ditem{ display:flex; gap:10px; padding:9px 12px; border-bottom:1px dashed #f1f5f9; font-size:14px; }
+  #mbRoot .mb-ditem:last-child{ border-bottom:none; }
+  #mbRoot .mb-ddate{ flex:none; min-width:74px; color:#3b82f6; font-weight:700; font-size:13px; }
+  #mbRoot .mb-dtext{ flex:1; color:#1f2937; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word; }
+  #mbRoot .mb-empty{ text-align:center; color:#94a3b8; padding:22px 0; font-size:14px; }
+  #mbRoot .mb-foot{ text-align:center; color:#94a3b8; font-size:12.5px; margin-top:6px; }
+
+  #mbRoot .mb-loading{ position:fixed; inset:0; background:rgba(255,255,255,.7); display:none; align-items:center; justify-content:center; z-index:50; }
+  #mbRoot .mb-spin{ width:38px; height:38px; border:4px solid #dbeafe; border-top-color:#3b82f6; border-radius:50%; animation:mbsp .9s linear infinite; }
+  @keyframes mbsp{ to{ transform:rotate(360deg); } }
+
+  /* 핸드폰 모드: 데스크톱 UI 전부 숨기고 모바일만 표시 (페이지 이동 없이) */
+  #mbRoot{ display:none; }
+  html.mb-on body{ background:#f5f6f8; }
+  html.mb-on body > *:not(#mbRoot){ display:none !important; }
+  html.mb-on #mbRoot{ display:block; }
+</style>
+
+<div id="mbRoot">
+  <div class="mb-loading" id="mbLoading"><div class="mb-spin"></div></div>
+  <div class="mb-wrap">
+    <div class="mb-header">
+      <div class="mb-title">
+        <img id="mbLogo" alt="로고" style="display:none">
+        <h1>주간 계획서</h1>
+      </div>
+      <a class="mb-pc" id="mbPcLink" href="#">PC 버전</a>
+    </div>
+
+    <div class="mb-mealwrap">
+      <div class="mb-meallabel" id="mbMealLabel">급식 불러오는 중…</div>
+      <div class="mb-mealbox"><ul class="mb-meal" id="mbMeal"></ul></div>
+    </div>
+
+    <div class="mb-ctrl">
+      <select id="mbY" onchange="mbUpWeeks()"></select>
+      <select id="mbM" onchange="mbUpWeeks()"></select>
+      <select id="mbW"></select>
+      <button onclick="mbLoadAll()">조회</button>
+    </div>
+
+    <div class="mb-grades" id="mbGrades">
+      <button class="on" onclick="mbSetGrade('all', this)">전체</button>
+      <button onclick="mbSetGrade('1', this)">1학년</button>
+      <button onclick="mbSetGrade('2', this)">2학년</button>
+      <button onclick="mbSetGrade('3', this)">3학년</button>
+    </div>
+
+    <div class="mb-range" id="mbRange"></div>
+
+    <div class="mb-card"><div class="mb-ctitle">📅 학사일정</div><div id="mbSched"></div></div>
+    <div class="mb-card mb-noticecard"><div class="mb-ctitle">📌 전달사항</div><div id="mbNotice">조회 버튼을 눌러주세요.</div></div>
+    <div class="mb-card"><div class="mb-ctitle">🗂️ 부서별 업무</div><div id="mbDept"><div class="mb-empty">상단에서 조회해 주세요.</div></div></div>
+
+    <p class="mb-foot">등록·수정·삭제, 결보강 계획서는 PC 버전에서 이용해 주세요.</p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    if (!window.__IS_MOBILE__) return; // 데스크톱에선 아무 것도 안 함
+
+    var g = google.script.run;
+    var sd = window.serverData || { currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1 };
+    var gradeF = 'all';
+    var weekSchedule = [], weekList = [], noticeItems = [];
+    var el = function (id) { return document.getElementById(id); };
+    var mbLoad = function (s) { el('mbLoading').style.display = s ? 'flex' : 'none'; };
+
+    // 로고/전환 링크 세팅
+    try {
+      if (window.FAVICON_URL) { var lg = el('mbLogo'); lg.src = window.FAVICON_URL; lg.style.display = ''; }
+      if (window.APP_URL) el('mbPcLink').href = window.APP_URL + (window.APP_URL.indexOf('?') > -1 ? '&' : '?') + 'view=pc';
+    } catch (e) {}
+
+    function mbInitSelects() {
+      var y = sd.currentYear, m = sd.currentMonth, yH = '', mH = '';
+      for (var i = y - 2; i <= y + 2; i++) yH += '<option value="' + i + '"' + (i === y ? ' selected' : '') + '>' + i + '년</option>';
+      for (var j = 1; j <= 12; j++) mH += '<option value="' + j + '"' + (j === m ? ' selected' : '') + '>' + j + '월</option>';
+      el('mbY').innerHTML = yH; el('mbM').innerHTML = mH;
+      mbUpWeeks();
+    }
+    function mbMondays(year, month) {
+      var arr = [], probe = new Date(year, month - 1, 1);
+      probe.setDate(probe.getDate() - 10);
+      for (var i = 0; i < 60; i++) {
+        if (probe.getDay() === 1) {
+          var wed = new Date(probe.getFullYear(), probe.getMonth(), probe.getDate() + 2);
+          if (wed.getFullYear() === year && wed.getMonth() === month - 1)
+            arr.push(new Date(probe.getFullYear(), probe.getMonth(), probe.getDate()));
+        }
+        probe.setDate(probe.getDate() + 1);
+      }
+      return arr;
+    }
+    window.mbUpWeeks = function () {
+      var d = new Date(), y = parseInt(el('mbY').value), m = parseInt(el('mbM').value);
+      var mons = mbMondays(y, m), cur = 1;
+      mons.forEach(function (mon, idx) {
+        var fri = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 4, 23, 59, 59, 999);
+        if (d >= mon && d <= fri) cur = idx + 1;
+      });
+      el('mbW').innerHTML = mons.map(function (_, idx) {
+        var w = idx + 1; return '<option value="' + w + '"' + (w === cur ? ' selected' : '') + '>' + w + '주차</option>';
+      }).join('');
+    };
+    function mbMatch(grades) {
+      if (gradeF === 'all') return true;
+      if (!grades) return true;
+      return String(grades).split(',').map(function (s) { return s.trim(); }).indexOf(gradeF) > -1;
+    }
+    window.mbSetGrade = function (gr, btn) {
+      gradeF = gr;
+      var bs = el('mbGrades').querySelectorAll('button');
+      for (var i = 0; i < bs.length; i++) bs[i].classList.remove('on');
+      btn.classList.add('on');
+      mbRenderNotices(); mbRenderDepts();
+    };
+    window.mbLoadAll = function () {
+      var y = el('mbY').value, m = el('mbM').value, w = el('mbW').value;
+      mbLoad(true);
+      g.withSuccessHandler(function (res) {
+        mbLoad(false);
+        weekSchedule = res.schedule || []; weekList = res.list || []; noticeItems = res.noticeItems || [];
+        el('mbRange').innerText = res.rangeText || '';
+        mbRenderSched(); mbRenderNotices(); mbRenderDepts();
+      }).withFailureHandler(function () {
+        mbLoad(false); el('mbNotice').innerText = '데이터를 불러오지 못했습니다.';
+      }).getCombinedData(y, m, w);
+    };
+    function mbRenderSched() {
+      el('mbSched').innerHTML = weekSchedule.map(function (s) {
+        return '<div class="mb-srow"><div class="mb-sdate">' + s.date + '</div><div class="mb-scont ' + (s.content ? '' : 'emp') + '">' + (s.content || '-') + '</div></div>';
+      }).join('') || '<div class="mb-empty">학사일정이 없습니다.</div>';
+    }
+    function mbRenderNotices() {
+      var vis = (noticeItems || []).filter(function (it) { return mbMatch(it.grades); });
+      el('mbNotice').innerHTML = vis.map(function (it) { return it.html; }).join('<div style="height:12px"></div>') || '전달사항이 없습니다.';
+    }
+    function mbRenderDepts() {
+      var depts = (weekList || []).map(function (d) {
+        return { name: d.name, items: (d.items || []).filter(function (it) { return mbMatch(it.grades); }) };
+      }).filter(function (d) { return d.items.length > 0; });
+      if (!depts.length) { el('mbDept').innerHTML = '<div class="mb-empty">데이터가 없습니다.</div>'; return; }
+      el('mbDept').innerHTML = depts.map(function (d) {
+        return '<div class="mb-dept"><div class="mb-dhead">' + d.name + '</div>' +
+          d.items.map(function (it) { return '<div class="mb-ditem"><div class="mb-ddate">' + it.date + '</div><div class="mb-dtext">' + it.text + '</div></div>'; }).join('') +
+          '</div>';
+      }).join('');
+    }
+    function mbLoadMeal() {
+      g.withSuccessHandler(function (cards) { mbRenderMeal(cards && cards[0]); })
+       .withFailureHandler(function () { mbRenderMeal(null); })
+       .getMealCards();
+    }
+    function mbRenderMeal(card) {
+      if (!card) { el('mbMealLabel').innerText = '급식 정보'; el('mbMeal').innerHTML = ''; return; }
+      el('mbMealLabel').innerText = card.label;
+      var body;
+      if (card.status === 'ok' && card.items && card.items.length) body = card.items.map(function (i) { return '<li>' + i + '</li>'; }).join('');
+      else if (card.status === 'holiday') { var nm = (card.holidayName && card.holidayName !== '공휴일') ? '공휴일 (' + card.holidayName + ')' : '공휴일'; body = '<li class="hol">' + nm + '</li>'; }
+      else body = '<li class="emp">급식 정보가 없습니다.</li>';
+      el('mbMeal').innerHTML = body;
+    }
+
+    // 초기화
+    function start() { mbInitSelects(); mbLoadMeal(); mbLoadAll(); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+  })();
+</script>

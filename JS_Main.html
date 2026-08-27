@@ -17,6 +17,7 @@
 
   // 1. 초기 세팅 (페이지 로드 시 호출)
   window.onload = () => {
+    if (window.__IS_MOBILE__) return; // 모바일 모드에선 데스크톱 초기화를 건너뜁니다(MobileView가 담당).
     initSelects();
     loadAll();
     loadMeals();
