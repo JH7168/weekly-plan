@@ -58,8 +58,14 @@
   @keyframes mbsp{ to{ transform:rotate(360deg); } }
 
   /* 핸드폰 모드: 데스크톱 UI 전부 숨기고 모바일만 표시 (페이지 이동 없이) */
-  #mbRoot{ display:none; }
-  html.mb-on body{ background:#f5f6f8; }
+  #mbRoot{ display:none; width:100%; }
+  /* 데스크톱 CSS가 모바일에서 body를 850px로 강제(min-width)해 좌우 여백+가로스크롤이 생기므로,
+     모바일 모드에선 그 강제를 풀어 기기 폭에 딱 맞춥니다. */
+  html.mb-on body{
+    min-width:0 !important; max-width:100% !important; width:100% !important;
+    margin:0 !important; padding:0 !important; overflow-x:hidden !important;
+    background:#f5f6f8;
+  }
   html.mb-on body > *:not(#mbRoot){ display:none !important; }
   html.mb-on #mbRoot{ display:block; }
 </style>
@@ -118,7 +124,7 @@
     // 로고/전환 링크 세팅
     try {
       if (window.FAVICON_URL) { var lg = el('mbLogo'); lg.src = window.FAVICON_URL; lg.style.display = ''; }
-      if (window.APP_URL) el('mbPcLink').href = window.APP_URL + (window.APP_URL.indexOf('?') > -1 ? '&' : '?') + 'view=pc';
+      if (window.APP_URL) el('mbPcLink').href = window.APP_URL; // 기본 주소 = PC 화면
     } catch (e) {}
 
     function mbInitSelects() {

@@ -3,41 +3,32 @@
   <head>
     <base target="_top">
 
-    <!-- 모바일 자동감지: 좁은 화면(핸드폰)이면 조회 위주 모바일 버전(?view=mobile)으로 자동 이동.
-         ?view=pc 로 들어온 경우(forcePC)엔 이동하지 않아 핸드폰에서도 PC 화면을 볼 수 있습니다. -->
+    <!-- 자동 감지 없음: 기본은 PC 화면. 화면 하단의 '모바일 버전으로 이동' 버튼을 누르면(주로 핸드폰) 모바일 화면으로 갑니다.
+         ?view=mobile 로 들어오면 모바일 화면을 표시합니다. -->
     <script>
-      // 반응형 전환: 페이지 이동 없이, 핸드폰이면 같은 문서에서 모바일 화면(#mbRoot)을 표시합니다.
-      // (GAS는 로드 시 페이지 자동 이동을 막으므로, 이동 대신 CSS 클래스로 전환 → 모든 폰에서 확실히 동작)
       (function () {
         try {
-          var forcePC = <?= forcePC ? 'true' : 'false' ?>;
           var forceMobile = <?= forceMobile ? 'true' : 'false' ?>;
-          // 폰 판별은 '기기 종류(UA)'만으로 합니다. (화면 크기/터치 기준은 배율 걸린 PC·터치 모니터를
-          // 폰으로 오인하므로 사용하지 않습니다.) 폰 브라우저 UA에는 iPhone/Android...Mobile/Mobi 등이 들어갑니다.
-          var ua = navigator.userAgent || '';
-          var isPhone = /iPhone|iPod|Android.*Mobile|Windows Phone|IEMobile|BlackBerry|Opera Mini|Mobi/i.test(ua);
-
-          if (forceMobile || (!forcePC && isPhone)) {
-            // 모바일 모드: 데스크톱 UI를 숨기고 모바일 화면을 표시 (MobileView.html의 CSS가 처리)
+          if (forceMobile) {
+            // 모바일 화면 표시 (데스크톱 UI는 MobileView.html의 CSS가 숨김)
             window.__IS_MOBILE__ = true;
             document.documentElement.classList.add('mb-on');
             return;
           }
-
-          if (forcePC && isPhone) {
-            // 핸드폰에서 'PC 버전'을 선택해 본 경우 → 모바일로 돌아가는 버튼 제공(기본 주소로 이동 = 다시 자동 모바일)
-            var u = '<?= appUrl ?>';
-            var add = function () {
-              if (!document.body || !u) { setTimeout(add, 100); return; }
-              var b = document.createElement('a');
-              b.href = u; b.target = '_top'; b.textContent = '📱 모바일 버전으로 돌아가기';
-              b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:99999;'
-                + 'background:#3b82f6;color:#fff;padding:12px 20px;border-radius:24px;font-size:15px;font-weight:800;'
-                + 'text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:nowrap;';
-              document.body.appendChild(b);
-            };
-            setTimeout(add, 300);
-          }
+          // 기본(PC) 화면: 하단에 '모바일 버전으로 이동' 버튼을 띄웁니다. (핸드폰에서 눌러 모바일로 이동)
+          var u = '<?= appUrl ?>';
+          var mobileUrl = u ? (u + (u.indexOf('?') > -1 ? '&' : '?') + 'view=mobile') : '';
+          if (!mobileUrl) return;
+          var add = function () {
+            if (!document.body) { setTimeout(add, 100); return; }
+            var b = document.createElement('a');
+            b.href = mobileUrl; b.target = '_top'; b.textContent = '📱 모바일 버전으로 이동';
+            b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:99999;'
+              + 'background:#3b82f6;color:#fff;padding:12px 20px;border-radius:24px;font-size:15px;font-weight:800;'
+              + 'text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:nowrap;';
+            document.body.appendChild(b);
+          };
+          setTimeout(add, 300);
         } catch (err) { /* 실패해도 PC 화면 그대로 표시 */ }
       })();
     </script>
