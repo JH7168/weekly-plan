@@ -464,9 +464,24 @@ function getCombinedData(year, month, week) {
   res.list = Object.keys(deptMap).map(name => {
     const items = deptMap[name].sort((a,b) => a.time - b.time);
     return { name, items, first: items[0].time };
-  }).sort((a,b) => a.first - b.first);
-  
+  }).sort((a,b) => {
+    const oa = deptOrderIndex_(a.name), ob = deptOrderIndex_(b.name);
+    if (oa !== ob) return oa - ob;
+    return a.first - b.first;
+  });
+
   return res;
+}
+
+// 부서별 업무 표시 순서: 지정된 부서는 이 순서대로, 목록에 없는 부서는 맨 뒤에 등록 시간순으로 표시합니다.
+const DEPT_ORDER_ = [
+  "교무기획부", "교육과정부", "교육연구부", "학생안전부", "방과후활동부",
+  "융합과학정보부", "체육인성부", "진로상담부", "보건실",
+  "1학년부", "2학년부", "3학년부", "행정실"
+];
+function deptOrderIndex_(name) {
+  const idx = DEPT_ORDER_.indexOf(name);
+  return idx === -1 ? DEPT_ORDER_.length : idx;
 }
 
 function getDeptList() {
@@ -475,7 +490,9 @@ function getDeptList() {
   const lastRow = s.getLastRow();
   if (lastRow < 1) return [];
   // Index 시트는 헤더 없이 1행부터 바로 부서명이 들어있습니다.
-  return s.getRange(1, 1, lastRow, 1).getValues().flat().filter(String);
+  // 부서 선택 화면 등에 노출되는 순서는 시트 순서가 아니라 지정된 고정 순서(DEPT_ORDER_)를 따릅니다.
+  const names = s.getRange(1, 1, lastRow, 1).getValues().flat().filter(String);
+  return names.sort((a, b) => deptOrderIndex_(a) - deptOrderIndex_(b));
 }
 
 // weeks(반복 주차 수)가 2 이상이면 7일 간격으로 동일한 내용을 여러 번 등록합니다 (최대 20주, 매주 반복 등록용).

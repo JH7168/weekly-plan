@@ -213,58 +213,26 @@
     dRowHtml += `<tr class="content-row" style="${fsStyle}">` + indices.map(i => `<td style="${fsStyle}">${currentWeekSchedule[i].content || ''}</td>`).join('') + `</tr>`;
     document.getElementById('dateBody').innerHTML = dRowHtml;
 
-    // 모바일 전용 목록형 렌더링: 요일별 표 대신 날짜 하나씩 세로로 나열합니다. (PC에서는 CSS로 숨김)
+    // 연간 행사 목록형 렌더링(PC/모바일 공용): 요일별 표 대신 날짜별로 한 줄씩 나열하고,
+    // 한 날짜에 행사가 여러 개면 그 줄 안에 줄바꿈으로 함께 보여줍니다. 행사가 없는 날짜는 표시하지 않습니다.
     const dateItems = indices.map(i => currentWeekSchedule[i]);
 
-    // (모바일용) 날짜별 그대로 나열 — 내용 없으면 '-' (기존 방식 유지)
-    const dateMobileEl = document.getElementById('dateMobileList');
-    if (dateMobileEl) {
-      dateMobileEl.innerHTML = dateItems.map(it => {
-        const has = !!(it.content && it.content.trim());
+    const dateRowsHtml = dateItems
+      .filter(it => (it.content || '').trim())
+      .map(it => {
+        const events = it.content.trim().split(/\r?\n/).map(s => s.trim()).filter(Boolean).join(', ');
         return `<div class="mobile-list-row">
-          <div class="mobile-list-date">${it.date}</div>
-          <div class="mobile-list-content${has ? '' : ' mobile-list-empty'}">${has ? it.content : '-'}</div>
-        </div>`;
-      }).join('');
-    }
+        <div class="mobile-list-date">${it.date}</div>
+        <div class="mobile-list-content">${events}</div>
+      </div>`;
+      }).join('')
+      || `<div class="mobile-list-row"><div class="mobile-list-content mobile-list-empty">연간 행사가 없습니다.</div></div>`;
 
-    // (PC용) '개별 행사'별로 묶기: 한 칸에 여러 행사가 줄바꿈으로 들어있다고 보고 나눈 뒤,
-    // 같은 행사가 연속된 날짜에 있으면 날짜 범위로 묶어 한 줄로 표시합니다. (세로 1열 나열)
+    // PC(#datePcList)와 모바일(#dateMobileList) 모두 동일한 내용으로 채웁니다.
     const datePcEl = document.getElementById('datePcList');
-    if (datePcEl) {
-      const eventOrder = [];   // 행사 처음 등장 순서
-      const eventDates = {};   // 행사 -> [주중 인덱스,...]
-      dateItems.forEach((it, idx) => {
-        const content = (it.content || '').trim();
-        if (!content) return;
-        content.split(/\r?\n/).map(s => s.trim()).filter(Boolean).forEach(ev => {
-          if (!(ev in eventDates)) { eventDates[ev] = []; eventOrder.push(ev); }
-          eventDates[ev].push(idx);
-        });
-      });
-      const rowsArr = [];
-      eventOrder.forEach(ev => {
-        const idxs = eventDates[ev]; // 오름차순
-        let runStart = idxs[0], prev = idxs[0];
-        for (let k = 1; k <= idxs.length; k++) {
-          const cur = idxs[k];
-          if (cur === prev + 1) { prev = cur; continue; }
-          rowsArr.push({
-            firstIdx: runStart, ev: ev,
-            label: (runStart === prev) ? dateItems[runStart].date
-                                       : `${dateItems[runStart].date} ~ ${dateItems[prev].date}`
-          });
-          runStart = cur; prev = cur;
-        }
-      });
-      rowsArr.sort((a, b) => a.firstIdx - b.firstIdx); // 첫 날짜 순 (같으면 등장 순서 유지)
-      const dateRows = rowsArr.map(r => `<div class="mobile-list-row">
-          <div class="mobile-list-date">${r.label}</div>
-          <div class="mobile-list-content">${r.ev}</div>
-        </div>`).join('');
-      datePcEl.innerHTML = dateRows
-        || `<div class="mobile-list-row"><div class="mobile-list-content mobile-list-empty">연간 행사가 없습니다.</div></div>`;
-    }
+    if (datePcEl) datePcEl.innerHTML = dateRowsHtml;
+    const dateMobileEl = document.getElementById('dateMobileList');
+    if (dateMobileEl) dateMobileEl.innerHTML = dateRowsHtml;
 
     // 2-2. 부서별 업무 헤더 렌더링 (날짜 및 부서 텍스트에 스케일 적용)
     let headHtml = `<tr style="${fsStyle}">
