@@ -86,7 +86,10 @@
     <div class="header-area">
       <!-- 수정/삭제는 이제 각 항목을 클릭한 뒤 팝업에서 처리하므로 관리자 버튼만 우측 상단에 작게 둡니다.
            인쇄 버튼은 휴대성이 좋아져 더는 필요 없어 뺐습니다. -->
-      <button class="admin-btn" onclick="openAdminLogin()"><i class="fas fa-lock"></i> 관리자</button>
+      <div class="header-top-actions">
+        <button class="suggest-btn" onclick="openSuggestBox()"><i class="fas fa-lightbulb"></i> 건의함</button>
+        <button class="admin-btn" onclick="openAdminLogin()"><i class="fas fa-lock"></i> 관리자</button>
+      </div>
       <h2>주간 계획서</h2>
 
       <!-- 급식/등록/바로가기 버튼을 모두 한 줄에: 왼쪽=오늘 급식, 가운데=등록, 오른쪽=바로가기 버튼(2열×3행 격자).
@@ -215,7 +218,15 @@
           </div>
           <span onclick="closeMod('itemDetailMod')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();closeMod('itemDetailMod');}" role="button" tabindex="0" aria-label="닫기" style="cursor:pointer; font-size:24px; color:#999; line-height:1; flex:0 0 auto;">&times;</span>
         </div>
-        <div id="itemDetailText" style="font-size:14.5px; color:#333; line-height:1.6; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word; max-height:55vh; overflow-y:auto; border-top:1px solid #eef0f3; padding-top:12px;"></div>
+        <div style="border-top:1px solid #eef0f3; padding-top:12px;">
+          <div id="itemDetailTitle" style="text-align:center; font-size:15.5px; font-weight:800; color:#111827; margin-bottom:10px; display:none;"></div>
+          <div id="itemDetailText" style="font-size:14.5px; color:#333; line-height:1.6; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word; max-height:55vh; overflow-y:auto;"></div>
+        </div>
+        <!-- 전달사항: 등록 시 별도로 입력한 내용이 있으면 아래에 '전달사항' 라벨 + 네모 박스로 보여줍니다. -->
+        <div id="itemDetailNoticeWrap" style="display:none; margin-top:14px;">
+          <div style="font-size:13px; font-weight:800; color:var(--notice); margin-bottom:6px;">전달사항</div>
+          <div id="itemDetailNotice" style="background:#fffdf0; border:1px solid #fde08b; border-radius:8px; padding:12px 14px; font-size:14px; color:#3f3f46; line-height:1.6; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word;"></div>
+        </div>
         <!-- 연간 행사(부서명 없음)는 이 화면에서 수정/삭제할 수 있는 데이터가 아니므로 버튼을 숨깁니다. -->
         <div id="itemDetailActions" style="display:flex; gap:10px; margin-top:20px;">
           <button class="btn-search" style="flex:1; margin:0; background:var(--edit);" onclick="editItemFromDetail(currentDetailIdx)">✏️ 수정</button>
@@ -284,6 +295,11 @@
         </div>
       </div>
     </div>
+
+    <!-- 페이지가 세로로 길 때, 스크롤을 내리면 우측 하단에 나타나는 "맨 위로" 버튼 -->
+    <button id="scrollTopBtn" class="scroll-top-btn" onclick="scrollToTop()" aria-label="맨 위로">
+      <i class="fas fa-chevron-up"></i><span>TOP</span>
+    </button>
 
     <?!= include('Modals_Task'); ?>
     <?!= include('Modals_Admin'); ?>

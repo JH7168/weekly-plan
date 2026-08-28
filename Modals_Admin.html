@@ -30,6 +30,7 @@
       <div class="dept-grid">
         <button class="dept-btn" onclick="openAdminSection('record')">📚 학교생활기록부</button>
         <button class="dept-btn" onclick="openAdminSection('forms')">📄 서식</button>
+        <button class="dept-btn" onclick="openSuggestList()">💬 건의함</button>
       </div>
     </div>
 
@@ -74,6 +75,47 @@
     <span onclick="closeMod('recordMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
     <h3 style="text-align:center; margin-top:0;">📚 학교생활기록부</h3>
     <div id="recordMaterialList" style="max-height: 65vh; overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- 건의함(사용자 제출): 제목 + 내용 -->
+<div id="suggestBoxMod" class="modal">
+  <div class="modal-content" style="max-width:460px; position:relative;">
+    <span onclick="closeMod('suggestBoxMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
+    <h3 style="text-align:center; margin-top:0; color:#b8860b;">💡 건의함</h3>
+    <p style="text-align:center; color:#64748b; font-size:13.5px; margin:0 0 16px;">이 시스템을 더 좋게 만들기 위한 의견을 남겨주세요.</p>
+    <label style="display:block; font-weight:700; font-size:13.5px; color:#334155; margin-bottom:6px;">제목</label>
+    <input type="text" id="suggestTitleInput" maxlength="100" placeholder="예: 급식표 글씨를 조금 키워주세요"
+      style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box; margin-bottom:14px; outline:none;">
+    <label style="display:block; font-weight:700; font-size:13.5px; color:#334155; margin-bottom:6px;">내용</label>
+    <textarea id="suggestContentInput" rows="6" placeholder="건의하실 내용을 자유롭게 작성해주세요."
+      style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box; resize:vertical; outline:none;"></textarea>
+    <div style="display:flex; gap:10px; margin-top:18px; justify-content:flex-end;">
+      <button class="btn-cancel" style="flex:0 0 auto; width:auto; margin:0; padding:9px 22px;" onclick="closeMod('suggestBoxMod')">취소</button>
+      <button class="btn-search" style="flex:0 0 auto; width:auto; margin:0; padding:9px 22px;" onclick="submitSuggestBox()">제출</button>
+    </div>
+  </div>
+</div>
+
+<!-- 건의함(관리자 조회): 작성일 + 제목 목록 -->
+<div id="suggestListMod" class="modal">
+  <div class="modal-content" style="max-width:560px; position:relative;">
+    <span onclick="closeMod('suggestListMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
+    <h3 style="text-align:center; margin-top:0;">💬 건의함</h3>
+    <div id="suggestListBody" style="max-height:62vh; overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- 건의함(관리자 조회): 제목 클릭 시 상세 내용 -->
+<div id="suggestDetailMod" class="modal">
+  <div class="modal-content" style="max-width:480px; position:relative;">
+    <span onclick="closeMod('suggestDetailMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
+    <div id="suggestDetailDate" style="font-size:13px; color:#888; margin:2px 0 2px;"></div>
+    <div id="suggestDetailTitle" style="text-align:center; font-size:16px; font-weight:800; color:#111827; margin:6px 0 14px;"></div>
+    <div id="suggestDetailContent" style="font-size:14.5px; color:#333; line-height:1.6; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word; max-height:55vh; overflow-y:auto; border-top:1px solid #eef0f3; padding-top:12px;"></div>
+    <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+      <button onclick="deleteCurrentSuggestion()" style="width:auto; margin:0; padding:8px 18px; background:#ef4444; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer;">🗑 삭제</button>
+    </div>
   </div>
 </div>
 
@@ -364,6 +406,84 @@
         showAlert("삭제되었습니다.");
         refreshMaterialsStatus(renderAdminPanel);
       }).deleteMaterial(slotKey);
+    });
+  }
+
+  // ===== 건의함 =====
+  // 사용자: 제목+내용을 작성해 제출 → "건의함" 시트에 저장.
+  function openSuggestBox() {
+    document.getElementById('suggestTitleInput').value = '';
+    document.getElementById('suggestContentInput').value = '';
+    openMod('suggestBoxMod');
+    setTimeout(() => document.getElementById('suggestTitleInput').focus(), 100);
+  }
+
+  function submitSuggestBox() {
+    const title = document.getElementById('suggestTitleInput').value.trim();
+    const content = document.getElementById('suggestContentInput').value.trim();
+    if (!title) { showAlert("제목을 입력해주세요."); return; }
+    toggleLoading(true, "제출 중...");
+    g.withFailureHandler(err => {
+      toggleLoading(false);
+      showAlert("제출에 실패했습니다.\n\n" + (err && err.message ? err.message : err));
+    }).withSuccessHandler(res => {
+      toggleLoading(false);
+      if (res && res.success) {
+        closeMod('suggestBoxMod');
+        showAlert("소중한 의견 감사합니다! 건의가 접수되었습니다.");
+      } else {
+        showAlert((res && res.msg) ? res.msg : "제출에 실패했습니다.");
+      }
+    }).submitSuggestion(title, content);
+  }
+
+  // 관리자: 접수된 건의 목록(작성일+제목)을 보고, 제목을 눌러 상세 내용을 봅니다.
+  let suggestListCache = [];
+  let currentSuggestRow = null;
+
+  function openSuggestList() {
+    toggleLoading(true, "불러오는 중...");
+    g.withSuccessHandler(list => {
+      toggleLoading(false);
+      suggestListCache = list || [];
+      renderSuggestList();
+      openMod('suggestListMod');
+    }).getSuggestions();
+  }
+
+  function renderSuggestList() {
+    const body = document.getElementById('suggestListBody');
+    if (!suggestListCache.length) {
+      body.innerHTML = `<p style="text-align:center; color:#94a3b8; padding:24px 0;">아직 접수된 건의가 없습니다.</p>`;
+      return;
+    }
+    body.innerHTML = suggestListCache.map((s, i) => `
+      <div class="suggest-row" role="button" tabindex="0" onclick="openSuggestDetail(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSuggestDetail(${i});}">
+        <span class="suggest-row-date">${s.dateLabel}</span>
+        <span class="suggest-row-title">${s.title}</span>
+      </div>`).join('');
+  }
+
+  function openSuggestDetail(i) {
+    const s = suggestListCache[i];
+    if (!s) return;
+    currentSuggestRow = s.row;
+    document.getElementById('suggestDetailDate').innerText = s.dateLabel;
+    document.getElementById('suggestDetailTitle').innerHTML = s.title;
+    document.getElementById('suggestDetailContent').innerHTML = s.content || '<span style="color:#94a3b8;">(내용 없음)</span>';
+    openMod('suggestDetailMod');
+  }
+
+  function deleteCurrentSuggestion() {
+    if (!currentSuggestRow) return;
+    showConfirm("이 건의를 삭제하시겠습니까?", () => {
+      toggleLoading(true, "삭제 중...");
+      g.withSuccessHandler(res => {
+        toggleLoading(false);
+        closeMod('suggestDetailMod');
+        if (res && res.success) { openSuggestList(); }
+        else { showAlert("삭제에 실패했습니다."); }
+      }).deleteSuggestion(currentSuggestRow);
     });
   }
 </script>

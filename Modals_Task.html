@@ -20,7 +20,6 @@
     <span onclick="closeMod('workMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
 
     <div id="wzStep1">
-      <h3 style="color:var(--primary); text-align:center; margin-bottom: 15px;">1단계: 부서 선택</h3>
       <p style="text-align:center; color:#666; margin-bottom:20px; font-weight:bold;">업무를 주관하는 부서를 클릭해주세요.</p>
       <input type="hidden" id="wzDept">
       <div id="wzDeptGrid" class="dept-grid"></div>
@@ -30,11 +29,10 @@
     </div>
 
     <div id="wzStep2" style="display:none;">
-      <h3 style="color:var(--primary); text-align:center; margin-bottom: 10px;">2단계: 날짜 선택</h3>
       <div style="display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px;">
         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0; font-weight:bold;">
           <input type="checkbox" id="wzIsRange" onclick="toggleWzRange()" style="width:20px; height:20px;">
-          기간으로 설정하기 (시작일과 종료일을 차례로 클릭)
+          <span style="color:var(--danger);">기간으로 설정</span> (<span style="color:var(--primary); text-decoration:underline;">시작일</span>과 <span style="color:var(--primary); text-decoration:underline;">종료일</span>을 차례로 클릭)
         </label>
         <span id="wzRangeStatus" style="color:var(--danger); font-weight:bold; font-size:13px; display:none;">시작일을 선택하세요</span>
       </div>
@@ -53,7 +51,6 @@
     </div>
 
     <div id="wzStep3" style="display:none;">
-      <h3 style="color:var(--primary); text-align:center; margin-bottom: 15px;">3단계: 상세 내용 입력</h3>
       <div id="wzSelectedDateDisplay" style="text-align:center; background:#eef5ff; color:var(--primary); font-weight:bold; padding:8px; border-radius:8px; margin-bottom:20px;"></div>
       
       <div class="field" style="margin-bottom:15px;">
@@ -63,7 +60,12 @@
 
       <div class="field" style="margin-bottom:15px;">
         <label style="font-weight:bold; display:block; margin-bottom:5px;">상세 내용 입력</label>
-        <textarea id="wizardSingleInput" style="width:100%; height:220px; padding:15px; border:1px solid #cbd5e1; border-radius:5px; resize:none; font-family:inherit; font-size:14px; line-height:1.6;" placeholder="1. 일시: 3교시~4교시&#10;2. 장소: 시청각실&#10;3. 대상: 1학년&#10;4. 전달사항: 임장지도 부탁드립니다."></textarea>
+        <textarea id="wizardSingleInput" style="width:100%; height:170px; padding:15px; border:1px solid #cbd5e1; border-radius:5px; resize:none; font-family:inherit; font-size:14px; line-height:1.6;" placeholder="1. 일시: 3교시~4교시&#10;2. 장소: 시청각실&#10;3. 대상: 1학년"></textarea>
+      </div>
+
+      <div class="field" style="margin-bottom:15px;">
+        <label style="font-weight:bold; display:block; margin-bottom:5px;">전달사항 <span style="font-weight:normal; color:#999; font-size:12px;">(선택 — 상세 보기에서 별도 박스로 표시됩니다)</span></label>
+        <textarea id="wizardNoticeInput" style="width:100%; height:80px; padding:15px; border:1px solid #fde08b; background:#fffdf0; border-radius:5px; resize:none; font-family:inherit; font-size:14px; line-height:1.6;" placeholder="예: 임장지도 부탁드립니다."></textarea>
       </div>
 
       <div class="field" style="margin-bottom:15px;">
@@ -167,9 +169,17 @@
     
     <div class="field"><label>시작일</label><input type="date" id="singleEditStart"></div>
     <div class="field"><label>종료일</label><input type="date" id="singleEditEnd"></div>
+    <div class="field" id="singleEditTitleField">
+      <label>일정명</label>
+      <input type="text" id="singleEditTitle" style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:5px; box-sizing:border-box;">
+    </div>
     <div class="field">
       <label>내용</label>
       <textarea id="singleEditText" rows="6" style="resize:vertical; background:#ffffff;"></textarea>
+    </div>
+    <div class="field" id="singleEditNoticeField">
+      <label>전달사항</label>
+      <textarea id="singleEditNotice" rows="3" style="resize:vertical; background:#fffdf0; border:1px solid #fde08b;"></textarea>
     </div>
     <div class="field">
       <label>대상 학년</label>
@@ -240,6 +250,7 @@
       document.getElementById('wzDept').value = '';
       document.getElementById('wzTitle').value = '';
       document.getElementById('wizardSingleInput').value = ''; // 통합 텍스트 에어리어 초기화
+      document.getElementById('wizardNoticeInput').value = ''; // 전달사항 칸 초기화
       document.getElementById('wzIsRange').checked = false;
       setCheckedGrades('wzGradeGroup', '1,2,3');
       document.getElementById('wzRepeat').checked = false;
@@ -300,7 +311,7 @@
       // 일시 예시를 실제 선택한 날짜에 맞춰 보여줍니다: 하루면 교시만, 기간이면 "월.일.(요일)~월.일.(요일)".
       const scheduleExample = isRange ? `${formatMD(wzStartD)}~${formatMD(wzEndD)}` : '3교시~4교시';
       document.getElementById('wizardSingleInput').placeholder =
-        `1. 일시: ${scheduleExample}\n2. 장소: 시청각실\n3. 대상: 1학년\n4. 전달사항: 임장지도 부탁드립니다.`;
+        `1. 일시: ${scheduleExample}\n2. 장소: 시청각실\n3. 대상: 1학년`;
     }
   }
 
@@ -370,9 +381,12 @@
 
     const detail = document.getElementById('wizardSingleInput').value.trim();
     if (!detail) { showAlert("상세 내용을 입력해주세요."); return; }
+    const notice = document.getElementById('wizardNoticeInput').value.trim();
 
     // 제목은 화면에 [ ] 안에 담아 저장합니다(기존 데이터·표시 로직과 형식을 맞추기 위함).
-    const finalContent = `[${title}]\n${detail}`;
+    // 전달사항이 있으면 "【전달사항】" 구분 헤더 뒤에 붙여, 상세 보기에서 별도 박스로 분리 표시합니다.
+    let finalContent = `[${title}]\n${detail}`;
+    if (notice) finalContent += `\n\n【전달사항】\n${notice}`;
 
     // 대상 학년을 하나도 선택하지 않아도 등록할 수 있습니다. 이 경우 학년별(1/2/3학년) 필터에는
     // 나타나지 않고, "전체" 필터에서만 보이게 됩니다.
@@ -535,6 +549,7 @@
     } else if (step === 3) {
       document.getElementById('editStep3').style.display = 'block';
       document.getElementById('editListTitle').innerText = (currentEditType === 'notice') ? "전달사항 수정" : `[${currentEditDept}] 수정`;
+      currentEditWeekCtx = null; // 일반 수정 메뉴에서는 화면의 년/월/주차 기준으로 조회
       fetchForEditWizard();
     }
   }
@@ -556,10 +571,15 @@
       .replace(/'/g, '&#39;');
   }
 
+  // 팝업 "수정"에서 넘어온 항목이 속한 주(연/월/주차). 월경계 주 항목을 현재 달력 월이 아니라
+  // 그 항목이 속한 주로 조회하기 위해 씁니다. (일반 수정 메뉴로 들어오면 null → 화면의 년/월/주차 사용)
+  let currentEditWeekCtx = null;
+
   // targetText를 넘기면(팝업에서 "수정" 클릭 시), 목록을 불러온 뒤 그 항목과 원문이 정확히 일치하는
   // 항목의 수정창을 자동으로 엽니다. (일반적인 "수정" 메뉴로 들어올 때는 targetText 없이 목록만 보여줍니다.)
   function fetchForEditWizard(targetText) {
-    const y = el.y().value, m = el.m().value, w = el.w().value;
+    const ctx = currentEditWeekCtx;
+    const y = ctx ? ctx.y : el.y().value, m = ctx ? ctx.m : el.m().value, w = ctx ? ctx.w : el.w().value;
     document.getElementById('editList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">불러오는 중...</div>';
 
     g.withSuccessHandler(list => {
@@ -580,7 +600,11 @@
       if (targetText != null) {
         const foundIdx = list.findIndex(it => escapeHtmlClient_(it.fullText) === targetText);
         if (foundIdx !== -1) openSingleEdit(foundIdx);
-        else showAlert("해당 항목을 찾을 수 없습니다. 목록이 바뀌었을 수 있어요. 아래 목록에서 다시 선택해주세요.");
+        else {
+          // 예외: 항목을 못 찾은 경우에만 목록 창을 띄워 직접 고르게 합니다.
+          openMod('editMod');
+          showAlert("해당 항목을 찾을 수 없습니다. 목록이 바뀌었을 수 있어요. 아래 목록에서 다시 선택해주세요.");
+        }
       }
     }).getItemsForDelete(currentEditType, y, m, w, currentEditDept);
   }
@@ -594,7 +618,9 @@
     isEdited = false;
     currentEditType = 'data';
     currentEditDept = d.label;
-    openMod('editMod');
+    currentEditWeekCtx = d.weekCtx || null; // 이 항목이 속한 주로 조회하도록
+    // 목록 창(editMod)은 띄우지 않고, 해당 항목의 수정창(singleEditMod)만 바로 엽니다.
+    // (항목을 못 찾는 예외 상황에서만 fetchForEditWizard가 목록 창을 대체로 띄웁니다.)
     document.getElementById('editStep1').style.display = 'none';
     document.getElementById('editStep2').style.display = 'none';
     document.getElementById('editStep3').style.display = 'block';
@@ -606,7 +632,9 @@
   function deleteItemFromDetail(idx) {
     const d = calendarItemDetails[idx];
     if (!d || d.label === '연간 행사') return;
-    const y = el.y().value, m = el.m().value, w = el.w().value;
+    // 이 항목이 속한 주(월경계 주 포함)로 조회 — 현재 달력 월과 다를 수 있어 항목의 주 정보를 우선 사용합니다.
+    const ctx = d.weekCtx;
+    const y = ctx ? ctx.y : el.y().value, m = ctx ? ctx.m : el.m().value, w = ctx ? ctx.w : el.w().value;
 
     toggleLoading(true, "확인 중...");
     g.withSuccessHandler(list => {
@@ -637,10 +665,22 @@
   function openSingleEdit(idx) {
     const item = currentEditList[idx];
     if (!item) return;
+    const isNotice = (currentEditType === 'notice');
     document.getElementById('singleEditRow').value = item.rowNum;
     document.getElementById('singleEditStart').value = item.isoStart;
     document.getElementById('singleEditEnd').value = item.isoEnd;
-    document.getElementById('singleEditText').value = item.fullText;
+    // 전달사항(공지) 수정은 일정명/전달사항 칸이 필요 없어 숨기고 본문만 그대로 편집합니다.
+    document.getElementById('singleEditTitleField').style.display = isNotice ? 'none' : 'block';
+    document.getElementById('singleEditNoticeField').style.display = isNotice ? 'none' : 'block';
+    if (isNotice) {
+      document.getElementById('singleEditText').value = item.fullText;
+    } else {
+      // 저장 텍스트를 일정명/내용/전달사항 3칸으로 분해합니다. (옛 형식의 "전달사항" 라벨도 자동 감지)
+      const p = parseTaskText(item.fullText);
+      document.getElementById('singleEditTitle').value = p.title;
+      document.getElementById('singleEditText').value = p.detail;
+      document.getElementById('singleEditNotice').value = p.notice;
+    }
     setCheckedGrades('singleEditGradeGroup', item.grades);
     openMod('singleEditMod');
   }
@@ -649,10 +689,21 @@
     const rowNum = document.getElementById('singleEditRow').value;
     const start = document.getElementById('singleEditStart').value;
     const end = document.getElementById('singleEditEnd').value;
-    const text = document.getElementById('singleEditText').value;
     const grades = getCheckedGrades('singleEditGradeGroup');
 
-    if (!start || !end || !text) { showAlert("날짜와 내용을 모두 입력하세요."); return; }
+    let text;
+    if (currentEditType === 'notice') {
+      text = document.getElementById('singleEditText').value.trim();
+      if (!start || !end || !text) { showAlert("날짜와 내용을 모두 입력하세요."); return; }
+    } else {
+      const title = document.getElementById('singleEditTitle').value.trim();
+      const detail = document.getElementById('singleEditText').value.trim();
+      const notice = document.getElementById('singleEditNotice').value.trim();
+      if (!start || !end || !detail) { showAlert("날짜와 내용을 모두 입력하세요."); return; }
+      // 일정명/내용/전달사항을 다시 저장 형식으로 결합합니다.
+      text = title ? `[${title}]\n${detail}` : detail;
+      if (notice) text += `\n\n【전달사항】\n${notice}`;
+    }
     if (!grades) { showAlert("대상 학년을 하나 이상 선택해주세요."); return; }
 
     toggleLoading(true, "수정 중...");
@@ -660,9 +711,10 @@
       toggleLoading(false);
       if (res) {
         closeMod('singleEditMod');
+        closeMod('editMod'); // 목록 창은 더 이상 띄우지 않고 바로 달력으로 돌아갑니다.
         isEdited = true;
         showAlert("수정 완료");
-        fetchForEditWizard();
+        loadAll(); // 달력 새로고침
       } else {
         showAlert("수정 실패");
       }

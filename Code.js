@@ -979,6 +979,77 @@ function saveMultipleAudiBookings(slots, purpose, manager) {
 }
 
 // 다수의 예약을 찾아 한 번에 삭제합니다.
+// ===== 건의함 (시스템 발전 제안) =====
+// 사용자는 제목+내용으로 제안을 제출하고, 관리자는 관리자 패널에서 목록(작성일+제목)을 보고
+// 제목을 눌러 상세 내용을 확인합니다. 전용 "건의함" 시트(작성일시/제목/내용)에 저장합니다.
+function submitSuggestion(title, content) {
+  title = String(title || '').trim();
+  content = String(content || '').trim();
+  if (!title) return { success: false, msg: "제목을 입력해주세요." };
+
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (e) { return { success: false, msg: "잠시 후 다시 시도해주세요." }; }
+  try {
+    let sheet = SS.getSheetByName("건의함");
+    if (!sheet) {
+      sheet = SS.insertSheet("건의함");
+      sheet.appendRow(["작성일시", "제목", "내용"]);
+    }
+    sheet.appendRow([new Date(), title, content]);
+    invalidateSheetCache_("건의함");
+    return { success: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// 관리자용: 저장된 건의 목록을 최신순으로 반환합니다. (제목/내용은 화면 표시용으로 이스케이프)
+function getSuggestions() {
+  let sheet = SS.getSheetByName("건의함");
+  if (!sheet) {
+    sheet = SS.insertSheet("건의함");
+    sheet.appendRow(["작성일시", "제목", "내용"]);
+    return [];
+  }
+  const data = sheet.getDataRange().getValues();
+  const out = [];
+  for (let i = 1; i < data.length; i++) {
+    const d = data[i][0];
+    let dateLabel = '';
+    if (d instanceof Date) {
+      dateLabel = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+    } else {
+      dateLabel = String(d || '');
+    }
+    out.push({
+      row: i + 1,
+      dateLabel: dateLabel,
+      title: escapeHtml_(String(data[i][1] || '')),
+      content: escapeHtml_(String(data[i][2] || ''))
+    });
+  }
+  out.reverse(); // 최신 건의가 위로 오도록
+  return out;
+}
+
+// 관리자용: 처리 완료된 건의를 행 번호로 삭제합니다.
+function deleteSuggestion(rowNum) {
+  rowNum = parseInt(rowNum, 10);
+  if (!rowNum || rowNum < 2) return { success: false };
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (e) { return { success: false, msg: "잠시 후 다시 시도해주세요." }; }
+  try {
+    const sheet = SS.getSheetByName("건의함");
+    if (!sheet) return { success: false };
+    if (rowNum > sheet.getLastRow()) return { success: false };
+    sheet.deleteRow(rowNum);
+    invalidateSheetCache_("건의함");
+    return { success: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function deleteMultipleAudiBookingsFromSheet(slotsToDelete) {
   const lock = LockService.getScriptLock();
   try {

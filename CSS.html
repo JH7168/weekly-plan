@@ -23,13 +23,41 @@
   h3 { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; color: #333; }
 
   /* 우측 상단 관리자 버튼 */
+  /* 맨 위로 가기(TOP) 버튼: 스크롤을 내리면 우측 하단에 부드럽게 나타납니다. */
+  .scroll-top-btn {
+    position: fixed; right: 22px; bottom: 22px; z-index: 9998;
+    display: none; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--primary, #3b82f6); color: #ffffff; border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.22); cursor: pointer;
+    font-size: 15px; opacity: 0; transition: opacity 0.25s ease, transform 0.15s ease;
+  }
+  .scroll-top-btn span { font-size: 10px; font-weight: bold; letter-spacing: 0.5px; }
+  .scroll-top-btn.show { display: flex; opacity: 1; }
+  .scroll-top-btn:hover { transform: translateY(-2px); }
+  @media (max-width: 768px) {
+    .scroll-top-btn { right: 14px; bottom: 14px; width: 46px; height: 46px; font-size: 13px; }
+  }
+
+  .header-top-actions { position: absolute; top: 0; right: 0; z-index: 5; display: flex; gap: 8px; }
   .admin-btn {
-    position: absolute; top: 0; right: 0; z-index: 5;
     background: #ffffff; border: 1px solid #cbd5e1; color: #64748b;
     padding: 8px 14px; border-radius: 8px; font-size: 12.5px; font-weight: bold;
     cursor: pointer; transition: 0.2s;
   }
   .admin-btn:hover { border-color: var(--danger); color: var(--danger); }
+  /* 건의함(시스템 발전 제안) 버튼 — 눈에 띄되 부담스럽지 않게 노란/앰버 계열로 */
+  .suggest-btn {
+    background: #ffffff; border: 1px solid #f5c518; color: #b8860b;
+    padding: 8px 14px; border-radius: 8px; font-size: 12.5px; font-weight: bold;
+    cursor: pointer; transition: 0.2s;
+  }
+  .suggest-btn:hover { background: #fffbeb; border-color: #eab308; color: #a16207; }
+  /* 관리자 건의함 목록: 작성일 + 제목 한 줄, 클릭하면 상세 */
+  .suggest-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: 0.15s; }
+  .suggest-row:hover { border-color: #f5c518; background: #fffbeb; }
+  .suggest-row-date { flex: 0 0 auto; font-size: 12.5px; color: #94a3b8; min-width: 96px; }
+  .suggest-row-title { flex: 1 1 auto; font-weight: 700; color: #334155; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* 2. 상단 메인 버튼 그룹: 왼쪽 급식 카드 + 오른쪽 바로가기 버튼(2줄) */
   .btn-group {
@@ -49,15 +77,15 @@
   /* 바로가기 버튼: 급식 카드 줄 오른쪽 끝에, 예전 배너처럼 옅은 흰 박스 안에 2열×3행 격자로 둡니다.
      1행: 전체 시간표 | 학교생활기록부   2행: 시청각실 예약 | 방과후 신청   3행: (빈칸) | 서식 */
   .shortcut-cluster {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 0 0 auto;
-    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 0 0 auto;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 7px 14px;
   }
   .shortcut-empty { display: block; }
   .shortcut-link {
     --accent: #3b82f6;
-    display: inline-flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     background: #ffffff; border: 1px solid var(--accent); color: var(--accent);
-    padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: bold;
+    padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: bold;
     cursor: pointer; transition: 0.2s; white-space: nowrap;
   }
   .shortcut-link:hover { background: var(--accent); color: #ffffff; }
@@ -86,18 +114,18 @@
   .meal-inline-left { align-items: flex-start; text-align: left; }
   /* 날짜 라벨은 흰 칸 밖 위쪽에 표시 */
   .meal-inline-label { font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 6px; white-space: nowrap; padding-left: 14px; }
-  /* 연한 파스텔 녹색 카드(흰 듯 녹색인 느낌): 높이는 등록 버튼(90px)과 동일, 안에는 메뉴만 */
+  /* 연한 파스텔 녹색 카드(흰 듯 녹색인 느낌): 메뉴 내용에 맞게 세로로 넉넉하게 (읽기 편하도록). */
   .meal-card-box {
     background: #f2fbf6; border: 1px solid #d8f0e3; border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02); padding: 8px 14px;
-    height: 90px; display: inline-flex; align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02); padding: 9px 16px;
+    height: auto; min-height: 66px; display: inline-flex; align-items: center;
   }
   /* 2열 그리드: 왼쪽/오른쪽 열이 각각 가지런히 맞아 '보이지 않는 구분선'이 생기고,
      긴 항목이 있어도 열 정렬이 흐트러지지 않아 가독성이 좋아집니다. */
   .meal-inline-menu {
     list-style: none; margin: 0; padding: 0;
     display: grid; grid-template-columns: auto auto;
-    gap: 3px 18px; /* 세로 간격 / 가로 간격(가상의 구분선 여백) */
+    gap: 6px 18px; /* 세로 간격 / 가로 간격(가상의 구분선 여백) */
     justify-content: start;
   }
   .meal-inline-menu li { font-size: 13.5px; color: #334155; line-height: 1.5; white-space: nowrap; }
@@ -202,7 +230,9 @@
   th, td { padding: 12px; border: 1px solid var(--border); text-align: center; }
   th { background: #f8fafc; font-weight: bold; color: #333; font-size: 14px; }
   
-  .dept-name-cell { font-weight: bold; background: #fdfdfd; width: 130px; color: #333; }
+  .dept-name-cell { font-weight: bold; background: #eef1f5; width: 130px; color: #333; }
+  /* 연간행사 행의 왼쪽 칸(부서명이 아님)은 회색 대신 흰색 바탕으로 둡니다. */
+  .cal-event-tr .dept-name-cell { background: #ffffff; }
 
   /* 모바일 전용 목록형 화면(연간 행사/부서별 업무): 요일별 표 대신 한 줄에 하나씩 세로로 나열합니다.
      PC에서는 기본적으로 숨기고, 모바일 미디어쿼리에서만 보이도록 켭니다. */
@@ -330,7 +360,7 @@
   .print-only-title { display: none; text-align: center; font-size: 26px; font-weight: bold; margin-bottom: 25px; color: black; }
   @media print {
     body { padding: 0; background: white; }
-    .btn-group, .search-box, .modal, .notice-container, .grade-filter, .top-panel, .meal-panel { display: none !important; }
+    .btn-group, .search-box, .modal, .notice-container, .grade-filter, .top-panel, .meal-panel, .scroll-top-btn { display: none !important; }
     .print-only-title { display: block !important; }
     table, th, td { border: 1px solid black !important; }
     .event-bar { border-left: 4px solid black !important; background: transparent !important; color: black !important; }
@@ -398,7 +428,13 @@
 
     /* 오늘 급식 카드: 2열 그리드(PC와 동일)를 그대로 쓰되, 폭이 좁아 줄바꿈이 필요할 때를
        대비해 항목 줄바꿈만 허용하고, 혹시 넘치면 박스 안에서만 스크롤되게 안전장치를 둡니다. */
-    .meal-inline-menu li { white-space: normal; }
+    /* 모바일은 PC보다 글씨를 1pt 키워 가독성을 높입니다. */
+    .meal-inline-menu li { white-space: normal; font-size: 14.5px; }
+    /* 두 열을 박스 전체 너비 기준으로 정확히 반씩(각 1fr) 나눠, 오른쪽 열(둘째 줄)이 박스의
+       절반 지점부터 시작하도록 합니다. 이때 ul이 박스 전체 폭을 차지해야 하므로 width:100%를 줍니다.
+       (박스가 flex라서 ul을 펴주지 않으면 내용 폭만큼만 차지해 1fr 1fr이 무의미해집니다.)
+       왼쪽 열(첫째 줄)은 그대로 왼쪽 정렬로 보입니다. */
+    .meal-inline-menu { width: 100%; grid-template-columns: 1fr 1fr; column-gap: 0; }
     /* 이제 급식 카드가 한 줄 전체를 혼자 차지하므로(옆에 버튼이 없음), 높이를 특정 버튼 묶음에
        맞출 필요 없이 내용에 맞게 자연스럽게 늘어나도록 최소 높이만 둡니다. */
     .meal-card-box { display: flex; width: 100%; box-sizing: border-box; align-items: center; min-height: 90px; }

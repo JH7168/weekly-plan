@@ -19,7 +19,31 @@
     initSelects();
     loadAll();
     loadMeals();
+    initScrollTopBtn();
   };
+
+  // 맨 위로 가기(TOP) 버튼: 일정 높이 이상 스크롤을 내리면 나타나고, 누르면 맨 위로 부드럽게 올라갑니다.
+  // (GAS는 내용이 iframe 안에서 스크롤되므로, 그 스크롤 위치를 기준으로 표시 여부를 정합니다.)
+  function initScrollTopBtn() {
+    const btn = document.getElementById('scrollTopBtn');
+    if (!btn) return;
+    const scrollY = () => window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    const onScroll = () => { btn.classList.toggle('show', scrollY() > 300); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
+  function scrollToTop() {
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      window.scrollTo(0, 0);
+    }
+    // 일부 환경에서 스크롤 주체가 문서 요소일 수 있어 함께 처리합니다.
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  }
 
   // 오늘 급식(NEIS) 렌더링. 하루 한 끼만: 서버가 현재 시각 기준으로 정한 "지금 보여줄 한 끼"(cards[0])를 씁니다.
   //  - 13:30 이전: 오늘 점심 / 13:30~18:15: 오늘 저녁 / 18:15 이후: 다음 등교일 점심
@@ -54,10 +78,31 @@
       `</div>`;
   }
 
+  // 주말(토·일)은 다음 주를 준비하는 시기이므로, "이번 주"를 정할 때 토/일이면 다음 주 월요일로
+  // 당겨서 계산합니다. (평일은 오늘 그대로) 예: 8/29(토) → 8/31(월)이 속한 9월 1주차를 이번 주로 봅니다.
+  function effectiveToday() {
+    const d = new Date();
+    const day = d.getDay(); // 0=일, 6=토
+    if (day === 6) d.setDate(d.getDate() + 2);
+    else if (day === 0) d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  // effectiveToday가 속한 주(월~금)의 소속 달(수요일 기준) 연/월을 돌려줍니다.
+  function effectiveOwningYM() {
+    const d = effectiveToday();
+    const day = d.getDay(); // 월~금(1~5)
+    const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (day - 1));
+    const wed = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 2);
+    return { y: wed.getFullYear(), m: wed.getMonth() + 1 };
+  }
+
   function initSelects() {
-    const d = new Date(), y = serverData.currentYear, m = serverData.currentMonth;
+    const ew = effectiveOwningYM();          // 주말이면 다음 주가 속한 달로 시작
+    const y = ew.y, m = ew.m;
+    const base = serverData.currentYear;
     let yH = '', mH = '';
-    for(let i=y-2; i<=y+2; i++) yH += `<option value="${i}" ${i===y?'selected':''}>${i}년</option>`;
+    for(let i=base-2; i<=base+2; i++) yH += `<option value="${i}" ${i===y?'selected':''}>${i}년</option>`;
     for(let i=1; i<=12; i++) mH += `<option value="${i}" ${i===m?'selected':''}>${i}월</option>`;
     el.y().innerHTML = yH; el.m().innerHTML = mH;
     upWeeks();
@@ -84,7 +129,7 @@
   }
 
   function upWeeks() {
-    const d = new Date();
+    const d = effectiveToday();
     const y = parseInt(el.y().value), m = parseInt(el.m().value);
     const mondays = getWeekMondaysForMonth(y, m);
 
@@ -166,8 +211,7 @@
         // (달을 옮기거나 다시 조회할 때는 그 달 전체를 보여주는 게 맞으므로, 최초 1회만 적용합니다.)
         if (!hasAutoJumpedToThisWeek) {
           hasAutoJumpedToThisWeek = true;
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          const today = effectiveToday();
           const todayTime = today.getTime();
           const curWeek = currentMonthWeeks.find(wk => todayTime >= wk.sTime && todayTime <= wk.sTime + 4 * 86400000 + 86399999);
           if (curWeek) activeWeekFilter = [curWeek.sTime];
@@ -220,8 +264,7 @@
     if (!navEl) return;
     if (!currentMonthWeeks || currentMonthWeeks.length === 0) { navEl.innerHTML = ''; return; }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = effectiveToday();
     const todayTime = today.getTime();
 
     // 소속 달(owningYear-owningMonth)별로 묶습니다. currentMonthWeeks가 이미 날짜순이라 그룹도 자연히 순서대로 생깁니다.
@@ -259,7 +302,15 @@
   // 보여주고, 다른 달이면 그 달의 달력으로 이동합니다.
   function jumpToMonth(y, m) {
     if (Number(el.y().value) === y && Number(el.m().value) === m) {
-      const weeksOfMonth = (currentMonthWeeks || []).filter(w => w.owningYear === y && w.owningMonth === m);
+      // 그 달(y년 m월)의 날짜가 월~금 중 하루라도 포함된 주는 모두 보여줍니다.
+      // (예: "8월"을 누르면 8/31이 든 9월 1주차(8/31~9/4)도 함께 나옵니다.)
+      const weeksOfMonth = (currentMonthWeeks || []).filter(w => {
+        for (let i = 0; i < 5; i++) {
+          const d = new Date(w.sTime + i * 86400000);
+          if (d.getFullYear() === y && (d.getMonth() + 1) === m) return true;
+        }
+        return false;
+      });
       if (weeksOfMonth.length === 0) return;
       selectedWeeksForFilter = [];
       activeWeekFilter = weeksOfMonth.map(w => w.sTime);
@@ -406,11 +457,11 @@
     // 막대 하나로, 제목만 표시합니다. 막대를 누르면 팝업으로 작성된 내용 전체를 볼 수 있습니다.
     function renderCalendarRow(label, popupLabel, items, isEventRow) {
       let rowHtml = `<tr style="page-break-inside: avoid; break-inside: avoid; border-bottom:1px solid #e2e8f0;"${isEventRow ? ' class="cal-event-tr"' : ''}>
-        <td class="dept-name-cell" style="${deptCellStyle}">${label}</td>
-        <td colspan="${indices.length}" style="padding:0; vertical-align:top; border:none;">`;
-      // align-content:center — 부서명이 2줄로 줄바꿈되어 행이 항목 막대보다 높아질 때, 막대가 위에 붙지 않고
-      // 세로 가운데로 오도록 합니다.
-      rowHtml += `<div style="display:grid; grid-template-columns: repeat(${indices.length}, minmax(0, 1fr)); gap:6px; padding:10px; height:100%; box-sizing:border-box; align-content:center;">`;
+        <td class="dept-name-cell" style="${deptCellStyle}${isEventRow ? ' border-right:none;' : ''}">${label}</td>
+        <td colspan="${indices.length}" style="padding:0; vertical-align:middle; border:none;">`;
+      // 부서명이 2줄로 줄바꿈되어 행이 항목 막대보다 높아질 때, 막대가 위에 붙지 않고 세로 가운데로 오도록 합니다.
+      // (표 셀 안에서는 height:100%가 잘 안 먹으므로, td를 vertical-align:middle로 두고 이 div는 내용 높이로 둡니다.)
+      rowHtml += `<div style="display:grid; grid-template-columns: repeat(${indices.length}, minmax(0, 1fr)); gap:6px; padding:10px; box-sizing:border-box;">`;
 
       items.forEach(item => {
         const mappedIndices = mapItemToIndices(item);
@@ -419,7 +470,11 @@
           const span = Math.max(...mappedIndices) - Math.min(...mappedIndices) + 1;
           const title = isEventRow ? item.text : extractDeptTitle(item.text);
           const barClass = 'event-bar' + (isEventRow ? ' cal-event-bar' : '');
-          const detailIdx = registerDetail(popupLabel, item.dateLabel || item.date || '', item.text);
+          // 이 항목이 실제로 속한 주(연/월/주차, 수요일 기준)를 함께 저장해, 월경계 주(예: 8/31~9/4=9월1주차)의
+          // 항목도 현재 달력의 월이 아니라 '항목이 속한 주'로 정확히 조회(수정/삭제)되게 합니다.
+          const weekCtx = (week && week.owningYear && week.owningMonth)
+            ? { y: week.owningYear, m: week.owningMonth, w: week.weekNum } : null;
+          const detailIdx = registerDetail(popupLabel, item.dateLabel || item.date || '', item.text, weekCtx);
 
           rowHtml += `<div class="${barClass}" style="grid-column: ${gridStart} / span ${span}; ${fsStyle}" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">${title}</div>`;
         }
@@ -467,8 +522,8 @@
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
     calendarItemDetails = [];
-    function registerDetail(label, dateLabel, text) {
-      calendarItemDetails.push({ label, dateLabel, text });
+    function registerDetail(label, dateLabel, text, weekCtx) {
+      calendarItemDetails.push({ label, dateLabel, text, weekCtx: weekCtx || null });
       return calendarItemDetails.length - 1;
     }
 
@@ -561,14 +616,13 @@
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
     calendarItemDetails = [];
-    function registerDetail(label, dateLabel, text) {
-      calendarItemDetails.push({ label, dateLabel, text });
+    function registerDetail(label, dateLabel, text, weekCtx) {
+      calendarItemDetails.push({ label, dateLabel, text, weekCtx: weekCtx || null });
       return calendarItemDetails.length - 1;
     }
 
-    // 오늘이 포함된 주(있다면)를 찾아 강조 테두리를 표시합니다.
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    // 오늘(주말이면 다음 주)이 포함된 주를 찾아 강조 테두리를 표시합니다.
+    const now = effectiveToday();
     const todayTime = now.getTime();
 
     const weeksToShow = activeWeekFilter
@@ -599,6 +653,38 @@
   }
 
   // 항목(연간 행사/부서별 업무) 막대나 모바일 목록 줄을 클릭했을 때, 작성된 내용 전체를 팝업으로 보여줍니다.
+  // 저장 텍스트에서 '전달사항'을 분리합니다. body(제목+상세 포함)와 notice로 나눕니다.
+  //  - 새 형식: "【전달사항】" 헤더 뒤를 전달사항으로.
+  //  - 옛 형식: "전달사항"으로 시작하는 줄(예: "4. 전달사항: ...")부터 뒤를 전달사항으로 자동 감지.
+  function splitNotice(text) {
+    text = String(text || '');
+    const mk = text.match(/^([\s\S]*?)\n*【전달사항】\n*([\s\S]*)$/);
+    if (mk) return { body: mk[1].replace(/\s+$/, ''), notice: mk[2].trim() };
+    const lines = text.split(/\r?\n/);
+    // "전달사항:" 또는 "4. 전달사항:" 또는 "전달사항"(단독 줄)만 감지 (뒤에 다른 말이 붙은 줄은 제외해 오탐 방지)
+    const idx = lines.findIndex(l => /^\s*\d*\s*[.)]?\s*전달\s*사항\s*(?:[:：]|\s*$)/.test(l));
+    if (idx !== -1) {
+      const body = lines.slice(0, idx).join('\n').replace(/\s+$/, '');
+      const firstNoticeLine = lines[idx].replace(/^\s*\d*\s*[.)]?\s*전달\s*사항\s*[:：]?\s*/, '');
+      const notice = [firstNoticeLine].concat(lines.slice(idx + 1)).join('\n').trim();
+      return { body: body, notice: notice };
+    }
+    return { body: text, notice: '' };
+  }
+
+  // 저장 텍스트를 { title, detail, notice }로 분해합니다. (수정 창 3칸 채우기용)
+  //  - 제목: 첫 줄이 "[...]" 이면 그 안의 글자.
+  function parseTaskText(raw) {
+    raw = String(raw || '');
+    let title = '', rest = raw;
+    const nl = raw.indexOf('\n');
+    const firstLine = nl === -1 ? raw : raw.slice(0, nl);
+    const tm = firstLine.match(/^\s*\[(.*)\]\s*$/);
+    if (tm) { title = tm[1].trim(); rest = (nl === -1) ? '' : raw.slice(nl + 1); }
+    const sn = splitNotice(rest);
+    return { title: title, detail: sn.body.trim(), notice: sn.notice };
+  }
+
   let currentDetailIdx = -1; // 지금 팝업에 열려 있는 항목의 calendarItemDetails 인덱스 (수정/삭제 버튼에서 사용)
   function showItemDetail(idx) {
     const d = calendarItemDetails[idx];
@@ -606,7 +692,20 @@
     currentDetailIdx = idx;
     document.getElementById('itemDetailDept').innerText = d.label || '';
     document.getElementById('itemDetailDate').innerText = d.dateLabel || '';
-    document.getElementById('itemDetailText').innerHTML = d.text || '';
+    // 저장 텍스트를 제목/내용/전달사항으로 분해해 각각 표시합니다.
+    //  - 제목: 대괄호 없이 가운데·굵게·크게(별도 요소)  - 전달사항: 아래 박스(라벨+색)
+    const p = parseTaskText(d.text);
+    const titleEl = document.getElementById('itemDetailTitle');
+    if (p.title) { titleEl.innerHTML = p.title; titleEl.style.display = 'block'; }
+    else { titleEl.style.display = 'none'; }
+    document.getElementById('itemDetailText').innerHTML = p.detail;
+    const noticeWrap = document.getElementById('itemDetailNoticeWrap');
+    if (p.notice) {
+      document.getElementById('itemDetailNotice').innerHTML = p.notice;
+      noticeWrap.style.display = 'block';
+    } else {
+      noticeWrap.style.display = 'none';
+    }
     // 연간 행사(부서명 없음)는 학사일정표 시트에서 직접 관리하므로 이 화면에서는 수정/삭제할 수 없습니다.
     document.getElementById('itemDetailActions').style.display = (d.label === '연간 행사') ? 'none' : 'flex';
     openMod('itemDetailMod');
