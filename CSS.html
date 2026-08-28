@@ -154,6 +154,23 @@
   .date-row td { background: #fdfdfd; font-weight: bold; font-size: 14px; color: #333; }
   .content-row td { min-height: 50px; height: 50px; font-size: 14px; color: #333; }
 
+  /* 모바일 전용 목록형 화면(연간 행사/부서별 업무): 요일별 표 대신 한 줄에 하나씩 세로로 나열합니다.
+     PC에서는 기본적으로 숨기고, 모바일 미디어쿼리에서만 보이도록 켭니다. */
+  .mobile-list { display: none; background: #fff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; overflow: hidden; }
+  .mobile-list-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-bottom: 1px solid #eef0f3; }
+  .mobile-list-row:last-child { border-bottom: none; }
+  .mobile-list-date { flex: 0 0 auto; min-width: 66px; font-weight: bold; color: #1e293b; font-size: 13px; white-space: nowrap; }
+  .mobile-list-content { flex: 1 1 auto; color: #334155; font-size: 13px; word-break: break-word; overflow-wrap: break-word; }
+  .mobile-list-content.mobile-list-empty { color: #cbd5e1; }
+  .mobile-list-dept-header { background: #f8fafc; padding: 10px 14px; font-weight: bold; color: #1e293b; font-size: 13.5px; border-bottom: 1px solid #e2e8f0; }
+
+  /* 연간 행사는 PC에서도 요일별 표 대신 목록형(.mobile-list)으로 표시합니다. (부서별 업무 표는 PC에서 그대로 표)
+     PC에서는 내용 크기에 맞춰 왼쪽으로 붙이고 일정 간격만 둔 2열로 배치합니다.
+     → 항목이 적으면(한 줄) 가깝게, 많으면 일관된 간격으로 보입니다. (모바일은 아래 미디어쿼리에서 1열) */
+  #dateTableWrap { display: none; }
+  /* PC용 연간 행사(행사별 묶음) 목록: 세로 1열로 나열 */
+  #datePcList { display: block; }
+
   .event-bar {
     background: #eef5ff; border-left: 4px solid var(--primary); padding: 8px 10px;
     border-radius: 4px; font-size: 13.5px; font-weight: 600; color: #333; white-space: pre-wrap;
@@ -244,12 +261,85 @@
     .event-bar { border-left: 4px solid black !important; background: transparent !important; color: black !important; }
   }
 
-  /* 모바일 화면 최적화 */
+  /* 모바일 화면 최적화: 각 폰의 화면 폭에 맞춰 실제로 줄어드는 "조회 전용" 레이아웃.
+     (등록/수정/삭제/인쇄는 감추고, 조회 관련 요소만 폰 폭에 맞게 재배치합니다.) */
   @media (max-width: 768px) {
-    body { padding: 10px; min-width: 850px; overflow-x: auto; }
-    .search-box { padding: 12px 15px; }
+    /* 예전에는 min-width:850px + overflow-x:auto로 PC 화면을 그대로 축소 없이 가로 스크롤만
+       시켰습니다. 폰 폭에 맞춰 실제로 줄어들도록 그 강제 최소폭을 제거합니다. */
+    body { padding: 10px; }
+    .search-box { padding: 10px 10px; }
     .btn-group { gap: 10px; }
     .card-btn { height: 80px; font-size: 13px; }
+
+    /* 1) 상단 한 줄: 왼쪽=오늘 급식(폭 축소), 오른쪽=등록/수정/삭제 3버튼(인쇄 숨김).
+       버튼은 고정 크기(각 46px, 사이 8px)로 세로 나열하고, 각 버튼은 [아이콘 + 명칭](가로).
+       급식 녹색 박스 높이는 '버튼 높이 합 + 사이 여백 합'(46*3 + 8*2 = 154px)에 맞춥니다. */
+    .btn-group { align-items: flex-end; } /* 급식 박스와 버튼 열의 아래를 맞춤 */
+    .meal-inline-right { display: none; }
+    .meal-inline-left { flex: 1 1 auto; min-width: 0; padding: 0; }
+    #printBtn { display: none; }
+    .btn-cluster { display: flex; flex-direction: column; flex: 0 0 auto; gap: 6px; }
+    .btn-cluster .card-btn {
+      width: auto !important; min-width: 84px; height: 34px; flex: 0 0 auto;
+      flex-direction: row; justify-content: flex-start; align-items: center; gap: 8px;
+      padding: 0 12px; font-size: 13px;
+    }
+    .btn-cluster .card-btn i { font-size: 16px; margin: 0; }
+    /* 모바일에서 주간 계획서 옆 관리자 버튼 숨김 */
+    .admin-btn { display: none; }
+
+    /* 선택확대/원래대로는 모바일(목록형)에서는 불필요하므로 숨깁니다. (인라인 display:flex 때문에 !important 필요) */
+    #dateFilterBtns { display: none !important; }
+
+    /* 2) 조회 컨트롤 순서 재배치: 위 줄엔 [년][월][주차][조회]만, 아래 줄엔 학년 버튼만.
+       폭이 좁은 폰에서도 한 줄에 다 들어가도록 select/버튼 크기를 줄이되,
+       "2026년"/"8월"/"4주차" 글자가 안 잘리도록 폭에는 여유를 둡니다. */
+    .search-box { flex-direction: column; align-items: stretch; gap: 10px; }
+    .search-center { order: 1; flex: 0 0 auto; flex-wrap: nowrap; justify-content: center; gap: 5px; }
+    .search-box .grade-filter { order: 2; flex: 0 0 auto; flex-wrap: nowrap; justify-content: center; }
+    .search-spacer { display: none; }
+
+    .search-box select { padding: 6px 4px; font-size: 12.5px; }
+    .search-box select#ySel { width: 78px; }
+    .search-box select#mSel { width: 60px; }
+    .search-box select#wSel { width: 66px; }
+    .search-center .btn-search { padding: 6px 10px; font-size: 12.5px; }
+
+    /* 학년 필터(전체/1학년/2학년/3학년)도 한 줄에 다 들어가도록 칩 크기를 줄입니다. */
+    .grade-chip { padding: 6px 10px; font-size: 12px; }
+
+    /* 3) 선택한 주차의 날짜 범위(예: 2026년 8월 24일 ~ 8월 28일)를 PC에서는 숨기고,
+       모바일에서만 가운데 정렬 + 굵게 눈에 띄게 보여줍니다. */
+    #rangeInfo { display: block; text-align: center; font-size: 14px; font-weight: bold; color: var(--primary); }
+
+    /* 4) 연간 행사/부서별 업무: PC의 요일별 표 대신, 그 주의 항목을 전부 세로로 나열하는
+       목록형 화면(.mobile-list)으로 바꿔서 좁은 화면에서도 잘리거나 겹치지 않게 합니다. */
+    #dateTableWrap, #workTableWrap { display: none; }
+    .mobile-list { display: block; }
+    #datePcList { display: none; } /* PC용 묶음 목록은 모바일에서 숨기고, #dateMobileList(날짜별)만 표시 */
+
+    /* 5) 바로가기 배너: 전체 시간표 / 시청각실 예약 / 방과후 신청 3개만 남기고 나머지는 숨깁니다.
+       폭이 좁아도 줄바꿈되지 않고 한 줄에 나오도록 버튼 크기를 줄입니다. */
+    #scRecordBtn, #scFormsBtn { display: none; }
+    .shortcut-banner { flex-wrap: nowrap; justify-content: center; gap: 6px; padding: 8px 10px; }
+    .shortcut-banner-links { flex-wrap: nowrap; gap: 6px; }
+    .shortcut-link { padding: 6px 8px; font-size: 11px; gap: 4px; }
+    .shortcut-link i { font-size: 12px; }
+
+    /* 오늘 급식 카드: 2열 그리드(PC와 동일)를 그대로 쓰되, 폭이 좁아 줄바꿈이 필요할 때를
+       대비해 항목 줄바꿈만 허용하고, 혹시 넘치면 박스 안에서만 스크롤되게 안전장치를 둡니다. */
+    .meal-inline-menu li { white-space: normal; }
+    /* 급식 녹색 박스 높이 = 오른쪽 3버튼 높이 합 + 사이 여백 합 (34*3 + 6*2 = 114px). 스크롤(드래그) 없음. */
+    .meal-card-box { display: flex; width: 100%; box-sizing: border-box; align-items: flex-start; height: 114px; overflow: hidden; }
+
+    /* 6) 전체 시간표 조회 모달: 표 복사하기/인쇄하기는 조회 전용 화면에서는 숨기고,
+       나머지 줄들의 정렬을 정리합니다 (학년탭: 가운데+한줄 / 학년·반 검색: 가운데 / 축소·확대: 오른쪽). */
+    .tt-action-buttons { display: none; }
+    .tt-toolbar-row { flex-direction: column; align-items: stretch; }
+    .tt-grade-tabs { justify-content: center; flex-wrap: nowrap; }
+    .tt-grade-tab { padding: 6px 8px; font-size: 12px; }
+    .tt-search-group { justify-content: center; }
+    .tt-zoom-group { justify-content: flex-end; }
   }
 
   /* 9. 결보강 계획서: 사유/주차 선택 칩 */
@@ -290,6 +380,9 @@
   .rs-manual-cal-day.active { background:#e11d48; color:#fff; font-weight:bold; }
   .rs-manual-cal-day.disabled { color:#d1d5db; cursor:default; }
   .rs-manual-cal-day.disabled:hover { background:none; color:#d1d5db; }
+  /* 공휴일: 요일 불일치(회색)와 구분되도록 옅은 빨강으로 표시합니다. (NEIS 학사일정 연동) */
+  .rs-manual-cal-day.rs-cal-holiday.disabled { color:#fca5a5; background:#fef2f2; }
+  .rs-manual-cal-day.rs-cal-holiday.disabled:hover { background:#fef2f2; color:#fca5a5; }
 
   /* 결보강 계획서: 시간표 선택 그리드 버튼 */
   .rs-picker-table { border-collapse: collapse; background: white; }

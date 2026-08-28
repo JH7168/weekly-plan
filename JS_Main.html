@@ -7,7 +7,6 @@
 
   let wzCalDate = new Date();
   let wzStartD = '', wzEndD = '', wzClickCount = 0;
-  let currentWzTimeType = 'period';
 
   const el = {
     y: () => document.getElementById('ySel'),
@@ -17,7 +16,6 @@
 
   // 1. 초기 세팅 (페이지 로드 시 호출)
   window.onload = () => {
-    if (window.__IS_MOBILE__) return; // 모바일 모드에선 데스크톱 초기화를 건너뜁니다(MobileView가 담당).
     initSelects();
     loadAll();
     loadMeals();
@@ -130,6 +128,7 @@
 
       renderNotices();
       document.getElementById('printTitle').innerText = `${y}년 ${m}월 ${w}주차 주간 계획서`;
+      renderWeekRangeInfo(y);
 
       renderFilteredWeek(activeFilterIndices);
     }).withFailureHandler(err => {
@@ -162,6 +161,22 @@
     document.getElementById('noticeTxt').innerHTML = blocks.join('<div style="height: 15px;"></div>') || "전달사항이 없습니다.";
   }
 
+  // 조회된 주차가 몇월 며칠부터 며칠까지인지(예: "2026년 8월 24일 ~ 8월 28일") #rangeInfo에 표시합니다.
+  // currentWeekSchedule[i].date는 서버가 "8/24(월)" 형태로 내려주므로 그 중 월/일만 뽑아 씁니다.
+  function renderWeekRangeInfo(year) {
+    const el2 = document.getElementById('rangeInfo');
+    if (!el2) return;
+    if (!currentWeekSchedule || currentWeekSchedule.length === 0) { el2.innerText = ''; return; }
+
+    const toMd = raw => {
+      const m = String(raw || '').match(/^(\d+)\/(\d+)/);
+      return m ? `${m[1]}월 ${m[2]}일` : raw;
+    };
+    const first = toMd(currentWeekSchedule[0].date);
+    const last = toMd(currentWeekSchedule[currentWeekSchedule.length - 1].date);
+    el2.innerText = `${year}년 ${first} ~ ${last}`;
+  }
+
   // 부서명 포맷팅 헬퍼 함수
   function formatDeptName(name) {
     const map = {
@@ -175,8 +190,11 @@
 
   // 선택된 날짜 인덱스(예: [0, 2, 4] -> 월, 수, 금)만 화면에 그려주는 핵심 렌더러
   function renderFilteredWeek(indices) {
+    // 최초 조회가 아직 끝나기 전(currentWeekSchedule이 비어있을 때) 학년 필터 등을 눌러도
+    // 존재하지 않는 데이터에 접근해 에러가 나지 않도록 조용히 무시합니다.
+    if (!currentWeekSchedule || currentWeekSchedule.length === 0) return;
     if(!indices || indices.length === 0) indices = [0, 1, 2, 3, 4];
-    
+
     // 1. 날짜 개수에 따른 폰트 스케일 계산 (5일: 1.0배, 4일: 1.07배, 3일: 1.14배, 2일: 1.21배, 1일: 1.28배)
     const fontScale = 1.0 + (5 - indices.length) * 0.07;
     const fsStyle = `font-size: ${fontScale}em;`;
@@ -195,6 +213,59 @@
     dRowHtml += `<tr class="content-row" style="${fsStyle}">` + indices.map(i => `<td style="${fsStyle}">${currentWeekSchedule[i].content || ''}</td>`).join('') + `</tr>`;
     document.getElementById('dateBody').innerHTML = dRowHtml;
 
+    // 모바일 전용 목록형 렌더링: 요일별 표 대신 날짜 하나씩 세로로 나열합니다. (PC에서는 CSS로 숨김)
+    const dateItems = indices.map(i => currentWeekSchedule[i]);
+
+    // (모바일용) 날짜별 그대로 나열 — 내용 없으면 '-' (기존 방식 유지)
+    const dateMobileEl = document.getElementById('dateMobileList');
+    if (dateMobileEl) {
+      dateMobileEl.innerHTML = dateItems.map(it => {
+        const has = !!(it.content && it.content.trim());
+        return `<div class="mobile-list-row">
+          <div class="mobile-list-date">${it.date}</div>
+          <div class="mobile-list-content${has ? '' : ' mobile-list-empty'}">${has ? it.content : '-'}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // (PC용) '개별 행사'별로 묶기: 한 칸에 여러 행사가 줄바꿈으로 들어있다고 보고 나눈 뒤,
+    // 같은 행사가 연속된 날짜에 있으면 날짜 범위로 묶어 한 줄로 표시합니다. (세로 1열 나열)
+    const datePcEl = document.getElementById('datePcList');
+    if (datePcEl) {
+      const eventOrder = [];   // 행사 처음 등장 순서
+      const eventDates = {};   // 행사 -> [주중 인덱스,...]
+      dateItems.forEach((it, idx) => {
+        const content = (it.content || '').trim();
+        if (!content) return;
+        content.split(/\r?\n/).map(s => s.trim()).filter(Boolean).forEach(ev => {
+          if (!(ev in eventDates)) { eventDates[ev] = []; eventOrder.push(ev); }
+          eventDates[ev].push(idx);
+        });
+      });
+      const rowsArr = [];
+      eventOrder.forEach(ev => {
+        const idxs = eventDates[ev]; // 오름차순
+        let runStart = idxs[0], prev = idxs[0];
+        for (let k = 1; k <= idxs.length; k++) {
+          const cur = idxs[k];
+          if (cur === prev + 1) { prev = cur; continue; }
+          rowsArr.push({
+            firstIdx: runStart, ev: ev,
+            label: (runStart === prev) ? dateItems[runStart].date
+                                       : `${dateItems[runStart].date} ~ ${dateItems[prev].date}`
+          });
+          runStart = cur; prev = cur;
+        }
+      });
+      rowsArr.sort((a, b) => a.firstIdx - b.firstIdx); // 첫 날짜 순 (같으면 등장 순서 유지)
+      const dateRows = rowsArr.map(r => `<div class="mobile-list-row">
+          <div class="mobile-list-date">${r.label}</div>
+          <div class="mobile-list-content">${r.ev}</div>
+        </div>`).join('');
+      datePcEl.innerHTML = dateRows
+        || `<div class="mobile-list-row"><div class="mobile-list-content mobile-list-empty">연간 행사가 없습니다.</div></div>`;
+    }
+
     // 2-2. 부서별 업무 헤더 렌더링 (날짜 및 부서 텍스트에 스케일 적용)
     let headHtml = `<tr style="${fsStyle}">
       <th style="${deptCellStyle} background:#fdfdfd; border-bottom:1px solid #cbd5e1;">
@@ -207,7 +278,7 @@
       let border = isSelected ? '2px solid #3b82f6' : '1px solid transparent';
       
       headHtml += `<th style="${fsStyle} border-bottom:1px solid #cbd5e1;">
-        <div onclick="toggleDateFilter(${idx})" style="cursor:pointer; padding:6px; border-radius:6px; background:${bg}; border:${border}; transition:all 0.2s ease; display:inline-block;">
+        <div onclick="toggleDateFilter(${idx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDateFilter(${idx});}" role="button" tabindex="0" style="cursor:pointer; padding:6px; border-radius:6px; background:${bg}; border:${border}; transition:all 0.2s ease; display:inline-block;">
           ${currentWeekSchedule[idx].date} <span style="font-size:0.8em; font-weight:normal; color:#666;">(클릭)</span>
         </div>
       </th>`;
@@ -254,6 +325,23 @@
         bodyHtml += `</div></td></tr>`;
       });
       document.getElementById('workBody').innerHTML = bodyHtml;
+    }
+
+    // 모바일 전용 목록형 렌더링: 요일 칸에 억지로 맞추는 그리드 대신, 부서마다 그 주의
+    // 업무를 전부 세로로 나열해 잘리거나 겹치는 항목 없이 다 보이도록 합니다. (PC에서는 CSS로 숨김)
+    const workMobileEl = document.getElementById('workMobileList');
+    if (workMobileEl) {
+      if (!visibleDepts || visibleDepts.length === 0) {
+        workMobileEl.innerHTML = `<div class="mobile-list-row"><div class="mobile-list-content mobile-list-empty">데이터 없음</div></div>`;
+      } else {
+        workMobileEl.innerHTML = visibleDepts.map(dept => {
+          const rows = dept.items.map(item => `<div class="mobile-list-row">
+            <div class="mobile-list-date">${item.date}</div>
+            <div class="mobile-list-content" style="white-space:pre-wrap;">${item.text}</div>
+          </div>`).join('');
+          return `<div class="mobile-list-dept-header">${dept.name}</div>${rows}`;
+        }).join('');
+      }
     }
   }
 
@@ -349,9 +437,13 @@
   function printTimetable() {
     const viewEl = document.getElementById('viewTimetable');
     let targetTable = viewEl.querySelector('table') || viewEl;
-    const title = document.getElementById('zoomLabel').innerText;
-    
+    const title = currentTimetableTitle;
+
     const win = window.open('', '_blank', 'width=1000,height=800');
+    if (!win) {
+      showAlert('팝업이 차단되어 인쇄 화면을 열 수 없습니다.\n브라우저 주소창의 팝업 차단 아이콘을 눌러 이 사이트의 팝업을 허용한 뒤 다시 시도해주세요.');
+      return;
+    }
     win.document.write('<html><head><title>' + title + '</title>');
     win.document.write('<style>');
     win.document.write('body { font-family: "Malgun Gothic", sans-serif; padding: 20px; }');
@@ -380,6 +472,9 @@
   let timetableZoom = 0.9;
   let fullTimetableData = [];
   let fullTimetableBgs = [];
+  // 인쇄 제목으로 쓰는 "진짜" 제목. #zoomLabel은 확대/축소(%) 표시 전용이라
+  // 그걸 그대로 인쇄 제목으로 쓰면 확대 후 제목이 "100%"로 깨져버리므로 별도 변수로 관리합니다.
+  let currentTimetableTitle = '전체 시간표';
 
   // 전체시간표가 실제로 적용되는 기간(학기 시작~방학식 등). 서버(스크립트 속성)에서 불러온 값을 캐시합니다.
   // 결보강 계획서의 날짜 추천이 이 기간을 벗어나지 않도록 참고합니다.
@@ -566,6 +661,7 @@
   }
 
   function renderFullTimetable() {
+    currentTimetableTitle = '전체 시간표';
     const totalCols = fullTimetableData[0] ? fullTimetableData[0].length : 0;
     const cols = [];
     for (let c = 0; c < totalCols; c++) cols.push(c);
@@ -648,6 +744,7 @@
 
   // 선택한 학년의 반들만, 선택한 요일의 행만 추려서 전체시간표와 동일한 형태로 렌더링합니다.
   function renderGradeTimetable(grade, days) {
+    currentTimetableTitle = `${grade} 시간표`;
     if (!days) days = ttActiveDays;
 
     let gradeRowIdx = -1;
@@ -778,8 +875,8 @@
     myHtml += `</table>`;
 
     document.getElementById('viewTimetable').innerHTML = myHtml;
-    document.getElementById('zoomLabel').innerText = title;
-    
+    currentTimetableTitle = title;
+
     const modalBox = document.querySelector('#timetableMod .modal-content');
     if (modalBox) {
       modalBox.style.width = '910px';   

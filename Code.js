@@ -44,6 +44,18 @@ function invalidateSheetCache_(sheetName) {
   CacheService.getScriptCache().remove('sheetvals_' + sheetName);
 }
 
+// 사용자가 입력한 텍스트를 HTML에 그대로 끼워 넣기 전에 이스케이프합니다. (저장형 XSS 방지)
+// 전달사항/부서 업무 내용은 시트에 저장된 원본 그대로(줄바꿈 포함) 화면에 표시되므로,
+// 화면에 보여주기 직전(getCombinedData)에만 이스케이프해 저장 데이터 자체는 원문을 유지합니다.
+function escapeHtml_(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // 사람이 시트를 직접 수정하면(예: 학사일정표에서 일정 이동) 해당 시트 캐시를 즉시 비워
 // 앱에 바로 반영되도록 합니다. (단순 onEdit 트리거는 수동 편집 시 자동 실행됩니다.)
 function onEdit(e) {
@@ -187,6 +199,12 @@ function fetchHolidays_(fromYmd, toYmd) {
   return out;
 }
 
+// 결보강 계획서에서 날짜 추천/선택 시 공휴일을 자동으로 제외하기 위해 fetchHolidays_를 그대로 공개합니다.
+// from/to는 'yyyyMMdd' 형식입니다. (급식 카드가 쓰는 형식과 동일)
+function getHolidaysInRange(fromYmd, toYmd) {
+  return fetchHolidays_(fromYmd, toYmd);
+}
+
 // 토/일 여부 ('u': 6=토, 7=일)
 function isWeekend_(d) {
   const u = Number(Utilities.formatDate(d, TZ, 'u'));
@@ -310,23 +328,14 @@ function getMaterialContent(slotKey) {
   }
 }
 
-function doGet(e) {
-  // 반응형: 항상 Index를 서빙하고, 같은 문서 안에서 클라이언트가 화면 크기로 모바일/PC를 그립니다.
-  // (페이지 이동을 전혀 안 하므로 모든 폰에서 확실히 동작합니다.)
-  //  - ?view=pc     → PC 화면 강제(핸드폰에서도 PC로 보기)
-  //  - ?view=mobile → 모바일 화면 강제
-  //  - 파라미터 없음 → 핸드폰이면 자동 모바일, PC면 PC
-  const view = (e && e.parameter && e.parameter.view) || '';
+function doGet() {
   const template = HtmlService.createTemplateFromFile('Index');
   const now = new Date();
 
   // 한영고 로고 아이콘(파비콘) 주소. setFaviconUrl은 .png 등 실제 이미지 확장자 주소만 받으므로
   // GitHub 저장소의 로고를 CDN(jsDelivr)으로 서빙합니다. (모든 사용자 공통)
   const faviconUrl = FAVICON_URL;
-  template.faviconUrl = faviconUrl; // 홈화면/아이콘 링크에 사용
-  template.forcePC = (view === 'pc');       // 핸드폰에서도 PC로 강제
-  template.forceMobile = (view === 'mobile'); // 모바일 강제
-  template.appUrl = ScriptApp.getService().getUrl(); // 모바일/PC 전환 링크용 앱 주소
+  template.faviconUrl = faviconUrl; // Index.html 홈화면/아이콘 링크에 사용
 
   // 초기 UI 구성에 필요한 최소 데이터만 전달 (속도 향상의 핵심)
   template.initialData = {
@@ -431,7 +440,7 @@ function getCombinedData(year, month, week) {
       const linesHtml = String(r[2]).split('\n')
         .map(line => line.trim())
         .filter(line => line)
-        .map(line => `<div class="notice-line">${line}</div>`)
+        .map(line => `<div class="notice-line">${escapeHtml_(line)}</div>`)
         .join("");
 
       if (linesHtml) {
@@ -448,7 +457,7 @@ function getCombinedData(year, month, week) {
 
     if (st <= eTime && et >= sTime) {
       if (!deptMap[r[0]]) deptMap[r[0]] = [];
-      deptMap[r[0]].push({ date: formatSimple(r[1], r[2]), time: st, st: st, et: et, text: r[3], grades: r[5] || '' });
+      deptMap[r[0]].push({ date: formatSimple(r[1], r[2]), time: st, st: st, et: et, text: escapeHtml_(r[3]), grades: r[5] || '' });
     }
   });
   
@@ -471,13 +480,28 @@ function getDeptList() {
 
 // weeks(반복 주차 수)가 2 이상이면 7일 간격으로 동일한 내용을 여러 번 등록합니다 (최대 20주, 매주 반복 등록용).
 // grades: 대상 학년을 콤마로 구분한 문자열 (예: "1,2,3", "1"). 빈 값이면 학년 필터와 무관하게 항상 표시됩니다.
-function saveRangeToSheet(s, e, dept, text, author, weeks, grades) {
-  try {
-    const sParts = s.split('-');
-    const startDate = new Date(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0);
+// "yyyy-MM-dd" 문자열을 Date로 안전하게 변환합니다. 형식이 잘못됐으면(빈 문자열 등)
+// 조용히 "Invalid Date"를 만드는 대신 바로 에러를 던져 잘못된 데이터가 시트에 저장되지 않게 합니다.
+function parseYmd_(s) {
+  const parts = String(s || '').split('-');
+  if (parts.length !== 3) throw new Error('날짜 형식이 올바르지 않습니다: ' + s);
+  const y = Number(parts[0]), m = Number(parts[1]), d = Number(parts[2]);
+  const date = new Date(y, m - 1, d, 0, 0, 0);
+  if (isNaN(date.getTime())) throw new Error('날짜 형식이 올바르지 않습니다: ' + s);
+  return date;
+}
 
-    const eParts = e ? e.split('-') : sParts;
-    const endDate = new Date(eParts[0], eParts[1] - 1, eParts[2], 0, 0, 0);
+function saveRangeToSheet(s, e, dept, text, author, weeks, grades) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (e2) {
+    throw new Error("다른 저장 작업이 진행 중입니다. 잠시 후 다시 시도해주세요.");
+  }
+
+  try {
+    const startDate = parseYmd_(s);
+    const endDate = e ? parseYmd_(e) : startDate;
 
     const repeatCount = Math.max(1, Math.min(20, Number(weeks) || 1));
     const rows = [];
@@ -489,22 +513,29 @@ function saveRangeToSheet(s, e, dept, text, author, weeks, grades) {
 
     const sheet = SS.getSheetByName("Data");
     if (!sheet) throw new Error('"Data" 시트를 찾을 수 없습니다.');
+    // 락으로 보호된 구간 안에서 getLastRow()를 다시 읽어, 다른 사용자가 그 사이 추가한 행과 겹치지 않게 합니다.
     sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
     invalidateSheetCache_("Data");
     return true;
   } catch (err) {
     console.error("saveRangeToSheet 오류: " + err.toString());
     throw new Error("업무 저장 중 오류가 발생했습니다: " + err.message);
+  } finally {
+    lock.releaseLock();
   }
 }
 
 function saveNoticeToSheet(s, e, text, author, weeks, grades) {
+  const lock = LockService.getScriptLock();
   try {
-    const sParts = s.split('-');
-    const startDate = new Date(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0);
+    lock.waitLock(10000);
+  } catch (e2) {
+    throw new Error("다른 저장 작업이 진행 중입니다. 잠시 후 다시 시도해주세요.");
+  }
 
-    const eParts = e ? e.split('-') : sParts;
-    const endDate = new Date(eParts[0], eParts[1] - 1, eParts[2], 0, 0, 0);
+  try {
+    const startDate = parseYmd_(s);
+    const endDate = e ? parseYmd_(e) : startDate;
 
     const repeatCount = Math.max(1, Math.min(20, Number(weeks) || 1));
     const rows = [];
@@ -522,17 +553,49 @@ function saveNoticeToSheet(s, e, text, author, weeks, grades) {
   } catch (err) {
     console.error("saveNoticeToSheet 오류: " + err.toString());
     throw new Error("전달사항 저장 중 오류가 발생했습니다: " + err.message);
+  } finally {
+    lock.releaseLock();
   }
 }
 
 function processBulkDelete(type, rowNums) {
-  const sheetName = type === 'notice' ? "Notice" : "Data";
-  const sheet = SS.getSheetByName(sheetName);
-  if (!sheet) return false;
-  rowNums.sort((a, b) => b - a);
-  rowNums.forEach(num => sheet.deleteRow(num));
-  invalidateSheetCache_(sheetName);
-  return true;
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (e) {
+    throw new Error("다른 삭제 작업이 진행 중입니다. 잠시 후 다시 시도해주세요.");
+  }
+
+  try {
+    const sheetName = type === 'notice' ? "Notice" : "Data";
+    const sheet = SS.getSheetByName(sheetName);
+    if (!sheet) return false;
+
+    // 헤더 행(1행)과 현재 시트 범위를 벗어난 행 번호는 무시해, 스키마 손상이나
+    // "행 번호가 이미 밀려버린" 상태에서의 엉뚱한 삭제를 막습니다.
+    const lastRow = sheet.getLastRow();
+    const validRows = (rowNums || [])
+      .map(Number)
+      .filter(num => Number.isInteger(num) && num >= 2 && num <= lastRow);
+
+    validRows.sort((a, b) => b - a); // 아래에서 위로 지워야 앞 행 삭제가 뒤 행 번호에 영향을 주지 않습니다.
+    validRows.forEach(num => {
+      try {
+        sheet.deleteRow(num);
+      } catch (rowErr) {
+        // 한 행 삭제가 실패해도(예: 동시 편집으로 행이 이미 사라짐) 나머지 행 삭제는 계속 진행합니다.
+        console.error("행 삭제 실패(행 " + num + "): " + rowErr.toString());
+      }
+    });
+
+    invalidateSheetCache_(sheetName);
+    return true;
+  } catch (err) {
+    console.error("processBulkDelete 오류: " + err.toString());
+    throw new Error("삭제 중 오류가 발생했습니다: " + err.message);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function formatSimple(s, e) {
@@ -544,7 +607,11 @@ function formatSimple(s, e) {
 
 function getItemsForDelete(type, year, month, week, dept) {
   const sheetName = type === 'notice' ? "Notice" : "Data";
-  const vals = getCachedSheetValues_(sheetName, 1800);
+  // 여기서 반환하는 rowNum은 곧바로 processBulkDelete/updateRowContent에서 실제 시트 행을
+  // 지우거나 덮어쓰는 데 쓰입니다. 캐시(최대 30분 stale)를 쓰면 그 사이 다른 사용자가
+  // 행을 추가/삭제했을 때 엉뚱한 행을 건드리게 되므로, 이 목록만은 항상 최신 값을 읽습니다.
+  const sheet = SS.getSheetByName(sheetName);
+  const vals = sheet ? sheet.getDataRange().getValues() : [];
   if (vals.length === 0) return [];
 
   const startMonth = new Date(year, month - 1, 1).getTime();
@@ -586,16 +653,26 @@ function getItemsForDelete(type, year, month, week, dept) {
 }
 
 function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, newGrades) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (e) {
+    console.error("수정 오류: 락 획득 실패");
+    return false;
+  }
+
   try {
     const sheetName = (type === 'notice') ? "Notice" : "Data";
     const sheet = SS.getSheetByName(sheetName);
     if (!sheet) throw new Error("시트를 찾을 수 없습니다.");
 
     const row = Number(rowNum);
-    const startDate = new Date(newStart);
-    const endDate = new Date(newEnd);
-    startDate.setHours(0,0,0,0);
-    endDate.setHours(0,0,0,0);
+    if (!Number.isInteger(row) || row < 2 || row > sheet.getLastRow()) {
+      throw new Error("대상 행을 찾을 수 없습니다. 목록을 새로고침한 뒤 다시 시도해주세요.");
+    }
+
+    const startDate = parseYmd_(newStart);
+    const endDate = parseYmd_(newEnd);
 
     if (type === 'notice') {
       sheet.getRange(row, 1, 1, 5).setValues([[startDate, endDate, newText, newAuthor || '', newGrades || '']]);
@@ -608,6 +685,8 @@ function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, ne
   } catch (e) {
     console.error("수정 오류: " + e.toString());
     return false;
+  } finally {
+    lock.releaseLock();
   }
 }
 

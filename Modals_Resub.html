@@ -144,6 +144,10 @@
   const RS_DAY_BY_JS = { 1: '월', 2: '화', 3: '수', 4: '목', 5: '금' };
   let rsManualCalMonth = {}; // "직접입력" 자체 달력이 target별로 지금 보여주는 연/월 { y, m }
 
+  // 공휴일(NEIS 학사일정) 맵: { 'yyyyMMdd': '공휴일명' }. 날짜 추천/선택 시 공휴일을 자동으로 제외하는 데 씁니다.
+  let rsHolidayMap = {};
+  let rsHolidayRangeLoaded = ''; // 마지막으로 불러온 범위("from_to"). scheduleValidRange가 바뀌면 다시 불러옵니다.
+
   // ===== 결보강 모달 드래그 이동 (헤더를 잡고 옆으로 치워서 뒤 시간표를 볼 수 있게) =====
   // transform으로 옮기면 그 안의 position:fixed 요소(날짜 선택 팝업 등)가 화면이 아니라
   // 이 모달 기준으로 위치가 어긋나고 화질도 흐려지는 부작용이 있어, left/top으로 옮깁니다.
@@ -196,19 +200,23 @@
     return d;
   }
 
-  // 시간표 유효기간(학기 시작~방학식 등) 안으로 날짜를 보정하고, 주말이면 평일로 다시 보정합니다.
+  // 시간표 유효기간(학기 시작~방학식 등) 안으로 날짜를 보정하고, 주말·공휴일이면 평일로 다시 보정합니다.
   function rsClampToValidWeekday(iso) {
     let result = iso;
     if (scheduleValidRange) {
       if (result > scheduleValidRange.to) result = scheduleValidRange.to;
       else if (result < scheduleValidRange.from) result = scheduleValidRange.from;
     }
-    const dow = new Date(result + 'T00:00:00').getDay();
-    if (dow === 0 || dow === 6) {
-      const d = rsNearestWeekday(new Date(result + 'T00:00:00'));
-      result = rsToISODate(d);
-      if (scheduleValidRange && result > scheduleValidRange.to) result = scheduleValidRange.to;
+    let d = new Date(result + 'T00:00:00');
+    // 주말이거나 공휴일이면 실제로 수업이 있는 날짜가 나올 때까지 하루씩 넘겨봅니다. (최대 2주)
+    for (let i = 0; i < 14; i++) {
+      const dow = d.getDay();
+      if (dow === 0 || dow === 6) { d = rsNearestWeekday(d); continue; }
+      if (rsIsHoliday(d)) { d = rsAddDays(d, 1); continue; }
+      break;
     }
+    result = rsToISODate(d);
+    if (scheduleValidRange && result > scheduleValidRange.to) result = scheduleValidRange.to;
     return result;
   }
 
@@ -223,6 +231,12 @@
     }
     if (scheduleValidRange && (this.value < scheduleValidRange.from || this.value > scheduleValidRange.to)) {
       showAlert(`시간표 유효기간(${scheduleValidRange.from} ~ ${scheduleValidRange.to}) 안의 날짜만 선택할 수 있습니다.`);
+      this.value = rsLastValidDate;
+      return;
+    }
+    const holidayDateObj = new Date(this.value + 'T00:00:00');
+    if (rsIsHoliday(holidayDateObj)) {
+      showAlert(`공휴일(${rsHolidayName(holidayDateObj) || '공휴일'})입니다. 다른 날짜를 선택해주세요.`);
       this.value = rsLastValidDate;
       return;
     }
@@ -248,11 +262,13 @@
     // 교과/담임교사 자료가 이미 불러와져 있으면 다시 서버에 요청하지 않고 그대로 재사용합니다.
     if (rsSupportDataLoaded) {
       ensureScheduleValidRange(() => {
+      rsEnsureHolidayMap(() => {
         rsLastValidDate = rsClampToValidWeekday(rsToISODate(rsNearestWeekday(new Date())));
         document.getElementById('rsDateInput').value = rsLastValidDate;
         openMod('resubMod');
         openMod('resubNeisNoticeMod'); // 나이스(NEIS) 미연동 안내 팝업을 함께 띄웁니다.
         rsGoStep(0);
+      });
       });
       return;
     }
@@ -264,12 +280,14 @@
       rsHomeroom = (res && res.homeroom) || null;
       rsSupportDataLoaded = true;
       ensureScheduleValidRange(() => {
+      rsEnsureHolidayMap(() => {
         // 기본 날짜는 오늘이지만, 시간표 유효기간(방학식 등)을 벗어나면 그 안의 날짜로 보정합니다.
         rsLastValidDate = rsClampToValidWeekday(rsToISODate(rsNearestWeekday(new Date())));
         document.getElementById('rsDateInput').value = rsLastValidDate;
         openMod('resubMod');
         openMod('resubNeisNoticeMod'); // 나이스(NEIS) 미연동 안내 팝업을 함께 띄웁니다.
         rsGoStep(0);
+      });
       });
     }).withFailureHandler(err => {
       toggleLoading(false);
@@ -1118,6 +1136,46 @@
     return iso >= scheduleValidRange.from && iso <= scheduleValidRange.to;
   }
 
+  // scheduleValidRange(시간표 유효기간) 전체 구간의 공휴일을 서버(NEIS 학사일정)에서 한 번만 불러옵니다.
+  // 이미 같은 범위를 불러온 상태면 다시 요청하지 않고 바로 callback을 호출합니다.
+  function rsEnsureHolidayMap(callback) {
+    const def = computeDefaultSchoolYearRange();
+    const range = scheduleValidRange || def;
+    const rangeKey = range.from + '_' + range.to;
+    if (rsHolidayRangeLoaded === rangeKey) { callback(); return; }
+
+    const fromYmd = range.from.replace(/-/g, '');
+    const toYmd = range.to.replace(/-/g, '');
+    g.withSuccessHandler(res => {
+      rsHolidayMap = res || {};
+      rsHolidayRangeLoaded = rangeKey;
+      callback();
+    }).withFailureHandler(() => {
+      // 공휴일 조회에 실패해도(예: NEIS 일시 오류) 결보강 계획서 자체는 계속 쓸 수 있어야 하므로
+      // 조용히 빈 맵으로 진행합니다. (기존 평일/유효기간 검사는 그대로 동작)
+      rsHolidayMap = {};
+      rsHolidayRangeLoaded = rangeKey;
+      callback();
+    }).getHolidaysInRange(fromYmd, toYmd);
+  }
+
+  // 날짜가 공휴일인지 확인합니다. (방학 기간은 scheduleValidRange 밖으로 이미 제외되므로 별도 처리하지 않습니다.)
+  function rsIsHoliday(dateObj) {
+    if (!dateObj) return false;
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return !!rsHolidayMap[`${y}${m}${d}`];
+  }
+
+  function rsHolidayName(dateObj) {
+    if (!dateObj) return '';
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return rsHolidayMap[`${y}${m}${d}`] || '';
+  }
+
   function rsGetAbsencePeriodRange() {
     let periods = [];
     if (rsCurrent.A) periods.push(parseInt(rsCurrent.A.period, 10));
@@ -1163,6 +1221,7 @@
         const d = rsAddDays(rsAddDays(monday0, o * 7), RS_DAY_IDX[ctx.person.day]);
         if (rsIsDateCollision(d, ctx.person.period, target)) continue;
         if (rsIsAbsenceDayBlocked(d, ctx.person.period)) continue;
+        if (rsIsHoliday(d)) continue; // 공휴일은 추천 후보에서 제외합니다.
         if (respectValidRange && !rsIsDateInValidRange(d)) continue;
         return { offset: o, dateObj: d };
       }
@@ -1234,6 +1293,7 @@
     for (let off = -3; off <= 3; off++) {
       const d = rsAddDays(rsAddDays(monday0, off * 7), RS_DAY_IDX[person.day]);
       if (!rsIsDateInValidRange(d)) continue; // 시간표 유효기간(학기 시작~방학식 등) 밖의 날짜는 추천하지 않습니다.
+      if (rsIsHoliday(d)) continue; // 공휴일은 목록에서 제외합니다.
       // 결강일 자체도 아주 낮은 확률로 수업이 있을 수 있으므로 목록에서 완전히 빼지는 않고, 고를 때 확인 문구만 띄웁니다.
       const active = (mode === 'week' && off === curOffset) ? 'active' : '';
       const warnMark = rsIsAbsenceDayBlocked(d, person.period) ? ' ⚠' : '';
@@ -1332,14 +1392,19 @@
     for (let i = 0; i < firstDow; i++) cells += '<div></div>';
     for (let d = 1; d <= daysInMonth; d++) {
       const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const jsDow = new Date(y, m, d).getDay();
+      const dateObj = new Date(y, m, d);
+      const jsDow = dateObj.getDay();
       const isAllowedDow = allowedJsDow === null || jsDow === allowedJsDow;
+      const holidayName = rsIsHoliday(dateObj) ? (rsHolidayName(dateObj) || '공휴일') : '';
+      const isPickable = isAllowedDow && !holidayName;
       const cls = ['rs-manual-cal-day'];
       if (iso === selIso) cls.push('active');
       if (iso === todayIso) cls.push('today');
-      if (!isAllowedDow) cls.push('disabled');
-      const clickAttr = isAllowedDow ? `onclick="event.stopPropagation(); rsPickManualDate('${target}', '${iso}')"` : '';
-      cells += `<div class="${cls.join(' ')}" ${clickAttr}>${d}</div>`;
+      if (!isPickable) cls.push('disabled');
+      if (holidayName) cls.push('rs-cal-holiday');
+      const titleAttr = holidayName ? ` title="공휴일(${holidayName})"` : '';
+      const clickAttr = isPickable ? `onclick="event.stopPropagation(); rsPickManualDate('${target}', '${iso}')"` : '';
+      cells += `<div class="${cls.join(' ')}"${titleAttr} ${clickAttr}>${d}</div>`;
     }
 
     el.innerHTML = `
@@ -1363,6 +1428,10 @@
       showAlert('중복입니다.');
       return;
     }
+    if (rsIsHoliday(dateObj)) {
+      showAlert(`공휴일(${rsHolidayName(dateObj) || '공휴일'})입니다. 다른 날짜를 선택해주세요.`);
+      return;
+    }
     ctx.store[ctx.modeKey] = 'week';
     ctx.store[ctx.offsetKey] = off;
     ctx.store[ctx.dateKey] = dateObj;
@@ -1381,6 +1450,10 @@ function rsPickManualDate(target, val) {
     const d = new Date(val + 'T00:00:00');
     if (rsIsDateCollision(d, ctx.person.period, target)) {
       showAlert('중복입니다.');
+      return;
+    }
+    if (rsIsHoliday(d)) {
+      showAlert(`공휴일(${rsHolidayName(d) || '공휴일'})입니다. 다른 날짜를 선택해주세요.`);
       return;
     }
     // 직접입력은 막지 않되, 결강일 그 자체를 고른 경우 팝업과 경고 문구로 확인을 유도합니다.

@@ -3,36 +3,6 @@
   <head>
     <base target="_top">
 
-    <!-- 자동 감지 없음: 기본은 PC 화면. 화면 하단의 '모바일 버전으로 이동' 버튼을 누르면(주로 핸드폰) 모바일 화면으로 갑니다.
-         ?view=mobile 로 들어오면 모바일 화면을 표시합니다. -->
-    <script>
-      (function () {
-        try {
-          var forceMobile = <?= forceMobile ? 'true' : 'false' ?>;
-          if (forceMobile) {
-            // 모바일 화면 표시 (데스크톱 UI는 MobileView.html의 CSS가 숨김)
-            window.__IS_MOBILE__ = true;
-            document.documentElement.classList.add('mb-on');
-            return;
-          }
-          // 기본(PC) 화면: 하단에 '모바일 버전으로 이동' 버튼을 띄웁니다. (핸드폰에서 눌러 모바일로 이동)
-          var u = '<?= appUrl ?>';
-          var mobileUrl = u ? (u + (u.indexOf('?') > -1 ? '&' : '?') + 'view=mobile') : '';
-          if (!mobileUrl) return;
-          var add = function () {
-            if (!document.body) { setTimeout(add, 100); return; }
-            var b = document.createElement('a');
-            b.href = mobileUrl; b.target = '_top'; b.textContent = '📱 모바일 버전으로 이동';
-            b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:99999;'
-              + 'background:#3b82f6;color:#fff;padding:12px 20px;border-radius:24px;font-size:15px;font-weight:800;'
-              + 'text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:nowrap;';
-            document.body.appendChild(b);
-          };
-          setTimeout(add, 300);
-        } catch (err) { /* 실패해도 PC 화면 그대로 표시 */ }
-      })();
-    </script>
-
     <!-- Font Awesome을 CDN에서 가져오는데, 미리 연결(preconnect)해두면 실제 <link>가 실행되기 전에
          DNS 조회/TLS 핸드셰이크를 먼저 끝내둘 수 있어 첫 화면 표시가 그만큼 빨라집니다. -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
@@ -124,16 +94,16 @@
 
         <!-- 가운데: 등록/수정/삭제/인쇄 (항상 정중앙) -->
         <div class="btn-cluster">
-          <div class="card-btn" onclick="openMod('choiceMod')" style="border-color: var(--primary); width: 100px; flex: none;">
+          <div class="card-btn" onclick="openMod('choiceMod')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMod('choiceMod');}" role="button" tabindex="0" style="border-color: var(--primary); width: 100px; flex: none;">
             <i class="fas fa-edit" style="color:var(--primary)"></i>등록
           </div>
-          <div class="card-btn" onclick="openEditMod()" style="border-color: var(--edit); width: 100px; flex: none;">
+          <div class="card-btn" onclick="openEditMod()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openEditMod();}" role="button" tabindex="0" style="border-color: var(--edit); width: 100px; flex: none;">
             <i class="fas fa-pen" style="color:var(--edit)"></i>수정
           </div>
-          <div class="card-btn" onclick="openDeleteMod()" style="border-color: var(--danger); width: 100px; flex: none;">
+          <div class="card-btn" onclick="openDeleteMod()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDeleteMod();}" role="button" tabindex="0" style="border-color: var(--danger); width: 100px; flex: none;">
             <i class="fas fa-trash-alt" style="color:var(--danger)"></i>삭제
           </div>
-          <div class="card-btn" onclick="window.print()" style="border-color: #666; width: 100px; flex: none;">
+          <div id="printBtn" class="card-btn" onclick="window.print()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.print();}" role="button" tabindex="0" style="border-color: #666; width: 100px; flex: none;">
             <i class="fas fa-print" style="color:#666"></i>인쇄
           </div>
         </div>
@@ -150,7 +120,7 @@
           <button class="shortcut-link" style="--accent:#e11d48;" onclick="openTimetableModal()">
             <i class="fas fa-table"></i>전체 시간표
           </button>
-          <button class="shortcut-link" style="--accent:#6366f1;" onclick="openRecordMod()">
+          <button id="scRecordBtn" class="shortcut-link" style="--accent:#6366f1;" onclick="openRecordMod()">
             <i class="fas fa-book"></i>학교생활기록부
           </button>
         </div>
@@ -158,10 +128,10 @@
           <button class="shortcut-link" style="--accent:#9c27b0;" onclick="openAudiWeekly()">
             <i class="fas fa-video"></i>시청각실 예약
           </button>
-          <button class="shortcut-link" style="--accent:#f97316;" onclick="window.open('https://script.google.com/macros/s/AKfycbw3g841N66dD-v82Rsufi7o3c91oeNpyu8_WBlv-OqnY9FysMMHclA-uj-Jht_P0xT3jg/exec', '_blank')">
+          <button class="shortcut-link" style="--accent:#f97316;" onclick="window.open('https://script.google.com/macros/s/AKfycbw3g841N66dD-v82Rsufi7o3c91oeNpyu8_WBlv-OqnY9FysMMHclA-uj-Jht_P0xT3jg/exec', '_blank', 'noopener,noreferrer')">
             <i class="fas fa-chalkboard-teacher"></i>방과후 신청
           </button>
-          <button class="shortcut-link" style="--accent:#0ea5e9;" onclick="openFormsMod()">
+          <button id="scFormsBtn" class="shortcut-link" style="--accent:#0ea5e9;" onclick="openFormsMod()">
             <i class="fas fa-file-alt"></i>서식
           </button>
         </div>
@@ -195,50 +165,53 @@
 
     <div id="printTitle" class="print-only-title"></div>
 
-    <div class="mobile-scroll-wrapper">
-      <div class="unified-content">
+    <div class="notice-container">
+      <div class="notice-badge">전달사항</div>
+      <div id="noticeTxt" class="notice-content">조회 버튼을 눌러주세요.</div>
+    </div>
 
-        <div class="notice-container">
-          <div class="notice-badge">전달사항</div>
-          <div id="noticeTxt" class="notice-content">조회 버튼을 눌러주세요.</div>
-        </div>
+    <h3 class="table-title">연간 행사</h3>
+    <div id="dateTableWrap" class="table-scroll">
+      <table id="dateTable">
+        <thead id="dateHead"></thead>
+        <tbody id="dateBody">
+          <tr>
+            <td style="padding:40px; color:#999; text-align:center;">
+              상단에서 주차 선택 후 [조회] 버튼을 눌러주세요.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- 연간 행사 목록: PC용(연속 같은 내용은 날짜 범위로 묶어 2열) / 모바일용(날짜별 그대로 1열) -->
+    <div id="datePcList" class="mobile-list"></div>
+    <div id="dateMobileList" class="mobile-list"></div>
 
-        <h3 class="table-title">연간 행사</h3>
-        <table id="dateTable">
-          <thead id="dateHead"></thead> 
-          <tbody id="dateBody">
-            <tr>
-              <td style="padding:40px; color:#999; text-align:center;">
-                상단에서 주차 선택 후 [조회] 버튼을 눌러주세요.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <div id="rangeInfo" style="display:none; text-align:right; font-size:11px; color:#999; margin-bottom:15px;"></div>
 
-        <div id="rangeInfo" style="text-align:right; font-size:11px; color:#999; margin-bottom:15px;"></div>
-        
-        <!-- 제목은 중앙에 고정, 버튼은 우측에 띄우는 레이아웃 -->
-        <div style="position: relative; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; min-height: 40px;">
-          <h3 class="table-title" style="margin: 0;">부서별 업무</h3>
-          <div style="position: absolute; right: 0; display: flex; gap: 8px;">
-            <button onclick="applyDateFilter()" class="btn-search" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #3b82f6; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔍 선택확대</button>
-            <button onclick="resetDateFilter()" class="btn-cancel" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #94a3b8; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔄 원래대로</button>
-          </div>
-        </div>
-        
-        <table id="workTable">
-          <thead id="workHead"></thead> 
-          <tbody id="workBody">
-            <tr>
-              <td style="padding:40px; color:#999; text-align:center;">
-                상단에서 주차 선택 후 [조회] 버튼을 눌러주세요.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
+    <!-- 제목은 "연간 행사"와 동일하게 왼쪽 정렬, 버튼만 우측에 띄우는 레이아웃 -->
+    <div style="position: relative; margin-bottom: 15px; display: flex; justify-content: flex-start; align-items: center; min-height: 40px;">
+      <h3 class="table-title" style="margin: 0;">부서별 업무</h3>
+      <div id="dateFilterBtns" style="position: absolute; right: 0; display: flex; gap: 8px;">
+        <button onclick="applyDateFilter()" class="btn-search" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #3b82f6; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔍 선택확대</button>
+        <button onclick="resetDateFilter()" class="btn-cancel" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #94a3b8; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔄 원래대로</button>
       </div>
     </div>
+
+    <div id="workTableWrap" class="table-scroll">
+      <table id="workTable">
+        <thead id="workHead"></thead>
+        <tbody id="workBody">
+          <tr>
+            <td style="padding:40px; color:#999; text-align:center;">
+              상단에서 주차 선택 후 [조회] 버튼을 눌러주세요.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- 모바일 전용: 부서별로 그 주의 업무를 전부 세로로 나열하는 목록형 화면 (PC에서는 숨김) -->
+    <div id="workMobileList" class="mobile-list"></div>
 
     <div id="timetableMod" class="modal">
       <div class="modal-content" style="max-width: 95vw; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
@@ -308,12 +281,7 @@
 
     <script>
       const serverData = <?!= JSON.stringify(initialData) ?>;
-      // 모바일 모듈(MobileView)에서 쓰도록 전역으로 노출
-      window.serverData = serverData;
-      window.APP_URL = '<?= appUrl ?>';
-      window.FAVICON_URL = '<?= faviconUrl ?>';
-    </script>
+    </script>    
     <?!= include('JS_Main'); ?>
-    <?!= include('MobileView'); ?>
   </body>
 </html>
