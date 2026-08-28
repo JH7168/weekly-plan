@@ -31,28 +31,28 @@
   }
   .admin-btn:hover { border-color: var(--danger); color: var(--danger); }
 
-  /* 2. 상단 메인 버튼 그룹 */
-  .btn-group { 
-    display: flex; justify-content: center; flex-wrap: nowrap; gap: 15px; margin-bottom: 25px; 
+  /* 2. 상단 메인 버튼 그룹: 왼쪽 급식 카드 + 오른쪽 바로가기 버튼(2줄) */
+  .btn-group {
+    display: flex; justify-content: center; flex-wrap: nowrap; gap: 15px; margin-bottom: 25px;
   }
-  
-  .card-btn { 
-    background: #ffffff; padding: 15px 10px; border-radius: 10px; cursor: pointer; 
-    border: 1px solid var(--border); transition: all 0.2s ease; text-align: center; 
-    flex: 1; max-width: 100px; height: 90px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
-    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+
+  .card-btn {
+    background: #ffffff; padding: 15px 10px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border); transition: all 0.2s ease; text-align: center;
+    flex: 1; max-width: 100px; height: 90px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 10px; font-weight: bold; font-size: 14px; color: #444;
   }
   .card-btn:hover { background: #f8fafc; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
   .card-btn i { font-size: 24px; }
 
-  /* 바로가기 배너: 다른 선생님들이 만든 웹앱으로 이동하는 링크 모음 (우측 정렬) */
-  .shortcut-banner {
-    display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between;
-    gap: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
-    padding: 10px 18px; margin-top: 15px;
+  /* 바로가기 버튼: 급식 카드 줄 오른쪽 끝에, 예전 배너처럼 옅은 흰 박스 안에 2열×3행 격자로 둡니다.
+     1행: 전체 시간표 | 학교생활기록부   2행: 시청각실 예약 | 방과후 신청   3행: (빈칸) | 서식 */
+  .shortcut-cluster {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 0 0 auto;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px;
   }
-  .shortcut-banner-links { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; }
+  .shortcut-empty { display: block; }
   .shortcut-link {
     --accent: #3b82f6;
     display: inline-flex; align-items: center; gap: 6px;
@@ -64,7 +64,9 @@
 
   /* 3. 조회 필터 박스 (무조건 한 줄 유지) */
   /* 상단 패널: (윗줄) 학년+조회 컨트롤 한 줄, (아랫줄) 오늘 급식 오른쪽 정렬 */
-  .top-panel { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
+  /* year/월/주차/조회/학년필터가 모두 위(◀ 2026년 8월 ▶ 줄)나 모바일 전용으로 옮겨가서, PC에서는
+     이 흰 박스 안에 남는 게 없어 통째로 숨깁니다. 모바일에서는 그 요소들이 이 안에 그대로 있으므로 다시 보여줍니다. */
+  .top-panel { display: none; flex-direction: column; gap: 15px; margin-bottom: 25px; }
 
   .search-box {
     display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 10px;
@@ -76,18 +78,14 @@
   .search-spacer { flex: 1 1 0; min-width: 0; }
   .search-box .grade-filter { flex: 1 1 0; min-width: 0; }
 
-  /* 등록/수정/삭제/인쇄 버튼 묶음: 항상 정중앙 */
-  .btn-cluster { display: flex; flex: 0 0 auto; justify-content: center; gap: 15px; }
-
-  /* 등록 버튼 줄 왼쪽의 오늘 한 끼 급식 */
+  /* 급식 카드 줄 왼쪽의 오늘 한 끼 급식 */
   .meal-inline {
     flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center;
     padding: 0 6px;
   }
   .meal-inline-left { align-items: flex-start; text-align: left; }
-  .meal-inline-right { align-items: flex-end; }
   /* 날짜 라벨은 흰 칸 밖 위쪽에 표시 */
-  .meal-inline-label { font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 6px; white-space: nowrap; padding-left: 14px; }
+  .meal-inline-label { font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 6px; white-space: nowrap; padding-left: 14px; }
   /* 연한 파스텔 녹색 카드(흰 듯 녹색인 느낌): 높이는 등록 버튼(90px)과 동일, 안에는 메뉴만 */
   .meal-card-box {
     background: #f2fbf6; border: 1px solid #d8f0e3; border-radius: 12px;
@@ -102,23 +100,77 @@
     gap: 3px 18px; /* 세로 간격 / 가로 간격(가상의 구분선 여백) */
     justify-content: start;
   }
-  .meal-inline-menu li { font-size: 12.5px; color: #334155; line-height: 1.5; white-space: nowrap; }
+  .meal-inline-menu li { font-size: 13.5px; color: #334155; line-height: 1.5; white-space: nowrap; }
   .meal-inline-menu li.meal-holiday { color: #dc2626; font-weight: bold; }
   .meal-inline-menu li.meal-empty { color: #94a3b8; }
   .search-box select {
     padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1;
     font-size: 15px; font-weight: 600; color: #333; outline: none; flex: 1; max-width: 150px;
   }
-  /* 년/월/주차 드롭다운을 조회 버튼 왼쪽에서 각각 다른 폭으로 축소 (기준 150px) */
-  .search-box select#ySel { flex: 0 0 auto; width: 100px; }  /* 년: 2/3 */
-  .search-box select#mSel { flex: 0 0 auto; width: 88px; }   /* 월: 두 자리(11·12월)도 안 짤리게 */
-  .search-box select#wSel { flex: 0 0 auto; width: 90px; }   /* 주차: 3/5 */
+  /* 년/월/주차 드롭다운을 조회 버튼 왼쪽에서 각각 다른 폭으로 축소 (기준 150px).
+     글자가 깨져 보이지 않도록 각 폭에 약간 여유를 둡니다. */
+  .search-box select#ySel { flex: 0 0 auto; width: 116px; }  /* 년: 2/3 */
+  .search-box select#mSel { flex: 0 0 auto; width: 100px; }  /* 월: 두 자리(11·12월)도 안 짤리게 */
+  .search-box select#wSel { flex: 0 0 auto; width: 104px; }  /* 주차: 3/5 */
+  /* 주차 선택은 이제 PC(한 달 전체 달력)에서는 필요 없어 기본적으로 숨기고, 모바일 화면(주간 조회)에서만 보여줍니다. */
+  #wSel { display: none; }
+  /* 조회 버튼도 PC에서는 년/월을 바꾸면 자동으로 조회되어 필요 없으므로 숨기고, 모바일에서만 보여줍니다. */
+  #searchBtn { display: none; }
+  /* 년/월 드롭다운도 PC에서는 위 큰 제목의 ◀▶ 화살표로 옮기므로 필요 없어 숨기고, 모바일에서만 보여줍니다. */
+  #ySel, #mSel { display: none; }
+  /* 학년 필터(검색창 안쪽 사본)는 PC에서는 큰 제목 옆의 사본을 대신 쓰므로 숨기고, 모바일에서만 보여줍니다. */
+  #gradeFilter { display: none; }
+
+  /* 지금 몇 년 몇 월을 보고 있는지 한 줄로 크게 보여주고, 좌우 화살표로 달을 옮깁니다 (달력처럼).
+     학년 필터를 이 줄 맨 오른쪽에 두기 위해, 왼쪽에 같은 폭의 빈 칸을 둬서 가운데는 그대로 중앙 정렬합니다. */
+  /* 3열 그리드로: 왼쪽/오른쪽 칸의 너비가 서로 달라도(주차 버튼 개수 vs 학년 칩 개수) 가운데 칸(년/월)이
+     항상 행 전체의 정가운데에 오도록 합니다(가운데 칸 기준 좌우를 각각 넉넉히 잡아 폭을 맞춤).
+     align-items:start — 주차 버튼이 "8월 줄"/"9월 줄" 두 줄일 때, 첫 줄(8월)이 "2026년 8월"과
+     같은 줄에 오고 둘째 줄(9월)은 그 아래로 내려가도록 위쪽을 기준으로 맞춥니다. */
+  .cal-heading-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px; margin-bottom: 15px; }
+  .cal-heading-row #weekQuickNav { justify-self: start; }
+  .cal-heading-row #monthYearHeading { padding-top: 2px; }
+  /* 오른쪽 칸: 학년 필터(1줄) + 선택확대/원래대로(1줄)를 같은 세로 간격(6px)으로 쌓아, 왼쪽의
+     "N월/N주차" 두 줄과 높이가 맞도록 합니다. 학년 칩은 기본 크기(8px 20px)가 주차 버튼보다 커서
+     그대로 두면 첫 줄 높이가 달라 둘째 줄이 서로 어긋나므로, 여기서만 주차 버튼과 같은 크기로 줄입니다. */
+  .cal-heading-right-col { display: flex; flex-direction: column; gap: 6px; justify-self: end; padding-top: 2px; }
+  .cal-heading-right-col .grade-chip { padding: 6px 12px; font-size: 12.5px; }
+
+  /* 맨 왼쪽 주차 바로가기 버튼들: 소속 달(수요일 기준)별로 한 줄씩, 줄 맨 앞엔 "N월"(그 달로 이동/확대),
+     그 뒤로 "N주차"(오늘이 속한 주는 "이번주")가 이어집니다. */
+  .week-quick-nav { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; }
+  .week-quick-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .week-quick-btn {
+    background: #ffffff; border: 1px solid #cbd5e1; color: #64748b;
+    padding: 6px 12px; border-radius: 20px; font-size: 12.5px; font-weight: bold;
+    cursor: pointer; transition: 0.2s; white-space: nowrap;
+  }
+  .week-quick-btn:hover { border-color: var(--primary); color: var(--primary); background: #eff6ff; }
+  .week-quick-btn.active { background: var(--primary); border-color: var(--primary); color: #ffffff; }
+  /* "N월" 버튼은 주차 버튼과 다르게 회색 계통으로 구분되게 둡니다. */
+  .week-quick-month-btn { background: #f1f5f9; border-color: #94a3b8; color: #334155; }
+  .week-quick-month-btn:hover { background: #e2e8f0; border-color: #64748b; color: #1e293b; }
+  /* 오늘이 포함된 "이번주" 버튼은 평소에도 눈에 띄도록 강조색을 씁니다. */
+  .week-quick-btn-today { border-color: #f59e0b; color: #b45309; }
+  .week-quick-btn-today:hover { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
+  .week-quick-btn-today.active { background: #f59e0b; border-color: #f59e0b; color: #ffffff; }
+  .cal-heading {
+    display: flex; align-items: center; justify-content: center; gap: 14px; flex: 0 0 auto;
+    font-size: 22px; font-weight: 800; color: #1e293b;
+  }
+  .cal-heading .cal-heading-year { font-weight: 900; color: #1e293b; margin-right: 6px; }
+  .cal-heading-nav {
+    background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; width: 32px; height: 32px;
+    border-radius: 8px; font-size: 14px; cursor: pointer; transition: 0.2s; flex: 0 0 auto;
+  }
+  .cal-heading-nav:hover { border-color: var(--primary); color: var(--primary); background: #eff6ff; }
 
   /* 학년 필터 칩 */
   .grade-filter { display: flex; justify-content: flex-start; gap: 8px; margin-bottom: 0; flex-wrap: wrap; }
   .grade-chip { background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 8px 20px; border-radius: 20px; font-size: 13.5px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-  .grade-chip:hover { border-color: var(--primary); color: var(--primary); }
-  .grade-chip.active { background: var(--primary); border-color: var(--primary); color: #ffffff; }
+  /* 조회 버튼과 색이 겹쳐 헷갈리지 않도록, 학년 필터는 파란색(--primary) 대신 회색 계통을 씁니다. */
+  .grade-chip:hover { border-color: #64748b; color: #64748b; }
+  .grade-chip.active { background: #64748b; border-color: #64748b; color: #ffffff; }
 
   /* 등록/수정 화면의 대상 학년 체크박스 */
   .grade-check-group { display: flex; gap: 10px; }
@@ -151,8 +203,6 @@
   th { background: #f8fafc; font-weight: bold; color: #333; font-size: 14px; }
   
   .dept-name-cell { font-weight: bold; background: #fdfdfd; width: 130px; color: #333; }
-  .date-row td { background: #fdfdfd; font-weight: bold; font-size: 14px; color: #333; }
-  .content-row td { min-height: 50px; height: 50px; font-size: 14px; color: #333; }
 
   /* 모바일 전용 목록형 화면(연간 행사/부서별 업무): 요일별 표 대신 한 줄에 하나씩 세로로 나열합니다.
      PC에서는 기본적으로 숨기고, 모바일 미디어쿼리에서만 보이도록 켭니다. */
@@ -162,21 +212,37 @@
   .mobile-list-date { flex: 0 0 auto; min-width: 66px; font-weight: bold; color: #1e293b; font-size: 13px; white-space: nowrap; }
   .mobile-list-content { flex: 1 1 auto; color: #334155; font-size: 13px; word-break: break-word; overflow-wrap: break-word; }
   .mobile-list-content.mobile-list-empty { color: #cbd5e1; }
-  .mobile-list-dept-header { background: #f8fafc; padding: 10px 14px; font-weight: bold; color: #1e293b; font-size: 13.5px; border-bottom: 1px solid #e2e8f0; }
-
-  /* 연간 행사는 PC에서도 요일별 표 대신 목록형(.mobile-list)으로 표시합니다. (부서별 업무 표는 PC에서 그대로 표)
-     PC에서는 내용 크기에 맞춰 왼쪽으로 붙이고 일정 간격만 둔 2열로 배치합니다.
-     → 항목이 적으면(한 줄) 가깝게, 많으면 일관된 간격으로 보입니다. (모바일은 아래 미디어쿼리에서 1열) */
-  #dateTableWrap { display: none; }
-  /* PC용 연간 행사(행사별 묶음) 목록: 세로 1열로 나열 */
-  #datePcList { display: block; }
+  /* 부서 이름 줄: 날짜/내용 줄과 확실히 구분되도록 진하게, 부서마다 다른 색을 씁니다(색은 JS에서 inline으로 지정). */
+  .mobile-list-dept-header { background: #64748b; padding: 10px 14px; font-weight: bold; color: #ffffff; font-size: 13.5px; letter-spacing: 0.2px; }
+  /* 부서별 업무는 제목만 보이므로, 눌러서 세부 내용 팝업을 열 수 있음을 알려줍니다. */
+  .mobile-list-row.cal-clickable { cursor: pointer; }
+  .mobile-list-row.cal-clickable:active { background: #f8fafc; }
 
   .event-bar {
     background: #eef5ff; border-left: 4px solid var(--primary); padding: 8px 10px;
-    border-radius: 4px; font-size: 13.5px; font-weight: 600; color: #333; white-space: pre-wrap;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; min-height: 36px;
-    display: flex; align-items: center; line-height: 1.4;
+    border-radius: 4px; font-size: 13.5px; font-weight: 600; color: #333;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: center; min-height: 36px;
+    display: flex; align-items: center; justify-content: center; line-height: 1.4; cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; /* 일정명은 막대(기간) 안에서 가운데 정렬, 한 줄로 자르고 눌러서 세부 내용 팝업을 봅니다. */
   }
+  .event-bar:hover, .event-bar:focus-visible { filter: brightness(0.97); outline: none; }
+  /* 연간 행사 막대는 부서 업무 막대와 색을 다르게 해서 "부서명 없는 행사 줄"임을 한눈에 구분되게 합니다.
+     맨 왼쪽 칸은 글자 없이 비어 있으므로(구분 표시 불필요) 주황 배경 없이 다른 행과 같게 둡니다. */
+  .event-bar.cal-event-bar { background: #fff7ed; border-left-color: #f97316; }
+  /* PC 월간 달력에서 주차와 주차 사이를 살짝 띄워 구분해 줍니다. */
+  .cal-week-gap td { height: 14px; border: none; background: transparent; padding: 0; }
+
+  /* PC 월간 달력에서 오늘이 포함된 주를 "이번 주는 여기예요" 느낌으로 감싸는 테두리.
+     칸마다 선이 생기지 않도록 그 행의 맨 왼쪽/오른쪽 칸에만 세로선을 긋고, 파란색은 부서 업무 막대
+     색과 겹쳐 헷갈리므로 다른 색(호박색)을 씁니다. */
+  .cal-current-week > td:first-child, .cal-current-week > th:first-child {
+    border-left: 3px solid #f59e0b !important;
+  }
+  .cal-current-week > td:last-child, .cal-current-week > th:last-child {
+    border-right: 3px solid #f59e0b !important;
+  }
+  .cal-current-week-start > td, .cal-current-week-start > th { border-top: 3px solid #f59e0b !important; }
+  .cal-current-week-end > td, .cal-current-week-end > th { border-bottom: 3px solid #f59e0b !important; }
 
   /* 6. 공통 팝업창 (모달) */
   .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 9999; padding: 15px; }
@@ -223,7 +289,11 @@
 
   /* 삭제/수정 리스트 */
   .del-item, .edit-item { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
-  .del-item input[type="checkbox"] { margin-right: 12px; width: 18px; height: 18px; }
+  .del-item input[type="checkbox"] { margin-right: 12px; width: 18px; height: 18px; flex: 0 0 auto; }
+  /* del-item은 [체크박스, 내용] 두 개만 있어서 justify-content:space-between이 내용을 오른쪽 끝으로
+     밀어버려 체크박스 옆이 빈 것처럼 보였습니다. 내용이 남는 폭을 채우도록 해서 체크박스 바로 옆에
+     왼쪽 정렬되게 합니다. */
+  .del-item-info { flex: 1 1 auto; min-width: 0; }
   .del-item-info span, .edit-item-info span { font-size: 12px; color: #666; display: block; }
   .del-item-info b, .edit-item-info b { font-size: 14px; color: #333; }
   .btn-del-sel { background: var(--danger); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; margin-top: 12px; }
@@ -255,49 +325,53 @@
   .print-only-title { display: none; text-align: center; font-size: 26px; font-weight: bold; margin-bottom: 25px; color: black; }
   @media print {
     body { padding: 0; background: white; }
-    .btn-group, .search-box, .modal, .shortcut-banner, .notice-container, .grade-filter, .top-panel, .meal-panel { display: none !important; }
+    .btn-group, .search-box, .modal, .notice-container, .grade-filter, .top-panel, .meal-panel { display: none !important; }
     .print-only-title { display: block !important; }
     table, th, td { border: 1px solid black !important; }
     .event-bar { border-left: 4px solid black !important; background: transparent !important; color: black !important; }
   }
 
   /* 모바일 화면 최적화: 각 폰의 화면 폭에 맞춰 실제로 줄어드는 "조회 전용" 레이아웃.
-     (등록/수정/삭제/인쇄는 감추고, 조회 관련 요소만 폰 폭에 맞게 재배치합니다.) */
+     (등록/관리자는 PC 버전에서만 이용하도록 감추고, 조회 관련 요소만 폰 폭에 맞게 재배치합니다.) */
   @media (max-width: 768px) {
     /* 예전에는 min-width:850px + overflow-x:auto로 PC 화면을 그대로 축소 없이 가로 스크롤만
        시켰습니다. 폰 폭에 맞춰 실제로 줄어들도록 그 강제 최소폭을 제거합니다. */
     body { padding: 10px; }
     .search-box { padding: 10px 10px; }
-    .btn-group { gap: 10px; }
     .card-btn { height: 80px; font-size: 13px; }
 
-    /* 1) 상단 한 줄: 왼쪽=오늘 급식(폭 축소), 오른쪽=등록/수정/삭제 3버튼(인쇄 숨김).
-       버튼은 고정 크기(각 46px, 사이 8px)로 세로 나열하고, 각 버튼은 [아이콘 + 명칭](가로).
-       급식 녹색 박스 높이는 '버튼 높이 합 + 사이 여백 합'(46*3 + 8*2 = 154px)에 맞춥니다. */
-    .btn-group { align-items: flex-end; } /* 급식 박스와 버튼 열의 아래를 맞춤 */
-    .meal-inline-right { display: none; }
-    .meal-inline-left { flex: 1 1 auto; min-width: 0; padding: 0; }
-    #printBtn { display: none; }
-    .btn-cluster { display: flex; flex-direction: column; flex: 0 0 auto; gap: 6px; }
-    .btn-cluster .card-btn {
-      width: auto !important; min-width: 84px; height: 34px; flex: 0 0 auto;
-      flex-direction: row; justify-content: flex-start; align-items: center; gap: 8px;
-      padding: 0 12px; font-size: 13px;
-    }
-    .btn-cluster .card-btn i { font-size: 16px; margin: 0; }
-    /* 모바일에서 주간 계획서 옆 관리자 버튼 숨김 */
+    /* 1) 등록/관리자/주차 바로가기 버튼은 PC 버전(월간 달력)에서만 의미가 있으므로 모바일에서는 숨깁니다. */
     .admin-btn { display: none; }
+    .card-btn { display: none; }
+    .register-btn-row { display: none; }
+    #weekQuickNav { display: none; }
 
-    /* 선택확대/원래대로는 모바일(목록형)에서는 불필요하므로 숨깁니다. (인라인 display:flex 때문에 !important 필요) */
-    #dateFilterBtns { display: none !important; }
+    /* 급식 카드가 한 줄 전체를 차지하고, 바로가기 버튼은 그 아래로 줄바꿈되어 가운데 정렬됩니다.
+       PC의 2열×3행 격자 대신, 자주 안 쓰는 2개(학교생활기록부/서식)는 숨기고 남은 3개만 한 줄로 둡니다.
+       PC용으로 인라인 style="display:grid"가 걸려 있어 !important로 다시 flex로 되돌립니다. */
+    .btn-group { display: flex !important; flex-wrap: wrap; gap: 10px !important; }
+    .meal-inline-left { flex: 1 1 100%; min-width: 0; padding: 0; }
+    .shortcut-cluster { display: flex; flex-wrap: nowrap; flex: 1 1 100%; justify-content: center; gap: 6px; }
+    #scRecordBtn, #scFormsBtn, .shortcut-empty { display: none; }
+    .shortcut-link { padding: 6px 8px; font-size: 11px; gap: 4px; }
+    .shortcut-link i { font-size: 12px; }
 
     /* 2) 조회 컨트롤 순서 재배치: 위 줄엔 [년][월][주차][조회]만, 아래 줄엔 학년 버튼만.
        폭이 좁은 폰에서도 한 줄에 다 들어가도록 select/버튼 크기를 줄이되,
-       "2026년"/"8월"/"4주차" 글자가 안 잘리도록 폭에는 여유를 둡니다. */
+       "2026년"/"8월"/"4주차" 글자가 안 잘리도록 폭에는 여유를 둡니다.
+       모바일은 PC의 월간 달력과 달리 예전처럼 주차 단위 조회를 그대로 쓰므로, 주차 선택을 다시 보여주고
+       PC 전용으로 추가한 달 이동 화살표/큰 제목은 숨겨서 모바일 화면은 기존 그대로 유지합니다. */
+    .top-panel { display: flex; }
     .search-box { flex-direction: column; align-items: stretch; gap: 10px; }
     .search-center { order: 1; flex: 0 0 auto; flex-wrap: nowrap; justify-content: center; gap: 5px; }
     .search-box .grade-filter { order: 2; flex: 0 0 auto; flex-wrap: nowrap; justify-content: center; }
     .search-spacer { display: none; }
+    #ySel, #mSel { display: inline-block; }
+    #wSel { display: inline-block; }
+    #searchBtn { display: inline-block; }
+    #gradeFilter { display: flex; }
+    .cal-heading-row { display: none; }
+    #weekFilterBtns { display: none !important; }
 
     .search-box select { padding: 6px 4px; font-size: 12.5px; }
     .search-box select#ySel { width: 78px; }
@@ -312,25 +386,17 @@
        모바일에서만 가운데 정렬 + 굵게 눈에 띄게 보여줍니다. */
     #rangeInfo { display: block; text-align: center; font-size: 14px; font-weight: bold; color: var(--primary); }
 
-    /* 4) 연간 행사/부서별 업무: PC의 요일별 표 대신, 그 주의 항목을 전부 세로로 나열하는
+    /* 4) 연간 행사/부서별 업무: PC의 달력형 표 대신, 그 주의 항목을 전부 세로로 나열하는
        목록형 화면(.mobile-list)으로 바꿔서 좁은 화면에서도 잘리거나 겹치지 않게 합니다. */
-    #dateTableWrap, #workTableWrap { display: none; }
+    #workTableWrap { display: none; }
     .mobile-list { display: block; }
-    #datePcList { display: none; } /* PC용 묶음 목록은 모바일에서 숨기고, #dateMobileList(날짜별)만 표시 */
-
-    /* 5) 바로가기 배너: 전체 시간표 / 시청각실 예약 / 방과후 신청 3개만 남기고 나머지는 숨깁니다.
-       폭이 좁아도 줄바꿈되지 않고 한 줄에 나오도록 버튼 크기를 줄입니다. */
-    #scRecordBtn, #scFormsBtn { display: none; }
-    .shortcut-banner { flex-wrap: nowrap; justify-content: center; gap: 6px; padding: 8px 10px; }
-    .shortcut-banner-links { flex-wrap: nowrap; gap: 6px; }
-    .shortcut-link { padding: 6px 8px; font-size: 11px; gap: 4px; }
-    .shortcut-link i { font-size: 12px; }
 
     /* 오늘 급식 카드: 2열 그리드(PC와 동일)를 그대로 쓰되, 폭이 좁아 줄바꿈이 필요할 때를
        대비해 항목 줄바꿈만 허용하고, 혹시 넘치면 박스 안에서만 스크롤되게 안전장치를 둡니다. */
     .meal-inline-menu li { white-space: normal; }
-    /* 급식 녹색 박스 높이 = 오른쪽 3버튼 높이 합 + 사이 여백 합 (34*3 + 6*2 = 114px). 스크롤(드래그) 없음. */
-    .meal-card-box { display: flex; width: 100%; box-sizing: border-box; align-items: flex-start; height: 114px; overflow: hidden; }
+    /* 이제 급식 카드가 한 줄 전체를 혼자 차지하므로(옆에 버튼이 없음), 높이를 특정 버튼 묶음에
+       맞출 필요 없이 내용에 맞게 자연스럽게 늘어나도록 최소 높이만 둡니다. */
+    .meal-card-box { display: flex; width: 100%; box-sizing: border-box; align-items: center; min-height: 90px; }
 
     /* 6) 전체 시간표 조회 모달: 표 복사하기/인쇄하기는 조회 전용 화면에서는 숨기고,
        나머지 줄들의 정렬을 정리합니다 (학년탭: 가운데+한줄 / 학년·반 검색: 가운데 / 축소·확대: 오른쪽). */

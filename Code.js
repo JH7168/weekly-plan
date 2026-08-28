@@ -382,86 +382,39 @@ function getWeekMondaysForMonth_(year, month) {
   return mondays;
 }
 
-/**
- * 데이터 통합 조회 (가장 안정적이고 빠른 버전)
- */
-function getCombinedData(year, month, week) {
-  // 클라이언트 <select>의 value는 문자열로 넘어오므로(예: "2026"), 이후 계산이 꼬이지 않도록 숫자로 변환합니다.
-  year = Number(year);
-  month = Number(month);
-  week = Number(week);
-  const res = { schedule: [], noticeItems: [], list: [], rangeText: "" };
-
-  const mondays = getWeekMondaysForMonth_(year, month);
-  const weekStart = mondays[week - 1] || mondays[0] || new Date(year, month - 1, 1);
-  weekStart.setHours(0,0,0,0);
-  
+// 한 주(월요일 시작)에 대한 연간 행사/부서별 업무를 계산합니다.
+// getCombinedData(주간 조회, 모바일용)와 getMonthlyCombinedData(월간 조회, PC용)가 공통으로 사용합니다.
+function buildWeekResult_(weekStart, schMap, datVals) {
+  weekStart = new Date(weekStart);
+  weekStart.setHours(0, 0, 0, 0);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 4);
-  weekEnd.setHours(23,59,59,999);
-  
+  weekEnd.setHours(23, 59, 59, 999);
   const sTime = weekStart.getTime();
   const eTime = weekEnd.getTime();
-  res.rangeText = Utilities.formatDate(weekStart, TZ, "yyyy-MM-dd") + " ~ " + Utilities.formatDate(weekEnd, TZ, "yyyy-MM-dd");
-  res.sTime = sTime;
-  
-  // 모든 시트 데이터를 가져온 후 헤더 행을 제외하고 메모리 처리 (빈 시트 방어 로직)
-  // 여러 사용자가 짧은 시간에 같은 주를 반복 조회하는 경우가 많아 캐시로 재요청을 줄입니다.
-  const rawSchVals = getCachedSheetValues_("학사일정표", 600);
-  const schVals = rawSchVals.length > 1 ? rawSchVals.slice(1) : [];
 
-  const rawNotVals = getCachedSheetValues_("Notice", 1800);
-  const notVals = rawNotVals.length > 1 ? rawNotVals.slice(1) : [];
-
-  const rawDatVals = getCachedSheetValues_("Data", 1800);
-  const datVals = rawDatVals.length > 1 ? rawDatVals.slice(1) : [];
-  
-  const schMap = new Map();
-  schVals.forEach(r => { 
-    if (r[0] instanceof Date) {
-      schMap.set(Utilities.formatDate(r[0], TZ, "yyyyMMdd"), r[1]); 
-    }
-  });
-  
   const daysArr = ["일", "월", "화", "수", "목", "금", "토"];
+  const schedule = [];
   for (let i = 0; i < 5; i++) {
-    let cur = new Date(weekStart);
+    const cur = new Date(weekStart);
     cur.setDate(weekStart.getDate() + i);
-    res.schedule.push({ 
-      date: (cur.getMonth()+1)+"/"+cur.getDate()+"("+daysArr[cur.getDay()]+")", 
-      content: schMap.get(Utilities.formatDate(cur, TZ, "yyyyMMdd")) || "" 
+    schedule.push({
+      date: (cur.getMonth()+1)+"/"+cur.getDate()+"("+daysArr[cur.getDay()]+")",
+      content: schMap.get(Utilities.formatDate(cur, TZ, "yyyyMMdd")) || ""
     });
   }
-  
-  // 전달사항 처리 (학년 필터링은 클라이언트에서 처리하므로 학년 태그를 함께 내려줍니다)
-  notVals.forEach(r => {
-    if (!(r[0] instanceof Date && r[1] instanceof Date)) return;
-    if (r[0].getTime() <= eTime && r[1].getTime() >= sTime) {
-      const linesHtml = String(r[2]).split('\n')
-        .map(line => line.trim())
-        .filter(line => line)
-        .map(line => `<div class="notice-line">${escapeHtml_(line)}</div>`)
-        .join("");
-
-      if (linesHtml) {
-        res.noticeItems.push({ html: linesHtml, grades: r[4] || '' });
-      }
-    }
-  });
 
   const deptMap = {};
   datVals.forEach(r => {
     if (!(r[1] instanceof Date) || !(r[2] instanceof Date)) return;
     const st = r[1].getTime();
     const et = r[2].getTime();
-
     if (st <= eTime && et >= sTime) {
       if (!deptMap[r[0]]) deptMap[r[0]] = [];
       deptMap[r[0]].push({ date: formatSimple(r[1], r[2]), time: st, st: st, et: et, text: escapeHtml_(r[3]), grades: r[5] || '' });
     }
   });
-  
-  res.list = Object.keys(deptMap).map(name => {
+  const list = Object.keys(deptMap).map(name => {
     const items = deptMap[name].sort((a,b) => a.time - b.time);
     return { name, items, first: items[0].time };
   }).sort((a,b) => {
@@ -470,7 +423,127 @@ function getCombinedData(year, month, week) {
     return a.first - b.first;
   });
 
-  return res;
+  return {
+    schedule, list, sTime, eTime,
+    rangeText: Utilities.formatDate(weekStart, TZ, "yyyy-MM-dd") + " ~ " + Utilities.formatDate(weekEnd, TZ, "yyyy-MM-dd")
+  };
+}
+
+// 시트 3종(학사일정표/Notice/Data)을 한 번에 읽어옵니다. getCombinedData/getMonthlyCombinedData 공용.
+function readScheduleSheets_() {
+  // 여러 사용자가 짧은 시간에 같은 주/달을 반복 조회하는 경우가 많아 캐시로 재요청을 줄입니다.
+  const rawSchVals = getCachedSheetValues_("학사일정표", 600);
+  const schVals = rawSchVals.length > 1 ? rawSchVals.slice(1) : [];
+  const rawNotVals = getCachedSheetValues_("Notice", 1800);
+  const notVals = rawNotVals.length > 1 ? rawNotVals.slice(1) : [];
+  const rawDatVals = getCachedSheetValues_("Data", 1800);
+  const datVals = rawDatVals.length > 1 ? rawDatVals.slice(1) : [];
+
+  const schMap = new Map();
+  schVals.forEach(r => {
+    if (r[0] instanceof Date) schMap.set(Utilities.formatDate(r[0], TZ, "yyyyMMdd"), r[1]);
+  });
+
+  return { schMap, notVals, datVals };
+}
+
+function buildNoticeItems_(notVals, sTime, eTime) {
+  const noticeItems = [];
+  notVals.forEach(r => {
+    if (!(r[0] instanceof Date && r[1] instanceof Date)) return;
+    if (r[0].getTime() <= eTime && r[1].getTime() >= sTime) {
+      const linesHtml = String(r[2]).split('\n')
+        .map(line => line.trim())
+        .filter(line => line)
+        .map(line => `<div class="notice-line">${escapeHtml_(line)}</div>`)
+        .join("");
+      if (linesHtml) noticeItems.push({ html: linesHtml, grades: r[4] || '' });
+    }
+  });
+  return noticeItems;
+}
+
+/**
+ * 데이터 통합 조회 - 한 주(모바일 조회 화면에서 사용)
+ */
+function getCombinedData(year, month, week) {
+  // 클라이언트 <select>의 value는 문자열로 넘어오므로(예: "2026"), 이후 계산이 꼬이지 않도록 숫자로 변환합니다.
+  year = Number(year);
+  month = Number(month);
+  week = Number(week);
+
+  const mondays = getWeekMondaysForMonth_(year, month);
+  const weekStart = mondays[week - 1] || mondays[0] || new Date(year, month - 1, 1);
+
+  const { schMap, notVals, datVals } = readScheduleSheets_();
+  const wr = buildWeekResult_(weekStart, schMap, datVals);
+  const noticeItems = buildNoticeItems_(notVals, wr.sTime, wr.eTime);
+
+  return { schedule: wr.schedule, list: wr.list, sTime: wr.sTime, rangeText: wr.rangeText, noticeItems };
+}
+
+// getWeekMondaysForMonth_는 "그 주 수요일이 속한 달"을 기준으로 주차를 정확히 한 달에만 배정합니다
+// (등록/수정 화면의 "N월 M주차" 표기용). 하지만 달력 화면은 그렇게 딱 자르면 8/31(월)~9/4(금) 같은 경계
+// 주간이 8월/9월 어느 쪽에도 하루씩 걸쳐 있는데 한쪽 달에서만 보이는 문제가 있습니다.
+// 이 함수는 대신 "그 주(월~금)가 이 달과 하루라도 겹치면" 포함시켜, 8월 달력에도 9월 달력에도
+// 8/31~9/4 주가 함께 보이도록 합니다(달력 화면 전용, 주차 번호 매기기에는 쓰지 않습니다).
+function getOverlappingWeekMondays_(year, month) {
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0, 23, 59, 59, 999); // 그 달의 마지막 날 23:59:59.999
+
+  // 이 달 1일이 속한 주의 월요일부터 탐색을 시작합니다.
+  const probe = new Date(monthStart);
+  const day = probe.getDay(); // 0=일, 1=월, ... 6=토
+  const diffToMonday = (day === 0) ? -6 : (1 - day);
+  probe.setDate(probe.getDate() + diffToMonday);
+  probe.setHours(0, 0, 0, 0);
+
+  const mondays = [];
+  for (let i = 0; i < 8; i++) { // 한 달이 걸칠 수 있는 최대 주차 수보다 넉넉하게
+    if (probe.getTime() > monthEnd.getTime()) break;
+    const friEnd = new Date(probe.getFullYear(), probe.getMonth(), probe.getDate() + 4, 23, 59, 59, 999);
+    if (friEnd.getTime() >= monthStart.getTime()) mondays.push(new Date(probe));
+    probe.setDate(probe.getDate() + 7);
+  }
+  return mondays;
+}
+
+/**
+ * 데이터 통합 조회 - 한 달(PC 조회 화면에서 사용). 그 달과 하루라도 겹치는 주차들을 전부 계산해
+ * 배열로 내려줍니다(8/31(월)~9/4(금) 같은 경계 주간은 8월/9월 달력 모두에 나타납니다).
+ */
+function getMonthlyCombinedData(year, month) {
+  year = Number(year);
+  month = Number(month);
+
+  const mondays = getOverlappingWeekMondays_(year, month);
+  const { schMap, notVals, datVals } = readScheduleSheets_();
+
+  const weeks = mondays.map(weekStart => {
+    const wr = buildWeekResult_(weekStart, schMap, datVals);
+    // 이 주가 "진짜 소속된" 달/주차 번호를 구합니다(수요일 기준 — 등록/수정 화면과 같은 규칙).
+    // 지금 보고 있는 달(month)과 다를 수 있습니다: 예) 8월 달력에 곁다리로 보이는 8/31~9/4 주는
+    // 실제로는 "9월 1주차"이므로, 화면에도 "8월 n주차"가 아니라 "9월 1주차"로 표시되어야 합니다.
+    const wed = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 2);
+    const owningYear = wed.getFullYear();
+    const owningMonth = wed.getMonth() + 1;
+    const owningMondays = getWeekMondaysForMonth_(owningYear, owningMonth);
+    const weekNum = owningMondays.findIndex(m => m.getTime() === weekStart.getTime()) + 1;
+    return {
+      weekNum: weekNum || 1, owningYear, owningMonth,
+      schedule: wr.schedule, list: wr.list, sTime: wr.sTime, rangeText: wr.rangeText
+    };
+  });
+
+  // 전달사항은 그 달(주차들 전체) 기준으로 한 번만 모아서, 여러 주에 걸친 항목이 중복 표시되지 않게 합니다.
+  let noticeItems = [];
+  if (weeks.length > 0) {
+    const monthStart = weeks[0].sTime;
+    const lastWeekEnd = weeks[weeks.length - 1].sTime + 4 * 86400000 + 86399999; // 마지막 주 금요일 23:59:59.999
+    noticeItems = buildNoticeItems_(notVals, monthStart, lastWeekEnd);
+  }
+
+  return { year, month, weeks, noticeItems };
 }
 
 // 부서별 업무 표시 순서: 지정된 부서는 이 순서대로, 목록에 없는 부서는 맨 뒤에 등록 시간순으로 표시합니다.
@@ -631,9 +704,26 @@ function getItemsForDelete(type, year, month, week, dept) {
   const vals = sheet ? sheet.getDataRange().getValues() : [];
   if (vals.length === 0) return [];
 
-  const startMonth = new Date(year, month - 1, 1).getTime();
-  const endMonth = new Date(year, month, 0, 23, 59, 59, 999).getTime();
-  
+  // "9월"의 주차들은 달력상 9월 1일~30일과 정확히 일치하지 않습니다(예: "9월 1주차"는 수요일 기준으로
+  // 8/31(월)~9/4(금)). 그래서 달력 월 경계로만 거르면 8/31처럼 앞뒤로 걸친 날짜가 목록에서 빠져
+  // 수정/삭제할 수 없는 문제가 있었습니다. 조회 화면(getCombinedData)과 같은 기준으로, 그 달에 속한
+  // 주차들의 첫 월요일 ~ 마지막 금요일 전체를 기본 범위로 잡습니다.
+  // 또한 선택한 주차 기준으로 최소 2주 전까지는 항상 나오도록, 둘 중 더 이른 날짜를 시작점으로 씁니다.
+  const weekMondays = getWeekMondaysForMonth_(year, month);
+  let rangeStart, rangeEnd;
+  if (weekMondays.length > 0) {
+    const selectedIdx = Math.max(0, Math.min(weekMondays.length - 1, Number(week) - 1 || 0));
+    const selectedMonday = weekMondays[selectedIdx];
+    const twoWeeksBefore = new Date(selectedMonday.getFullYear(), selectedMonday.getMonth(), selectedMonday.getDate() - 14).getTime();
+    rangeStart = Math.min(weekMondays[0].getTime(), twoWeeksBefore);
+    const lastMonday = weekMondays[weekMondays.length - 1];
+    rangeEnd = new Date(lastMonday.getFullYear(), lastMonday.getMonth(), lastMonday.getDate() + 4, 23, 59, 59, 999).getTime();
+  } else {
+    // 혹시 주차를 하나도 못 찾으면(있을 수 없지만) 달력 월 경계로 대체합니다.
+    rangeStart = new Date(year, month - 1, 1).getTime();
+    rangeEnd = new Date(year, month, 0, 23, 59, 59, 999).getTime();
+  }
+
   const [sIdx, eIdx, tIdx, gIdx] = (type === 'notice') ? [0, 1, 2, 4] : [1, 2, 3, 5];
   const MAX_LEN = 20;
 
@@ -643,7 +733,7 @@ function getItemsForDelete(type, year, month, week, dept) {
       if (!(row[sIdx] instanceof Date && row[eIdx] instanceof Date)) return false;
       const rowStartTime = row[sIdx].getTime();
       const rowEndTime = row[eIdx].getTime();
-      const isMatchDate = rowStartTime <= endMonth && rowEndTime >= startMonth;
+      const isMatchDate = rowStartTime <= rangeEnd && rowEndTime >= rangeStart;
       return type === 'data' ? (isMatchDate && row[0] === dept) : isMatchDate;
     })
     .reverse()
@@ -655,11 +745,17 @@ function getItemsForDelete(type, year, month, week, dept) {
       const startDate = obj.row[sIdx];
       const endDate = obj.row[eIdx];
 
+      // display는 수정/삭제 목록 화면에 innerHTML로 그대로 꽂혀 들어가므로 반드시 이스케이프합니다.
+      // (이스케이프하지 않으면 내용에 '<' 같은 글자가 섞였을 때 그 항목만 화면이 깨져 버튼이 눌리지 않게 됩니다.)
+      // fullText는 수정 입력창의 값으로만 쓰이므로 원문 그대로 둡니다.
+      // 부서 업무는 이미 "[부서명] 수정/삭제" 화면 제목으로 부서가 나와 있으므로, 항목마다 다시
+      // "[부서명]"을 붙이지 않습니다.
+      const escapedDisplay = escapeHtml_(displayContent);
       return {
         rowNum: obj.i + 1,
         fullText: originalText,
         grades: grades,
-        display: (type === 'notice') ? displayContent : `[${obj.row[0]}] ${displayContent}`,
+        display: escapedDisplay,
         date: Utilities.formatDate(startDate, TZ, "M/d") +
               (Utilities.formatDate(startDate, TZ, "M/d") === Utilities.formatDate(endDate, TZ, "M/d") ?
               "" : " ~ " + Utilities.formatDate(endDate, TZ, "M/d")),

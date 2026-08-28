@@ -84,57 +84,44 @@
     </div>
 
     <div class="header-area">
+      <!-- 수정/삭제는 이제 각 항목을 클릭한 뒤 팝업에서 처리하므로 관리자 버튼만 우측 상단에 작게 둡니다.
+           인쇄 버튼은 휴대성이 좋아져 더는 필요 없어 뺐습니다. -->
       <button class="admin-btn" onclick="openAdminLogin()"><i class="fas fa-lock"></i> 관리자</button>
       <h2>주간 계획서</h2>
 
-      <div class="btn-group" style="display: flex; width: 100%; justify-content: center; align-items: flex-end; gap: 0; flex-wrap: nowrap;">
+      <!-- 급식/등록/바로가기 버튼을 모두 한 줄에: 왼쪽=오늘 급식, 가운데=등록, 오른쪽=바로가기 버튼(2열×3행 격자).
+           3열 그리드로 배치해서 급식/바로가기 버튼의 폭이 서로 달라도 등록 버튼이 항상 이 줄의 정가운데에 오도록 합니다. -->
+      <div class="btn-group" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; width: 100%;">
 
         <!-- 왼쪽: 지금 보여줄 한 끼 (시간에 따라 점심 또는 저녁) -->
-        <div class="meal-inline meal-inline-left" id="mealNow"></div>
+        <div class="meal-inline meal-inline-left" id="mealNow" style="justify-self: start;"></div>
 
-        <!-- 가운데: 등록/수정/삭제/인쇄 (항상 정중앙) -->
-        <div class="btn-cluster">
-          <div class="card-btn" onclick="openMod('choiceMod')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMod('choiceMod');}" role="button" tabindex="0" style="border-color: var(--primary); width: 100px; flex: none;">
-            <i class="fas fa-edit" style="color:var(--primary)"></i>등록
-          </div>
-          <div class="card-btn" onclick="openEditMod()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openEditMod();}" role="button" tabindex="0" style="border-color: var(--edit); width: 100px; flex: none;">
-            <i class="fas fa-pen" style="color:var(--edit)"></i>수정
-          </div>
-          <div class="card-btn" onclick="openDeleteMod()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDeleteMod();}" role="button" tabindex="0" style="border-color: var(--danger); width: 100px; flex: none;">
-            <i class="fas fa-trash-alt" style="color:var(--danger)"></i>삭제
-          </div>
-          <div id="printBtn" class="card-btn" onclick="window.print()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.print();}" role="button" tabindex="0" style="border-color: #666; width: 100px; flex: none;">
-            <i class="fas fa-print" style="color:#666"></i>인쇄
-          </div>
+        <!-- 가운데: 등록 버튼 -->
+        <div class="card-btn" onclick="openMod('choiceMod')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMod('choiceMod');}" role="button" tabindex="0" style="border-color: var(--primary); width: 100px; justify-self: center;">
+          <i class="fas fa-edit" style="color:var(--primary)"></i>등록
         </div>
 
-        <!-- 오른쪽: 버튼을 정중앙에 두기 위한 여백 (급식은 하루 1개만, 왼쪽에만 표시) -->
-        <div class="meal-inline meal-inline-right" aria-hidden="true"></div>
-
-      </div>
-
-      <!-- 바로가기 배너: 다른 선생님들이 만든 웹앱으로 이동하는 링크 모음.
-           앞으로 새 웹앱을 연결할 땐 이 안에 .shortcut-link 버튼만 추가하면 됩니다. -->
-      <div class="shortcut-banner">
-        <div class="shortcut-banner-links">
+        <!-- 오른쪽: 바로가기 버튼(2열×3행 격자, 흰 박스 안에).
+             1행: 전체 시간표 | 시청각실 예약   2행: 학교생활기록부 | 방과후 신청   3행: (빈칸) | 서식 -->
+        <div class="shortcut-cluster" style="justify-self: end;">
           <button class="shortcut-link" style="--accent:#e11d48;" onclick="openTimetableModal()">
             <i class="fas fa-table"></i>전체 시간표
+          </button>
+          <button class="shortcut-link" style="--accent:#9c27b0;" onclick="openAudiWeekly()">
+            <i class="fas fa-video"></i>시청각실 예약
           </button>
           <button id="scRecordBtn" class="shortcut-link" style="--accent:#6366f1;" onclick="openRecordMod()">
             <i class="fas fa-book"></i>학교생활기록부
           </button>
-        </div>
-        <div class="shortcut-banner-links">
-          <button class="shortcut-link" style="--accent:#9c27b0;" onclick="openAudiWeekly()">
-            <i class="fas fa-video"></i>시청각실 예약
-          </button>
           <button class="shortcut-link" style="--accent:#f97316;" onclick="window.open('https://script.google.com/macros/s/AKfycbw3g841N66dD-v82Rsufi7o3c91oeNpyu8_WBlv-OqnY9FysMMHclA-uj-Jht_P0xT3jg/exec', '_blank', 'noopener,noreferrer')">
             <i class="fas fa-chalkboard-teacher"></i>방과후 신청
           </button>
+          <span class="shortcut-empty" aria-hidden="true"></span>
           <button id="scFormsBtn" class="shortcut-link" style="--accent:#0ea5e9;" onclick="openFormsMod()">
             <i class="fas fa-file-alt"></i>서식
           </button>
         </div>
+
       </div>
     </div>
 
@@ -144,22 +131,25 @@
     <!-- 상단: (윗줄) 학년 필터 + 조회 컨트롤 한 줄, (아랫줄 오른쪽) 오늘 급식 카드 2개 -->
     <div class="top-panel">
       <div class="search-box">
-        <!-- 왼쪽: 학년 필터 (조회 버튼과 같은 줄, 맨 왼쪽) -->
-        <div class="grade-filter" id="gradeFilter">
-          <button class="grade-chip active" onclick="setGradeFilter('all', this)">전체</button>
-          <button class="grade-chip" onclick="setGradeFilter('1', this)">1학년</button>
-          <button class="grade-chip" onclick="setGradeFilter('2', this)">2학년</button>
-          <button class="grade-chip" onclick="setGradeFilter('3', this)">3학년</button>
-        </div>
-        <!-- 가운데: 년/월/주차/조회 -->
-        <div class="search-center">
-          <select id="ySel" onchange="upWeeks()"></select>
-          <select id="mSel" onchange="upWeeks()"></select>
-          <select id="wSel"></select>
-          <button class="btn-search" onclick="loadAll()">조회</button>
-        </div>
-        <!-- 오른쪽: 가운데 정렬용 여백 -->
+        <!-- 왼쪽: 가운데 정렬용 여백 (오른쪽 학년 필터와 폭을 맞춰 년/월/주차/조회를 가운데에 둡니다) -->
         <div class="search-spacer"></div>
+        <!-- 가운데: 년/월/주차(모바일 전용)/조회(모바일 전용). 달 이동 화살표는 위 큰 제목 쪽으로 옮겼습니다.
+             PC는 년/월을 바꾸면 바로 조회되므로 조회 버튼이 필요 없어 숨깁니다.
+             모바일은 주차를 고른 뒤 조회를 눌러야 하므로 그대로 둡니다. -->
+        <div class="search-center">
+          <select id="ySel" onchange="onYearMonthChange()"></select>
+          <select id="mSel" onchange="onYearMonthChange()"></select>
+          <!-- 주차 선택: PC는 한 달 전체를 보여주므로 숨기고, 모바일에서만(조회 전용 화면) 씁니다. -->
+          <select id="wSel"></select>
+          <button id="searchBtn" class="btn-search" onclick="loadAll()">조회</button>
+        </div>
+        <!-- 학년 필터(모바일용): PC에서는 아래 큰 제목 옆의 사본을 대신 쓰므로 숨깁니다. -->
+        <div class="grade-filter grade-filter-group" id="gradeFilter">
+          <button class="grade-chip active" data-grade="all" onclick="setGradeFilter('all', this)">전체</button>
+          <button class="grade-chip" data-grade="1" onclick="setGradeFilter('1', this)">1학년</button>
+          <button class="grade-chip" data-grade="2" onclick="setGradeFilter('2', this)">2학년</button>
+          <button class="grade-chip" data-grade="3" onclick="setGradeFilter('3', this)">3학년</button>
+        </div>
       </div>
     </div>
 
@@ -170,33 +160,35 @@
       <div id="noticeTxt" class="notice-content">조회 버튼을 눌러주세요.</div>
     </div>
 
-    <h3 class="table-title">연간 행사</h3>
-    <div id="dateTableWrap" class="table-scroll">
-      <table id="dateTable">
-        <thead id="dateHead"></thead>
-        <tbody id="dateBody">
-          <tr>
-            <td style="padding:40px; color:#999; text-align:center;">
-              상단에서 주차 선택 후 [조회] 버튼을 눌러주세요.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- PC는 이제 "그 달 전체"를 달력처럼 보여주므로(주차 개념 없이), 표 바로 위에 지금 몇 년 몇 월인지
+         크게 보여주고 좌우 화살표로 달을 옮길 수 있게 합니다. 학년 필터도 이 줄 맨 오른쪽에 둡니다.
+         모바일에서는 이 줄 전체를 CSS로 숨기고, 검색창 안의 학년 필터(위)를 그대로 씁니다. -->
+    <!-- 연간 행사(부서명 없음) + 부서별 업무(제목만)를 하나의 달력형 화면으로 통합해서 보여줍니다.
+         위에 "2026년 8월" 큰 제목이 있어 "주간 일정" 같은 별도 이름표는 필요 없어 뺐습니다.
+         날짜 단위 선택확대는 없앴지만, 표 왼쪽의 "N주차"를 눌러 원하는 주차만 확대해 볼 수 있습니다(PC 전용). -->
+    <div class="cal-heading-row">
+      <!-- 맨 왼쪽: 이번 달에 속한 주차 바로가기 버튼들 (오늘이 포함된 주는 "이번주"로 표시) -->
+      <div id="weekQuickNav" class="week-quick-nav"></div>
+      <div id="monthYearHeading" class="cal-heading"></div>
+      <!-- 오른쪽 칸: 학년 필터(1줄) 바로 아래 선택확대/원래대로(1줄) — 왼쪽 "N월/N주차" 두 줄과 높이를 맞춥니다. -->
+      <div class="cal-heading-right-col">
+        <div class="grade-filter grade-filter-group" id="gradeFilterTop">
+          <button class="grade-chip active" data-grade="all" onclick="setGradeFilter('all', this)">전체</button>
+          <button class="grade-chip" data-grade="1" onclick="setGradeFilter('1', this)">1학년</button>
+          <button class="grade-chip" data-grade="2" onclick="setGradeFilter('2', this)">2학년</button>
+          <button class="grade-chip" data-grade="3" onclick="setGradeFilter('3', this)">3학년</button>
+        </div>
+        <div id="weekFilterBtns" style="display:flex; justify-content:flex-end; gap:8px;">
+          <button onclick="applyWeekFilter()" class="btn-search" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #3b82f6; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔍 선택확대</button>
+          <button onclick="resetWeekFilter()" class="btn-cancel" style="width: auto; padding: 6px 15px; font-size: 13px; margin: 0; background: #94a3b8; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔄 원래대로</button>
+        </div>
+      </div>
     </div>
-    <!-- 연간 행사 목록: PC용(연속 같은 내용은 날짜 범위로 묶어 2열) / 모바일용(날짜별 그대로 1열) -->
-    <div id="datePcList" class="mobile-list"></div>
-    <div id="dateMobileList" class="mobile-list"></div>
 
     <div id="rangeInfo" style="display:none; text-align:right; font-size:11px; color:#999; margin-bottom:15px;"></div>
 
-    <!-- 제목은 "연간 행사"와 동일하게 왼쪽 정렬, 버튼만 우측에 띄우는 레이아웃 -->
-    <div style="position: relative; margin-bottom: 15px; display: flex; justify-content: flex-start; align-items: center; min-height: 40px;">
-      <h3 class="table-title" style="margin: 0;">부서별 업무</h3>
-      <div id="dateFilterBtns" style="position: absolute; right: 0; display: flex; gap: 8px;">
-        <button onclick="applyDateFilter()" class="btn-search" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #3b82f6; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔍 선택확대</button>
-        <button onclick="resetDateFilter()" class="btn-cancel" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #94a3b8; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔄 원래대로</button>
-      </div>
-    </div>
+    <!-- 모바일 전용: 연간 행사(날짜별, 행사 없는 날짜는 숨김) -->
+    <div id="dateMobileList" class="mobile-list"></div>
 
     <div id="workTableWrap" class="table-scroll">
       <table id="workTable">
@@ -210,8 +202,27 @@
         </tbody>
       </table>
     </div>
-    <!-- 모바일 전용: 부서별로 그 주의 업무를 전부 세로로 나열하는 목록형 화면 (PC에서는 숨김) -->
+    <!-- 모바일 전용: 부서별로 그 주의 업무 제목만 전부 세로로 나열하는 목록형 화면 (PC에서는 숨김) -->
     <div id="workMobileList" class="mobile-list"></div>
+
+    <!-- 항목(연간 행사/부서별 업무) 클릭 시 세부 내용을 보여주는 팝업. 제목만 보이는 항목을 클릭하면 열립니다. -->
+    <div id="itemDetailMod" class="modal">
+      <div class="modal-content" style="max-width: 480px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:12px;">
+          <div>
+            <h3 style="margin:0 0 4px; color:var(--primary);" id="itemDetailDept"></h3>
+            <div id="itemDetailDate" style="font-size:13px; color:#888;"></div>
+          </div>
+          <span onclick="closeMod('itemDetailMod')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();closeMod('itemDetailMod');}" role="button" tabindex="0" aria-label="닫기" style="cursor:pointer; font-size:24px; color:#999; line-height:1; flex:0 0 auto;">&times;</span>
+        </div>
+        <div id="itemDetailText" style="font-size:14.5px; color:#333; line-height:1.6; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word; max-height:55vh; overflow-y:auto; border-top:1px solid #eef0f3; padding-top:12px;"></div>
+        <!-- 연간 행사(부서명 없음)는 이 화면에서 수정/삭제할 수 있는 데이터가 아니므로 버튼을 숨깁니다. -->
+        <div id="itemDetailActions" style="display:flex; gap:10px; margin-top:20px;">
+          <button class="btn-search" style="flex:1; margin:0; background:var(--edit);" onclick="editItemFromDetail(currentDetailIdx)">✏️ 수정</button>
+          <button class="btn-search" style="flex:1; margin:0; background:var(--danger);" onclick="deleteItemFromDetail(currentDetailIdx)">🗑️ 삭제</button>
+        </div>
+      </div>
+    </div>
 
     <div id="timetableMod" class="modal">
       <div class="modal-content" style="max-width: 95vw; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">

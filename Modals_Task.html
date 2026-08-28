@@ -57,8 +57,13 @@
       <div id="wzSelectedDateDisplay" style="text-align:center; background:#eef5ff; color:var(--primary); font-weight:bold; padding:8px; border-radius:8px; margin-bottom:20px;"></div>
       
       <div class="field" style="margin-bottom:15px;">
-        <label style="font-weight:bold; display:block; margin-bottom:5px;">상세 내용 입력 (일정명은 반드시 [ ] 안에 작성)</label>
-        <textarea id="wizardSingleInput" style="width:100%; height:220px; padding:15px; border:1px solid #cbd5e1; border-radius:5px; resize:none; font-family:inherit; font-size:14px; line-height:1.6;" placeholder="[선배멘토링]&#10;1. 일시: 2026. 7. 15.(수) 3교시~4교시&#10;2. 장소: 시청각실&#10;3. 대상: 1학년&#10;4. 전달사항: 임장지도 부탁드립니다."></textarea>
+        <label style="font-weight:bold; display:block; margin-bottom:5px;">제목</label>
+        <input type="text" id="wzTitle" style="width:100%; padding:12px 15px; border:1px solid #cbd5e1; border-radius:5px; font-size:14px; box-sizing:border-box;" placeholder="예: 선배멘토링">
+      </div>
+
+      <div class="field" style="margin-bottom:15px;">
+        <label style="font-weight:bold; display:block; margin-bottom:5px;">상세 내용 입력</label>
+        <textarea id="wizardSingleInput" style="width:100%; height:220px; padding:15px; border:1px solid #cbd5e1; border-radius:5px; resize:none; font-family:inherit; font-size:14px; line-height:1.6;" placeholder="1. 일시: 3교시~4교시&#10;2. 장소: 시청각실&#10;3. 대상: 1학년&#10;4. 전달사항: 임장지도 부탁드립니다."></textarea>
       </div>
 
       <div class="field" style="margin-bottom:15px;">
@@ -233,6 +238,7 @@
     if (t === 'workMod') {
       document.getElementById('wzDeptGrid').innerHTML = serverData.deptList.map(d => `<button class="dept-btn" onclick="selectWzDept('${d}')">${d}</button>`).join('');
       document.getElementById('wzDept').value = '';
+      document.getElementById('wzTitle').value = '';
       document.getElementById('wizardSingleInput').value = ''; // 통합 텍스트 에어리어 초기화
       document.getElementById('wzIsRange').checked = false;
       setCheckedGrades('wzGradeGroup', '1,2,3');
@@ -287,9 +293,22 @@
       wzCalDate = new Date();
       buildWzCalendar();
     } else if (stepNum === 3) {
-      const dateText = (document.getElementById('wzIsRange').checked && wzStartD && wzEndD) ? `${wzStartD} ~ ${wzEndD}` : wzStartD;
+      const isRange = document.getElementById('wzIsRange').checked && wzStartD && wzEndD;
+      const dateText = isRange ? `${wzStartD} ~ ${wzEndD}` : wzStartD;
       document.getElementById('wzSelectedDateDisplay').innerText = `선택된 날짜: ${dateText}`;
+
+      // 일시 예시를 실제 선택한 날짜에 맞춰 보여줍니다: 하루면 교시만, 기간이면 "월.일.(요일)~월.일.(요일)".
+      const scheduleExample = isRange ? `${formatMD(wzStartD)}~${formatMD(wzEndD)}` : '3교시~4교시';
+      document.getElementById('wizardSingleInput').placeholder =
+        `1. 일시: ${scheduleExample}\n2. 장소: 시청각실\n3. 대상: 1학년\n4. 전달사항: 임장지도 부탁드립니다.`;
     }
+  }
+
+  // "YYYY-MM-DD"를 "M.D.(요일)" 형태로 바꿉니다. (일시 예시 표시용)
+  function formatMD(dateStr) {
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    const d = new Date(dateStr + 'T00:00:00');
+    return `${d.getMonth() + 1}.${d.getDate()}.(${days[d.getDay()]})`;
   }
 
   function toggleWzRange() {
@@ -346,21 +365,18 @@
     const dept = document.getElementById('wzDept').value;
     if (!wzStartD) { showAlert("날짜를 선택해주세요."); return; }
 
-    const finalContent = document.getElementById('wizardSingleInput').value.trim();
+    const title = document.getElementById('wzTitle').value.trim();
+    if (!title) { showAlert("제목을 입력해주세요."); return; }
 
-    if(!finalContent) {
-      showAlert("상세 내용을 입력해주세요.");
-      return;
-    }
+    const detail = document.getElementById('wizardSingleInput').value.trim();
+    if (!detail) { showAlert("상세 내용을 입력해주세요."); return; }
 
-    // 첫 글자가 '['로 시작하고, 그 뒤에 ']'가 닫히는지 엄격하게 검사
-    if (!finalContent.startsWith('[') || !finalContent.includes(']')) {
-      showAlert("일정명(행사명)은 반드시 앞뒤로 대괄호 [ ] 를 넣어 제일 윗줄에 작성해주세요.\n\n예시: [선배멘토링]");
-      return;
-    }
+    // 제목은 화면에 [ ] 안에 담아 저장합니다(기존 데이터·표시 로직과 형식을 맞추기 위함).
+    const finalContent = `[${title}]\n${detail}`;
 
+    // 대상 학년을 하나도 선택하지 않아도 등록할 수 있습니다. 이 경우 학년별(1/2/3학년) 필터에는
+    // 나타나지 않고, "전체" 필터에서만 보이게 됩니다.
     const grades = getCheckedGrades('wzGradeGroup');
-    if (!grades) { showAlert("대상 학년을 하나 이상 선택해주세요."); return; }
 
     const isRepeat = document.getElementById('wzRepeat').checked;
     const weeks = isRepeat ? Math.max(2, parseInt(document.getElementById('wzRepeatWeeks').value) || 2) : 1;
@@ -528,10 +544,24 @@
     goToEditStep(3);
   }
 
-  function fetchForEditWizard() {
+  // 서버(Code.js)의 escapeHtml_와 동일하게 이스케이프합니다. "세부 내용 보기" 팝업의 텍스트(calendarItemDetails의
+  // text)는 서버가 이미 이스케이프해서 내려준 값이라, getItemsForDelete가 돌려주는 원문(fullText)과 그냥 비교하면
+  // 특수문자(& < > " ')가 섞인 항목만 매칭에 실패합니다. 비교 전에 같은 방식으로 맞춰줍니다.
+  function escapeHtmlClient_(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // targetText를 넘기면(팝업에서 "수정" 클릭 시), 목록을 불러온 뒤 그 항목과 원문이 정확히 일치하는
+  // 항목의 수정창을 자동으로 엽니다. (일반적인 "수정" 메뉴로 들어올 때는 targetText 없이 목록만 보여줍니다.)
+  function fetchForEditWizard(targetText) {
     const y = el.y().value, m = el.m().value, w = el.w().value;
     document.getElementById('editList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">불러오는 중...</div>';
-    
+
     g.withSuccessHandler(list => {
       if (!list || list.length === 0) {
         document.getElementById('editList').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">수정할 항목이 없습니다.</div>';
@@ -547,7 +577,59 @@
           <button class="btn-search" style="padding: 6px 12px; margin: 0; width: auto; background:var(--edit);" onclick="openSingleEdit(${idx})">수정</button>
         </div>
       `).join('');
+      if (targetText != null) {
+        const foundIdx = list.findIndex(it => escapeHtmlClient_(it.fullText) === targetText);
+        if (foundIdx !== -1) openSingleEdit(foundIdx);
+        else showAlert("해당 항목을 찾을 수 없습니다. 목록이 바뀌었을 수 있어요. 아래 목록에서 다시 선택해주세요.");
+      }
     }).getItemsForDelete(currentEditType, y, m, w, currentEditDept);
+  }
+
+  // "세부 내용 보기" 팝업의 수정 버튼: 팝업을 닫고 해당 부서의 수정 목록을 불러와, 지금 보고 있던
+  // 항목의 수정창으로 바로 이동합니다.
+  function editItemFromDetail(idx) {
+    const d = calendarItemDetails[idx];
+    if (!d || d.label === '연간 행사') return;
+    closeMod('itemDetailMod');
+    isEdited = false;
+    currentEditType = 'data';
+    currentEditDept = d.label;
+    openMod('editMod');
+    document.getElementById('editStep1').style.display = 'none';
+    document.getElementById('editStep2').style.display = 'none';
+    document.getElementById('editStep3').style.display = 'block';
+    document.getElementById('editListTitle').innerText = `[${currentEditDept}] 수정`;
+    fetchForEditWizard(d.text);
+  }
+
+  // "세부 내용 보기" 팝업의 삭제 버튼: 확인 후 지금 보고 있던 항목 하나만 바로 삭제합니다.
+  function deleteItemFromDetail(idx) {
+    const d = calendarItemDetails[idx];
+    if (!d || d.label === '연간 행사') return;
+    const y = el.y().value, m = el.m().value, w = el.w().value;
+
+    toggleLoading(true, "확인 중...");
+    g.withSuccessHandler(list => {
+      toggleLoading(false);
+      const found = (list || []).find(it => escapeHtmlClient_(it.fullText) === d.text);
+      if (!found) { showAlert("해당 항목을 찾을 수 없습니다. 목록이 바뀌었을 수 있어요. 새로고침 후 다시 시도해주세요."); return; }
+
+      showConfirm("이 항목을 삭제하시겠습니까?", () => {
+        toggleLoading(true, "삭제 중...");
+        g.withSuccessHandler(() => {
+          toggleLoading(false);
+          closeMod('itemDetailMod');
+          showAlert("삭제되었습니다.");
+          loadAll();
+        }).withFailureHandler(err => {
+          toggleLoading(false);
+          showAlert('삭제 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
+        }).processBulkDelete('data', [found.rowNum]);
+      });
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      showAlert('불러오는 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
+    }).getItemsForDelete('data', y, m, w, d.label);
   }
 
   // 원문(fullText)에 따옴표 등이 포함돼도 onclick 속성이 깨지지 않도록,

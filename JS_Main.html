@@ -104,54 +104,192 @@
   }
 
   // 2. 데이터 조회 및 가로 막대(Gantt) 시간표 렌더링
-  let currentWeekSchedule = []; // 현재 주차 날짜 데이터 보관
-  let currentWeekWorkList = []; // 현재 주차 업무 데이터 보관
-  let currentNoticeItems = []; // 현재 주차 전달사항 데이터 보관 (학년 필터링용)
+  // PC는 이제 "그 달 전체"(주차들을 세로로 이어붙인 달력)를 보여주고, 모바일은 기존처럼 한 주만 보여줍니다.
+  let currentWeekSchedule = []; // (모바일용) 현재 주차 날짜 데이터 보관
+  let currentWeekWorkList = []; // (모바일용) 현재 주차 업무 데이터 보관
   let currentWeekSTime = 0;
-  let selectedDatesForFilter = []; // 유저가 클릭한 날짜의 인덱스 보관
-  let activeFilterIndices = [0, 1, 2, 3, 4]; // 현재 화면에 그려지고 있는 날짜 인덱스 (기본: 월~금 5일)
+  let currentMonthWeeks = []; // (PC용) 이번 달에 속한 주차들의 데이터 배열
+  let currentNoticeItems = []; // 현재 조회 범위(주/달)의 전달사항 데이터 보관 (학년 필터링용)
+  let activeFilterIndices = [0, 1, 2, 3, 4]; // 화면에 그려지는 날짜 인덱스 (월~금 5일 고정)
   let currentGradeFilter = 'all'; // 학년 필터 ('all' | '1' | '2' | '3')
+  let calendarItemDetails = []; // 화면에 그려진 항목(연간 행사/부서별 업무)의 세부 내용 (클릭 시 팝업용)
+  let hasAutoJumpedToThisWeek = false; // PC 첫 조회 때만 "이번주"로 자동 확대하기 위한 1회성 플래그
+
+  // 화면 폭 기준으로 지금이 모바일 레이아웃인지 판단합니다(CSS의 max-width:768px 기준과 동일).
+  function isMobileLayout() {
+    return window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  // 지금 그려져 있는 화면(모바일=주간 / PC=월간)을 같은 날짜 필터(indices)로 다시 그립니다.
+  function rerenderCurrent(indices) {
+    if (isMobileLayout()) renderFilteredWeek(indices);
+    else renderMonthView(indices);
+  }
 
   function loadAll() {
     const y = el.y().value, m = el.m().value, w = el.w().value;
     toggleLoading(true, "조회 중...");
-    g.withSuccessHandler(res => {
-      toggleLoading(false);
-      currentWeekSchedule = res.schedule;
-      currentWeekWorkList = res.list;
-      currentNoticeItems = res.noticeItems;
-      currentWeekSTime = res.sTime;
 
-      // 주차가 바뀌면 필터 초기화
-      selectedDatesForFilter = [];
-      activeFilterIndices = [0, 1, 2, 3, 4];
+    activeFilterIndices = [0, 1, 2, 3, 4];
+    selectedWeeksForFilter = [];
+    activeWeekFilter = null;
 
-      renderNotices();
-      document.getElementById('printTitle').innerText = `${y}년 ${m}월 ${w}주차 주간 계획서`;
-      renderWeekRangeInfo(y);
+    if (isMobileLayout()) {
+      g.withSuccessHandler(res => {
+        toggleLoading(false);
+        currentWeekSchedule = res.schedule;
+        currentWeekWorkList = res.list;
+        currentNoticeItems = res.noticeItems;
+        currentWeekSTime = res.sTime;
 
-      renderFilteredWeek(activeFilterIndices);
-    }).withFailureHandler(err => {
-      toggleLoading(false);
-      showAlert('데이터를 불러오는 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
-    }).getCombinedData(y, m, w);
+        renderNotices();
+        document.getElementById('printTitle').innerText = `${y}년 ${m}월 ${w}주차 주간 계획서`;
+        renderWeekRangeInfo(y);
+        updateMonthYearHeading(y, m);
+
+        renderFilteredWeek(activeFilterIndices);
+      }).withFailureHandler(err => {
+        toggleLoading(false);
+        showAlert('데이터를 불러오는 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
+      }).getCombinedData(y, m, w);
+    } else {
+      g.withSuccessHandler(res => {
+        toggleLoading(false);
+        currentMonthWeeks = res.weeks || [];
+        currentNoticeItems = res.noticeItems;
+
+        renderNotices();
+        document.getElementById('printTitle').innerText = `${y}년 ${m}월 주간 계획서`;
+        updateMonthYearHeading(y, m);
+
+        // 맨 처음 페이지를 열었을 때만, 그 달 전체가 아니라 오늘이 포함된 "이번주"부터 바로 보여줍니다.
+        // (달을 옮기거나 다시 조회할 때는 그 달 전체를 보여주는 게 맞으므로, 최초 1회만 적용합니다.)
+        if (!hasAutoJumpedToThisWeek) {
+          hasAutoJumpedToThisWeek = true;
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const todayTime = today.getTime();
+          const curWeek = currentMonthWeeks.find(wk => todayTime >= wk.sTime && todayTime <= wk.sTime + 4 * 86400000 + 86399999);
+          if (curWeek) activeWeekFilter = [curWeek.sTime];
+        }
+
+        renderMonthView(activeFilterIndices);
+      }).withFailureHandler(err => {
+        toggleLoading(false);
+        showAlert('데이터를 불러오는 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
+      }).getMonthlyCombinedData(y, m);
+    }
+  }
+
+  // 상단 큰 제목("◀ 2026년 8월 ▶", 한 줄)을 갱신합니다. 모바일에서는 CSS로 숨겨져 있어 실제로는 PC에서만 보입니다.
+  function updateMonthYearHeading(y, m) {
+    const elH = document.getElementById('monthYearHeading');
+    if (!elH) return;
+    elH.innerHTML =
+      `<button class="cal-heading-nav" onclick="shiftMonth(-1)" aria-label="이전 달">◀</button>` +
+      `<span><span class="cal-heading-year">${y}년</span>${m}월</span>` +
+      `<button class="cal-heading-nav" onclick="shiftMonth(1)" aria-label="다음 달">▶</button>`;
+  }
+
+  // 년/월 select를 직접 바꿨을 때: PC에서는 바로 다시 조회하고, 모바일에서는 예전처럼 조회 버튼을 눌러야 합니다.
+  function onYearMonthChange() {
+    upWeeks();
+    if (!isMobileLayout()) loadAll();
+  }
+
+  // 월 이동 화살표(◀ ▶) 클릭 시: 년/월 select를 옮기고 바로 다시 조회합니다.
+  function shiftMonth(offset) {
+    let y = parseInt(el.y().value), m = parseInt(el.m().value) + offset;
+    if (m < 1) { m = 12; y -= 1; }
+    else if (m > 12) { m = 1; y += 1; }
+    // 연도 select에 없는 해(선택 가능 범위 밖)로는 넘어가지 않습니다.
+    const hasYear = Array.from(el.y().options).some(o => Number(o.value) === y);
+    if (!hasYear) return;
+    el.y().value = y;
+    el.m().value = m;
+    upWeeks();
+    loadAll();
+  }
+
+  // "N주차" 바로가기(전체/1학년/2학년/3학년 줄의 맨 왼쪽, PC 전용)를 그립니다.
+  // 실제 소속 달(owningYear/owningMonth, 수요일 기준)별로 줄을 나눠, 각 줄 맨 앞에 "그 달로 가기" 버튼을
+  // 두고 그 뒤에 그 달의 주차 버튼을 나열합니다. 오늘이 포함된 주는 "N주차" 대신 "이번주"로 표시합니다.
+  // 아무 버튼도 누르지 않은 초기 화면은 항상 달(月) 전체가 그대로 보이는 달력 상태입니다.
+  function renderWeekQuickNav() {
+    const navEl = document.getElementById('weekQuickNav');
+    if (!navEl) return;
+    if (!currentMonthWeeks || currentMonthWeeks.length === 0) { navEl.innerHTML = ''; return; }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
+
+    // 소속 달(owningYear-owningMonth)별로 묶습니다. currentMonthWeeks가 이미 날짜순이라 그룹도 자연히 순서대로 생깁니다.
+    const groups = [];
+    const groupIndexByKey = {};
+    currentMonthWeeks.forEach(week => {
+      const key = week.owningYear + '-' + week.owningMonth;
+      if (!(key in groupIndexByKey)) {
+        groupIndexByKey[key] = groups.length;
+        groups.push({ year: week.owningYear, month: week.owningMonth, weeks: [] });
+      }
+      groups[groupIndexByKey[key]].weeks.push(week);
+    });
+
+    navEl.innerHTML = groups.map(group => {
+      const monthBtn = `<button class="week-quick-btn week-quick-month-btn" onclick="jumpToMonth(${group.year}, ${group.month})">${group.month}월</button>`;
+      const weekBtns = group.weeks.map(week => {
+        const isThisWeek = todayTime >= week.sTime && todayTime <= week.sTime + 4 * 86400000 + 86399999;
+        const label = isThisWeek ? '이번주' : `${week.weekNum}주차`;
+        const isActive = activeWeekFilter && activeWeekFilter.length === 1 && activeWeekFilter[0] === week.sTime;
+        return `<button class="week-quick-btn${isThisWeek ? ' week-quick-btn-today' : ''}${isActive ? ' active' : ''}" onclick="jumpToWeek(${week.sTime})">${label}</button>`;
+      }).join('');
+      return `<div class="week-quick-row">${monthBtn}${weekBtns}</div>`;
+    }).join('');
+  }
+
+  // "N주차"/"이번주" 버튼 클릭 시: 선택확대처럼 두 단계를 거치지 않고, 그 주만 바로 확대해서 보여줍니다.
+  function jumpToWeek(sTime) {
+    selectedWeeksForFilter = [];
+    activeWeekFilter = [sTime];
+    renderMonthView(activeFilterIndices);
+  }
+
+  // "N월" 버튼 클릭 시: 지금 보고 있는 달이면 그 달 자체 주차들만(다른 달에 곁다리로 걸친 주는 제외) 확대해서
+  // 보여주고, 다른 달이면 그 달의 달력으로 이동합니다.
+  function jumpToMonth(y, m) {
+    if (Number(el.y().value) === y && Number(el.m().value) === m) {
+      const weeksOfMonth = (currentMonthWeeks || []).filter(w => w.owningYear === y && w.owningMonth === m);
+      if (weeksOfMonth.length === 0) return;
+      selectedWeeksForFilter = [];
+      activeWeekFilter = weeksOfMonth.map(w => w.sTime);
+      renderMonthView(activeFilterIndices);
+    } else {
+      el.y().value = y;
+      el.m().value = m;
+      upWeeks();
+      loadAll();
+    }
   }
 
   // 항목의 대상 학년(grades, 예: "1,2,3")이 현재 학년 필터에 해당하는지 확인합니다.
-  // 학년 정보가 없는 기존 데이터는 필터와 무관하게 항상 표시합니다.
+  // 대상 학년을 하나도 지정하지 않은 항목(학년 정보 없음)은 "전체" 필터에서만 보이고,
+  // 1/2/3학년별 필터에서는 보이지 않습니다.
   function matchesGradeFilter(grades) {
     if (currentGradeFilter === 'all') return true;
-    if (!grades) return true;
+    if (!grades) return false;
     return String(grades).split(',').map(s => s.trim()).includes(currentGradeFilter);
   }
 
-  // 학년 필터 칩 클릭 시 호출됩니다.
+  // 학년 필터 칩 클릭 시 호출됩니다. PC(제목 옆)와 모바일(검색창 안) 두 군데에 사본이 있으므로
+  // data-grade로 두 군데 모두 활성 표시를 맞춰줍니다.
   function setGradeFilter(grade, btnEl) {
     currentGradeFilter = grade;
-    document.querySelectorAll('#gradeFilter .grade-chip').forEach(b => b.classList.remove('active'));
-    if (btnEl) btnEl.classList.add('active');
+    document.querySelectorAll('.grade-filter-group .grade-chip').forEach(b => {
+      b.classList.toggle('active', b.dataset.grade === grade);
+    });
     renderNotices();
-    renderFilteredWeek(activeFilterIndices);
+    rerenderCurrent(activeFilterIndices);
   }
 
   // 전달사항을 현재 학년 필터에 맞게 걸러서 렌더링합니다.
@@ -188,160 +326,308 @@
     return map[name] || name;
   }
 
-  // 선택된 날짜 인덱스(예: [0, 2, 4] -> 월, 수, 금)만 화면에 그려주는 핵심 렌더러
+  // 모바일 목록에서 부서 이름 줄의 배경색(부서마다 다르게, 날짜/내용 줄과 확실히 구분되도록).
+  const DEPT_COLORS = {
+    '교무기획부': '#3b82f6', '교육과정부': '#8b5cf6', '교육연구부': '#06b6d4',
+    '학생안전부': '#ef4444', '방과후활동부': '#f97316', '융합과학정보부': '#14b8a6',
+    '체육인성부': '#22c55e', '진로상담부': '#d97706', '보건실': '#ec4899',
+    '1학년부': '#0ea5e9', '2학년부': '#a855f7', '3학년부': '#64748b', '행정실': '#78716c'
+  };
+  function deptHeaderColor(name) { return DEPT_COLORS[name] || '#64748b'; }
+
+  // 부서 업무 항목에서 '제목'만 뽑습니다: 선생님들이 보통 첫 줄에 제목을 쓰므로 첫 줄만 쓰고,
+  // '[', ']' 기호만 지웁니다(안의 글자는 그대로 둡니다).
+  function extractDeptTitle(text) {
+    const firstLine = (text || '').split(/\r?\n/)[0] || '';
+    return firstLine.replace(/[\[\]]/g, '').trim() || '(제목 없음)';
+  }
+
+  // 한 주(week: {schedule, list, sTime}) 분량의 "날짜 헤더 행 + 연간행사 행 + 부서별 업무 행"을 HTML로 만듭니다.
+  // 모바일(한 주만 조회)과 PC(달 전체 = 이 함수를 주차 수만큼 반복 호출) 양쪽에서 공용으로 씁니다.
+  // registerDetail은 calendarItemDetails에 항목을 등록해 클릭 팝업과 연결하는 함수를 그대로 전달받습니다.
+  // isCurrentWeek이 true면(오늘이 이 주에 포함되면), 그 주 전체를 감싸는 강조 테두리를 두릅니다.
+  // cornerHtml을 넘기면 맨 왼쪽 위 칸("구분")에 그 내용을 대신 넣습니다(PC 월간 달력의 "N주차" 클릭용).
+  function renderWeekBlockHtml(week, indices, fsStyle, deptCellStyle, registerDetail, showDateHeader, isCurrentWeek, cornerHtml) {
+    const rows = []; // <tr>...</tr> 문자열을 순서대로 모아 두었다가, 맨 끝에 첫/마지막 행 표시를 붙입니다.
+
+    if (showDateHeader) {
+      let headerRow = `<tr style="${fsStyle}">
+        <th style="${deptCellStyle} background:#fdfdfd; border-bottom:1px solid #cbd5e1;">
+          ${cornerHtml || '구분'}
+        </th>`;
+      indices.forEach(idx => {
+        headerRow += `<th style="${fsStyle} border-bottom:1px solid #cbd5e1; padding:6px;">${week.schedule[idx].date}</th>`;
+      });
+      headerRow += `</tr>`;
+      rows.push(headerRow);
+    }
+
+    // 연간 행사(학사일정표, 부서명 없음)를 "같은 행사가 연속된 날짜"별로 하나로 묶어, 부서 업무 항목과
+    // 똑같은 형태(st/et를 가진 가상 항목)로 만듭니다. 이렇게 하면 renderCalendarRow가 부서 업무와
+    // 동일한 방식으로 날짜 칸을 이어붙인 막대 하나로 그려줍니다(주 안에서 이어지면 이어진 채로 표시).
+    const eventOrder = [];
+    const eventDayIdx = {};
+    week.schedule.forEach((it, dayIdx) => {
+      const content = (it.content || '').trim();
+      if (!content) return;
+      content.split(/\r?\n/).map(s => s.trim()).filter(Boolean).forEach(ev => {
+        if (!(ev in eventDayIdx)) { eventDayIdx[ev] = []; eventOrder.push(ev); }
+        eventDayIdx[ev].push(dayIdx);
+      });
+    });
+    const eventItems = [];
+    eventOrder.forEach(ev => {
+      const idxs = eventDayIdx[ev]; // 오름차순
+      let runStart = idxs[0], prev = idxs[0];
+      for (let k = 1; k <= idxs.length; k++) {
+        const cur = idxs[k];
+        if (cur === prev + 1) { prev = cur; continue; }
+        const dateLabel = (runStart === prev)
+          ? week.schedule[runStart].date
+          : `${week.schedule[runStart].date} ~ ${week.schedule[prev].date}`;
+        eventItems.push({ st: week.sTime + runStart * 86400000, et: week.sTime + prev * 86400000, text: ev, dateLabel });
+        runStart = cur; prev = cur;
+      }
+    });
+
+    // item(st/et)이 이 주에서 화면에 표시된 날짜(indices) 중 어디에 걸치는지 칸 위치로 바꿔줍니다.
+    function mapItemToIndices(item) {
+      const globalStartIdx = Math.max(0, Math.round((item.st - week.sTime) / 86400000));
+      const globalEndIdx = Math.min(4, Math.round((item.et - week.sTime) / 86400000));
+      let mapped = [];
+      for (let i = globalStartIdx; i <= globalEndIdx; i++) {
+        let pos = indices.indexOf(i);
+        if (pos !== -1) mapped.push(pos);
+      }
+      return mapped;
+    }
+
+    // 행사 한 줄 / 부서 한 줄을 그리는 공용 함수. 날짜 범위가 이어지는 항목은 칸을 합쳐 색이 이어진
+    // 막대 하나로, 제목만 표시합니다. 막대를 누르면 팝업으로 작성된 내용 전체를 볼 수 있습니다.
+    function renderCalendarRow(label, popupLabel, items, isEventRow) {
+      let rowHtml = `<tr style="page-break-inside: avoid; break-inside: avoid; border-bottom:1px solid #e2e8f0;"${isEventRow ? ' class="cal-event-tr"' : ''}>
+        <td class="dept-name-cell" style="${deptCellStyle}">${label}</td>
+        <td colspan="${indices.length}" style="padding:0; vertical-align:top; border:none;">`;
+      // align-content:center — 부서명이 2줄로 줄바꿈되어 행이 항목 막대보다 높아질 때, 막대가 위에 붙지 않고
+      // 세로 가운데로 오도록 합니다.
+      rowHtml += `<div style="display:grid; grid-template-columns: repeat(${indices.length}, minmax(0, 1fr)); gap:6px; padding:10px; height:100%; box-sizing:border-box; align-content:center;">`;
+
+      items.forEach(item => {
+        const mappedIndices = mapItemToIndices(item);
+        if (mappedIndices.length > 0) {
+          const gridStart = Math.min(...mappedIndices) + 1;
+          const span = Math.max(...mappedIndices) - Math.min(...mappedIndices) + 1;
+          const title = isEventRow ? item.text : extractDeptTitle(item.text);
+          const barClass = 'event-bar' + (isEventRow ? ' cal-event-bar' : '');
+          const detailIdx = registerDetail(popupLabel, item.dateLabel || item.date || '', item.text);
+
+          rowHtml += `<div class="${barClass}" style="grid-column: ${gridStart} / span ${span}; ${fsStyle}" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">${title}</div>`;
+        }
+      });
+      rowHtml += `</div></td></tr>`;
+      return rowHtml;
+    }
+
+    const visibleDepts = week.list
+      .map(dept => ({ name: dept.name, items: dept.items.filter(item => matchesGradeFilter(item.grades)) }))
+      .filter(dept => dept.items.length > 0);
+
+    // 맨 왼쪽 "구분" 칸의 "연간 행사" 글자는 없애고 빈칸으로 둡니다(주황색 배경/줄만 유지).
+    // 클릭했을 때 뜨는 팝업 제목에는 구분을 위해 "연간 행사"를 그대로 씁니다.
+    if (eventItems.length > 0) rows.push(renderCalendarRow('', '연간 행사', eventItems, true));
+    visibleDepts.forEach(dept => { rows.push(renderCalendarRow(formatDeptName(dept.name), dept.name, dept.items, false)); });
+
+    // 오늘이 포함된 주라면, 그 주에 해당하는 행 전체(첫 행~마지막 행)를 감싸는 굵은 테두리를 그립니다.
+    // ("이번 주는 여기예요" 표시. 각 <tr>의 여는 태그에 클래스만 얹으면 되므로 문자열 맨 앞에 끼워 넣습니다.)
+    let finalRows = rows;
+    if (isCurrentWeek && rows.length > 0) {
+      finalRows = rows.map((rowHtml, i) => {
+        let cls = 'cal-current-week';
+        if (i === 0) cls += ' cal-current-week-start';
+        if (i === rows.length - 1) cls += ' cal-current-week-end';
+        return rowHtml.replace(/^<tr style="([^"]*)"( class="([^"]*)")?/,
+          (m, styleVal, _g2, existingClass) => `<tr style="${styleVal}" class="${existingClass ? existingClass + ' ' : ''}${cls}"`);
+      });
+    }
+
+    return { html: finalRows.join(''), visibleDepts };
+  }
+
+  // 선택된 날짜 인덱스(예: [0, 2, 4] -> 월, 수, 금)만 화면에 그려주는 (모바일용) 한 주 렌더러
   function renderFilteredWeek(indices) {
     // 최초 조회가 아직 끝나기 전(currentWeekSchedule이 비어있을 때) 학년 필터 등을 눌러도
     // 존재하지 않는 데이터에 접근해 에러가 나지 않도록 조용히 무시합니다.
     if (!currentWeekSchedule || currentWeekSchedule.length === 0) return;
-    if(!indices || indices.length === 0) indices = [0, 1, 2, 3, 4];
+    if (!indices || indices.length === 0) indices = [0, 1, 2, 3, 4];
 
-    // 1. 날짜 개수에 따른 폰트 스케일 계산 (5일: 1.0배, 4일: 1.07배, 3일: 1.14배, 2일: 1.21배, 1일: 1.28배)
+    // 날짜 개수에 따른 폰트 스케일 계산 (5일: 1.0배, 4일: 1.07배, 3일: 1.14배, 2일: 1.21배, 1일: 1.28배)
     const fontScale = 1.0 + (5 - indices.length) * 0.07;
     const fsStyle = `font-size: ${fontScale}em;`;
-    
-    // 부서 칸 넓이 계산 (기본 80px로 넉넉하게 잡고 스케일업). max-width를 제거하여 어긋남 방지
     const deptWidth = Math.round(80 * fontScale);
-    
-    // 표 라인(테두리)이 상/하 완벽하게 일치하도록 동일한 스타일 변수 사용
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
-    // 2-1. 연간 행사 렌더링
-    const daysName = ['월', '화', '수', '목', '금'];
-    document.getElementById('dateHead').innerHTML = `<tr style="${fsStyle}">` + indices.map(i => `<th style="${fsStyle}">${daysName[i]}</th>`).join('') + `</tr>`;
-    
-    let dRowHtml = `<tr class="date-row" style="${fsStyle}">` + indices.map(i => `<td style="${fsStyle}">${currentWeekSchedule[i].date}</td>`).join('') + `</tr>`;
-    dRowHtml += `<tr class="content-row" style="${fsStyle}">` + indices.map(i => `<td style="${fsStyle}">${currentWeekSchedule[i].content || ''}</td>`).join('') + `</tr>`;
-    document.getElementById('dateBody').innerHTML = dRowHtml;
-
-    // 연간 행사 목록형 렌더링(PC/모바일 공용): 요일별 표 대신 날짜별로 한 줄씩 나열하고,
-    // 한 날짜에 행사가 여러 개면 그 줄 안에 줄바꿈으로 함께 보여줍니다. 행사가 없는 날짜는 표시하지 않습니다.
-    const dateItems = indices.map(i => currentWeekSchedule[i]);
-
-    const dateRowsHtml = dateItems
-      .filter(it => (it.content || '').trim())
-      .map(it => {
-        const events = it.content.trim().split(/\r?\n/).map(s => s.trim()).filter(Boolean).join(', ');
-        return `<div class="mobile-list-row">
-        <div class="mobile-list-date">${it.date}</div>
-        <div class="mobile-list-content">${events}</div>
-      </div>`;
-      }).join('')
-      || `<div class="mobile-list-row"><div class="mobile-list-content mobile-list-empty">연간 행사가 없습니다.</div></div>`;
-
-    // PC(#datePcList)와 모바일(#dateMobileList) 모두 동일한 내용으로 채웁니다.
-    const datePcEl = document.getElementById('datePcList');
-    if (datePcEl) datePcEl.innerHTML = dateRowsHtml;
-    const dateMobileEl = document.getElementById('dateMobileList');
-    if (dateMobileEl) dateMobileEl.innerHTML = dateRowsHtml;
-
-    // 2-2. 부서별 업무 헤더 렌더링 (날짜 및 부서 텍스트에 스케일 적용)
-    let headHtml = `<tr style="${fsStyle}">
-      <th style="${deptCellStyle} background:#fdfdfd; border-bottom:1px solid #cbd5e1;">
-        부서
-      </th>`;
-    
-    indices.forEach(idx => {
-      let isSelected = selectedDatesForFilter.includes(idx);
-      let bg = isSelected ? '#dbeafe' : 'transparent';
-      let border = isSelected ? '2px solid #3b82f6' : '1px solid transparent';
-      
-      headHtml += `<th style="${fsStyle} border-bottom:1px solid #cbd5e1;">
-        <div onclick="toggleDateFilter(${idx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDateFilter(${idx});}" role="button" tabindex="0" style="cursor:pointer; padding:6px; border-radius:6px; background:${bg}; border:${border}; transition:all 0.2s ease; display:inline-block;">
-          ${currentWeekSchedule[idx].date} <span style="font-size:0.8em; font-weight:normal; color:#666;">(클릭)</span>
-        </div>
-      </th>`;
-    });
-    headHtml += `</tr>`;
-    document.getElementById('workHead').innerHTML = headHtml;
-
-    // 2-3. 부서별 업무 본문 렌더링 (학년 필터에 맞는 항목만 표시, 해당 항목이 하나도 없는 부서는 행 자체를 숨김)
-    const visibleDepts = currentWeekWorkList
-      .map(dept => ({ name: dept.name, items: dept.items.filter(item => matchesGradeFilter(item.grades)) }))
-      .filter(dept => dept.items.length > 0);
-
-    if (!visibleDepts || visibleDepts.length === 0) {
-      document.getElementById('workBody').innerHTML = `<tr style="${fsStyle}"><td colspan="${indices.length + 1}" style="padding:40px; color:#999; text-align:center; ${fsStyle}">데이터 없음</td></tr>`;
-    } else {
-      let bodyHtml = '';
-      visibleDepts.forEach(dept => {
-        let displayDept = formatDeptName(dept.name);
-
-        bodyHtml += `<tr style="page-break-inside: avoid; break-inside: avoid; border-bottom:1px solid #e2e8f0;">
-          <td class="dept-name-cell" style="${deptCellStyle}">${displayDept}</td>
-          <td colspan="${indices.length}" style="padding:0; vertical-align:top; border:none;">`;
-
-        bodyHtml += `<div style="display:grid; grid-template-columns: repeat(${indices.length}, minmax(0, 1fr)); gap:6px; padding:10px; height:100%; box-sizing:border-box;">`;
-
-        dept.items.forEach(item => {
-          const globalStartIdx = Math.max(0, Math.round((item.st - currentWeekSTime) / 86400000));
-          const globalEndIdx = Math.min(4, Math.round((item.et - currentWeekSTime) / 86400000));
-
-          let mappedIndices = [];
-          for(let i = globalStartIdx; i <= globalEndIdx; i++) {
-            let pos = indices.indexOf(i);
-            if(pos !== -1) mappedIndices.push(pos);
-          }
-
-          if (mappedIndices.length > 0) {
-            const gridStart = Math.min(...mappedIndices) + 1;
-            const span = Math.max(...mappedIndices) - Math.min(...mappedIndices) + 1;
-
-            // [핵심] white-space: pre-wrap; 을 적용하여 작성된 글의 Enter(줄바꿈)를 그대로 화면에 표시합니다.
-            bodyHtml += `<div class="event-bar" style="grid-column: ${gridStart} / span ${span}; ${fsStyle} white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;">${item.text}</div>`;
-          }
-        });
-        bodyHtml += `</div></td></tr>`;
-      });
-      document.getElementById('workBody').innerHTML = bodyHtml;
+    calendarItemDetails = [];
+    function registerDetail(label, dateLabel, text) {
+      calendarItemDetails.push({ label, dateLabel, text });
+      return calendarItemDetails.length - 1;
     }
 
-    // 모바일 전용 목록형 렌더링: 요일 칸에 억지로 맞추는 그리드 대신, 부서마다 그 주의
-    // 업무를 전부 세로로 나열해 잘리거나 겹치는 항목 없이 다 보이도록 합니다. (PC에서는 CSS로 숨김)
+    const week = { schedule: currentWeekSchedule, list: currentWeekWorkList, sTime: currentWeekSTime };
+    const { html: bodyHtml, visibleDepts } = renderWeekBlockHtml(week, indices, fsStyle, deptCellStyle, registerDetail, true);
+
+    document.getElementById('workHead').innerHTML = ''; // 날짜 헤더는 이제 본문 첫 행에 포함됩니다.
+    document.getElementById('workBody').innerHTML = bodyHtml
+      || `<tr style="${fsStyle}"><td colspan="${indices.length + 1}" style="padding:40px; color:#999; text-align:center; ${fsStyle}">데이터 없음</td></tr>`;
+    fitEventBarText(); // 칸 폭에 비해 일정명이 길어 잘리면, 잘리지 않을 때까지 글자를 조금씩 줄입니다.
+
+    // 모바일 전용 목록형 렌더링(PC에서는 CSS로 숨김).
+    // 위: 연간 행사 — 날짜별로 한 줄씩, 행사 없는 날짜는 표시하지 않고 같은 날 여러 행사는 쉼표로 나열합니다.
+    const dateMobileEl = document.getElementById('dateMobileList');
+    if (dateMobileEl) {
+      const dateItems = indices.map(i => currentWeekSchedule[i]);
+      dateMobileEl.innerHTML = dateItems
+        .filter(it => (it.content || '').trim())
+        .map(it => {
+          const events = it.content.trim().split(/\r?\n/).map(s => s.trim()).filter(Boolean).join(', ');
+          return `<div class="mobile-list-row">
+            <div class="mobile-list-date">${it.date}</div>
+            <div class="mobile-list-content">${events}</div>
+          </div>`;
+        }).join('')
+        || `<div class="mobile-list-row"><div class="mobile-list-content mobile-list-empty">연간 행사가 없습니다.</div></div>`;
+    }
+
+    // 아래: 부서별 업무 — 부서마다(지정된 순서로) 그 주의 업무 제목만 세로로 나열합니다. 항목을 누르면
+    // 팝업으로 작성된 내용 전체를 볼 수 있습니다.
     const workMobileEl = document.getElementById('workMobileList');
     if (workMobileEl) {
       if (!visibleDepts || visibleDepts.length === 0) {
         workMobileEl.innerHTML = `<div class="mobile-list-row"><div class="mobile-list-content mobile-list-empty">데이터 없음</div></div>`;
       } else {
         workMobileEl.innerHTML = visibleDepts.map(dept => {
-          const rows = dept.items.map(item => `<div class="mobile-list-row">
-            <div class="mobile-list-date">${item.date}</div>
-            <div class="mobile-list-content" style="white-space:pre-wrap;">${item.text}</div>
-          </div>`).join('');
-          return `<div class="mobile-list-dept-header">${dept.name}</div>${rows}`;
+          const rows = dept.items.map(item => {
+            const detailIdx = registerDetail(dept.name, item.date || '', item.text);
+            return `<div class="mobile-list-row cal-clickable" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">
+              <div class="mobile-list-date">${item.date}</div>
+              <div class="mobile-list-content">${extractDeptTitle(item.text)}</div>
+            </div>`;
+          }).join('');
+          return `<div class="mobile-list-dept-header" style="background:${deptHeaderColor(dept.name)};">${dept.name}</div>${rows}`;
         }).join('');
       }
     }
   }
 
-  // 날짜 클릭 시 선택/해제 토글
-  function toggleDateFilter(idx) {
-    const pos = selectedDatesForFilter.indexOf(idx);
-    if (pos > -1) {
-      selectedDatesForFilter.splice(pos, 1);
-    } else {
-      selectedDatesForFilter.push(idx);
-    }
-    renderFilteredWeek(activeFilterIndices); // 화면 테두리 업데이트 (열 개수 유지)
+  // (PC용) "N주차"를 선택확대/원래대로 하기 위한 상태. 이전의 날짜 단위 선택확대와 같은 방식이며,
+  // 단위만 날짜에서 주차로 바뀐 것입니다. 주차 선택은 week.sTime(그 주 월요일 시각, 고유값)으로 구분합니다
+  // — weekNum만으로는 "8월 달력에 곁다리로 보이는 9월 1주차"처럼 다른 달의 같은 번호와 겹칠 수 있어서입니다.
+  let selectedWeeksForFilter = []; // 유저가 클릭한 주(sTime)들
+  let activeWeekFilter = null; // null이면 이번 달의 모든 주차, 배열(sTime)이면 그 주차들만 표시
+
+  // "N주차" 클릭 시 선택/해제 토글
+  function toggleWeekFilter(sTime) {
+    const pos = selectedWeeksForFilter.indexOf(sTime);
+    if (pos > -1) selectedWeeksForFilter.splice(pos, 1);
+    else selectedWeeksForFilter.push(sTime);
+    renderMonthView(activeFilterIndices);
   }
 
   // 선택확대 버튼 클릭 시
-  function applyDateFilter() {
-    if (selectedDatesForFilter.length === 0) {
-      showAlert("먼저 표 상단의 날짜(7/13(월) 등)를 클릭하여 볼 날짜를 선택해주세요.");
+  function applyWeekFilter() {
+    if (selectedWeeksForFilter.length === 0) {
+      showAlert("먼저 표 왼쪽의 'N주차'를 클릭하여 볼 주차를 선택해주세요.");
       return;
     }
-    // 월화수목금 순서가 꼬이지 않게 오름차순 정렬
-    activeFilterIndices = [...selectedDatesForFilter].sort((a, b) => a - b);
-    selectedDatesForFilter = []; // 선택 내역 리셋
-    renderFilteredWeek(activeFilterIndices); // 선택된 열만 새롭게 렌더링
+    activeWeekFilter = [...selectedWeeksForFilter].sort((a, b) => a - b);
+    selectedWeeksForFilter = [];
+    renderMonthView(activeFilterIndices);
   }
 
   // 원래대로 버튼 클릭 시
-  function resetDateFilter() {
-    selectedDatesForFilter = [];
-    activeFilterIndices = [0, 1, 2, 3, 4];
-    renderFilteredWeek(activeFilterIndices);
+  function resetWeekFilter() {
+    selectedWeeksForFilter = [];
+    activeWeekFilter = null;
+    renderMonthView(activeFilterIndices);
   }
+
+  // (PC용) 이번 달에 속한 주차들을 세로로 이어붙여 "월간 달력"처럼 그리는 렌더러.
+  function renderMonthView(indices) {
+    if (!currentMonthWeeks || currentMonthWeeks.length === 0) return;
+    if (!indices || indices.length === 0) indices = [0, 1, 2, 3, 4];
+
+    const fontScale = 1.0 + (5 - indices.length) * 0.07;
+    const fsStyle = `font-size: ${fontScale}em;`;
+    const deptWidth = Math.round(80 * fontScale);
+    const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
+
+    calendarItemDetails = [];
+    function registerDetail(label, dateLabel, text) {
+      calendarItemDetails.push({ label, dateLabel, text });
+      return calendarItemDetails.length - 1;
+    }
+
+    // 오늘이 포함된 주(있다면)를 찾아 강조 테두리를 표시합니다.
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const todayTime = now.getTime();
+
+    const weeksToShow = activeWeekFilter
+      ? currentMonthWeeks.filter(w => activeWeekFilter.includes(w.sTime))
+      : currentMonthWeeks;
+
+    let bodyHtml = '';
+    weeksToShow.forEach((week, wIdx) => {
+      const isCurrentWeek = todayTime >= week.sTime && todayTime <= week.sTime + 4 * 86400000 + 86399999;
+      const isSelected = selectedWeeksForFilter.includes(week.sTime);
+      // 이 주가 실제로 소속된 달/주차(수요일 기준)를 두 줄로 보여줍니다. 지금 보고 있는 달과 다를 수 있습니다
+      // (예: 8월 달력 맨 끝의 8/31~9/4 주는 "9월 1주차"로 표시됩니다).
+      const cornerHtml = `<div onclick="toggleWeekFilter(${week.sTime})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleWeekFilter(${week.sTime});}" role="button" tabindex="0" style="cursor:pointer; padding:6px; border-radius:6px; background:${isSelected ? '#dbeafe' : 'transparent'}; border:${isSelected ? '2px solid #3b82f6' : '1px solid transparent'}; transition:all 0.2s ease; display:inline-block; line-height:1.3;">${week.owningMonth}월<br>${week.weekNum}주차</div>`;
+
+      const { html } = renderWeekBlockHtml(week, indices, fsStyle, deptCellStyle, registerDetail, true, isCurrentWeek, cornerHtml);
+      bodyHtml += html;
+      // 주차와 주차 사이를 살짝 띄워 구분합니다(마지막 주는 제외).
+      if (wIdx < weeksToShow.length - 1) {
+        bodyHtml += `<tr class="cal-week-gap" aria-hidden="true"><td colspan="${indices.length + 1}"></td></tr>`;
+      }
+    });
+
+    document.getElementById('workHead').innerHTML = '';
+    document.getElementById('workBody').innerHTML = bodyHtml
+      || `<tr style="${fsStyle}"><td colspan="${indices.length + 1}" style="padding:40px; color:#999; text-align:center; ${fsStyle}">데이터 없음</td></tr>`;
+    fitEventBarText();
+    renderWeekQuickNav();
+  }
+
+  // 항목(연간 행사/부서별 업무) 막대나 모바일 목록 줄을 클릭했을 때, 작성된 내용 전체를 팝업으로 보여줍니다.
+  let currentDetailIdx = -1; // 지금 팝업에 열려 있는 항목의 calendarItemDetails 인덱스 (수정/삭제 버튼에서 사용)
+  function showItemDetail(idx) {
+    const d = calendarItemDetails[idx];
+    if (!d) return;
+    currentDetailIdx = idx;
+    document.getElementById('itemDetailDept').innerText = d.label || '';
+    document.getElementById('itemDetailDate').innerText = d.dateLabel || '';
+    document.getElementById('itemDetailText').innerHTML = d.text || '';
+    // 연간 행사(부서명 없음)는 학사일정표 시트에서 직접 관리하므로 이 화면에서는 수정/삭제할 수 없습니다.
+    document.getElementById('itemDetailActions').style.display = (d.label === '연간 행사') ? 'none' : 'flex';
+    openMod('itemDetailMod');
+  }
+
+  // "주간 일정" 달력 막대는 칸 폭에 맞춰 한 줄로 자동으로 잘립니다(...). 일정명이 칸보다 길어 잘렸으면,
+  // 다 보일 때까지(또는 너무 작아지기 전까지) 글자 크기를 조금씩 줄입니다.
+  function fitEventBarText() {
+    const minFontSize = 9;
+    document.querySelectorAll('#workBody .event-bar').forEach(el => {
+      el.style.fontSize = '';
+      let fontSize = parseFloat(getComputedStyle(el).fontSize);
+      let guard = 0;
+      while (el.scrollWidth > el.clientWidth + 1 && fontSize > minFontSize && guard < 20) {
+        fontSize -= 0.5;
+        el.style.fontSize = fontSize + 'px';
+        guard++;
+      }
+    });
+  }
+
 
   // 3. UI 유틸리티 (로딩, 모달, 알림창)
   function toggleLoading(s, t) {
