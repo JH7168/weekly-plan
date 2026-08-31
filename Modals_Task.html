@@ -331,7 +331,8 @@
   }
 
   function changeWzMonth(offset) {
-    wzCalDate.setMonth(wzCalDate.getMonth() + offset);
+    // 날짜를 1일로 두고 월만 바꿉니다. (예: 8/31에서 +1하면 '9/31'=10/1로 튀는 것을 방지)
+    wzCalDate = new Date(wzCalDate.getFullYear(), wzCalDate.getMonth() + offset, 1);
     buildWzCalendar();
   }
 
@@ -416,8 +417,9 @@
     const sDVal = document.getElementById('nsD').value, isRange = document.getElementById('isRangeNot').checked, eDVal = document.getElementById('neD').value, text = document.getElementById('notT').value;
     if(!sDVal || (isRange && !eDVal) || !text) { showAlert("날짜와 전달사항을 모두 입력해주세요."); return; }
 
+    // 대상 학년을 하나도 선택하지 않아도 등록할 수 있습니다(교직원용 등 학생 대상이 아닌 전달사항).
+    // 이 경우 학년 정보 없이 저장되어 '전체' 필터에서만 표시됩니다.
     const grades = getCheckedGrades('notGradeGroup');
-    if (!grades) { showAlert("대상 학년을 하나 이상 선택해주세요."); return; }
 
     const isRepeat = document.getElementById('notRepeat').checked;
     const weeks = isRepeat ? Math.max(2, parseInt(document.getElementById('notRepeatWeeks').value) || 2) : 1;
@@ -436,6 +438,18 @@
     isDeleted = false;
     goToDelStep(1);
     openMod('deleteMod');
+  }
+
+  // 전달사항 칸 위 버튼 전용: '수정 유형/삭제 유형 선택' 단계를 건너뛰고 곧바로 전달사항 목록으로 진입합니다.
+  function openNoticeEdit() {
+    isEdited = false;
+    openMod('editMod');
+    goToEditStep(2, 'notice');
+  }
+  function openNoticeDelete() {
+    isDeleted = false;
+    openMod('deleteMod');
+    goToDelStep(2, 'notice');
   }
 
   function goToDelStep(step, type) {
@@ -704,7 +718,7 @@
       text = title ? `[${title}]\n${detail}` : detail;
       if (notice) text += `\n\n【전달사항】\n${notice}`;
     }
-    if (!grades) { showAlert("대상 학년을 하나 이상 선택해주세요."); return; }
+    // 대상 학년 미선택도 허용합니다(교직원용 등). 학년 정보 없이 저장되어 '전체' 필터에서만 표시됩니다.
 
     toggleLoading(true, "수정 중...");
     g.withSuccessHandler(res => {

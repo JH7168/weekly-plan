@@ -259,6 +259,8 @@
   /* 연간 행사 막대는 부서 업무 막대와 색을 다르게 해서 "부서명 없는 행사 줄"임을 한눈에 구분되게 합니다.
      맨 왼쪽 칸은 글자 없이 비어 있으므로(구분 표시 불필요) 주황 배경 없이 다른 행과 같게 둡니다. */
   .event-bar.cal-event-bar { background: #fff7ed; border-left-color: #f97316; }
+  /* 행정실 업무 막대는 녹색 계열로 구분합니다. */
+  .event-bar.dept-haengjeong { background: #dcfce7; border-left-color: #16a34a; color: #166534; }
   /* PC 월간 달력에서 주차와 주차 사이를 살짝 띄우고, 눈에 보이는 구분선도 그어줍니다.
      (달 전체를 볼 때나 2개 이상 주차를 확대해서 볼 때 특히 필요합니다.) */
   .cal-week-gap td { height: 18px; border: none; background: transparent; padding: 0; position: relative; }
@@ -379,6 +381,7 @@
     .admin-btn { display: none; }
     .card-btn { display: none; }
     .register-btn-row { display: none; }
+    .notice-toolbar { display: none; }
     #weekQuickNav { display: none; }
 
     /* 급식 카드가 한 줄 전체를 차지하고, 바로가기 버튼은 그 아래로 줄바꿈되어 가운데 정렬됩니다.

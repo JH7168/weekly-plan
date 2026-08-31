@@ -153,7 +153,18 @@
   let currentWeekSchedule = []; // (모바일용) 현재 주차 날짜 데이터 보관
   let currentWeekWorkList = []; // (모바일용) 현재 주차 업무 데이터 보관
   let currentWeekSTime = 0;
-  let currentMonthWeeks = []; // (PC용) 이번 달에 속한 주차들의 데이터 배열
+  let currentMonthWeeks = []; // (PC용) 이번 달에 속한 주차들의 데이터 배열 (앞뒤로 인접 주 1개씩 포함)
+  let currentViewYear = null, currentViewMonth = null; // (PC용) 지금 보고 있는 달 — 전체 월 뷰에서 인접 주 제외용
+
+  // 한 주(월~금 5일 중 하루라도)가 지정한 연·월에 걸쳐 있는지 확인합니다.
+  function weekHasDayInMonth_(week, y, m) {
+    if (!y || !m) return true;
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(week.sTime + i * 86400000);
+      if (d.getFullYear() === y && (d.getMonth() + 1) === m) return true;
+    }
+    return false;
+  }
   let currentNoticeItems = []; // 현재 조회 범위(주/달)의 전달사항 데이터 보관 (학년 필터링용)
   let activeFilterIndices = [0, 1, 2, 3, 4]; // 화면에 그려지는 날짜 인덱스 (월~금 5일 고정)
   let currentGradeFilter = 'all'; // 학년 필터 ('all' | '1' | '2' | '3')
@@ -201,6 +212,7 @@
       g.withSuccessHandler(res => {
         toggleLoading(false);
         currentMonthWeeks = res.weeks || [];
+        currentViewYear = y; currentViewMonth = m;
         currentNoticeItems = res.noticeItems;
 
         renderNotices();
@@ -214,7 +226,14 @@
           const today = effectiveToday();
           const todayTime = today.getTime();
           const curWeek = currentMonthWeeks.find(wk => todayTime >= wk.sTime && todayTime <= wk.sTime + 4 * 86400000 + 86399999);
-          if (curWeek) activeWeekFilter = [curWeek.sTime];
+          if (curWeek) {
+            // 첫 화면은 전주·이번주·다음주 3개 주를 보여줍니다. (현재 달력에 로드된 주 중에서 필터)
+            const WEEK = 7 * 86400000;
+            const wanted = [curWeek.sTime - WEEK, curWeek.sTime, curWeek.sTime + WEEK];
+            const avail = currentMonthWeeks.map(w => w.sTime);
+            activeWeekFilter = wanted.filter(t => avail.includes(t));
+            if (activeWeekFilter.length === 0) activeWeekFilter = [curWeek.sTime];
+          }
         }
 
         renderMonthView(activeFilterIndices);
@@ -268,9 +287,10 @@
     const todayTime = today.getTime();
 
     // 소속 달(owningYear-owningMonth)별로 묶습니다. currentMonthWeeks가 이미 날짜순이라 그룹도 자연히 순서대로 생깁니다.
+    // (첫 화면 3주 표시용으로 앞뒤에 덧붙인 인접 주는 네비에서 제외해, 지금 달의 주차만 깔끔히 보여줍니다.)
     const groups = [];
     const groupIndexByKey = {};
-    currentMonthWeeks.forEach(week => {
+    currentMonthWeeks.filter(w => weekHasDayInMonth_(w, currentViewYear, currentViewMonth)).forEach(week => {
       const key = week.owningYear + '-' + week.owningMonth;
       if (!(key in groupIndexByKey)) {
         groupIndexByKey[key] = groups.length;
@@ -382,7 +402,7 @@
     '교무기획부': '#3b82f6', '교육과정부': '#8b5cf6', '교육연구부': '#06b6d4',
     '학생안전부': '#ef4444', '방과후활동부': '#f97316', '융합과학정보부': '#14b8a6',
     '체육인성부': '#22c55e', '진로상담부': '#d97706', '보건실': '#ec4899',
-    '1학년부': '#0ea5e9', '2학년부': '#a855f7', '3학년부': '#64748b', '행정실': '#78716c'
+    '1학년부': '#0ea5e9', '2학년부': '#a855f7', '3학년부': '#64748b', '행정실': '#16a34a'
   };
   function deptHeaderColor(name) { return DEPT_COLORS[name] || '#64748b'; }
 
@@ -469,7 +489,7 @@
           const gridStart = Math.min(...mappedIndices) + 1;
           const span = Math.max(...mappedIndices) - Math.min(...mappedIndices) + 1;
           const title = isEventRow ? item.text : extractDeptTitle(item.text);
-          const barClass = 'event-bar' + (isEventRow ? ' cal-event-bar' : '');
+          const barClass = 'event-bar' + (isEventRow ? ' cal-event-bar' : '') + (!isEventRow && popupLabel === '행정실' ? ' dept-haengjeong' : '');
           // 이 항목이 실제로 속한 주(연/월/주차, 수요일 기준)를 함께 저장해, 월경계 주(예: 8/31~9/4=9월1주차)의
           // 항목도 현재 달력의 월이 아니라 '항목이 속한 주'로 정확히 조회(수정/삭제)되게 합니다.
           const weekCtx = (week && week.owningYear && week.owningMonth)
@@ -625,9 +645,10 @@
     const now = effectiveToday();
     const todayTime = now.getTime();
 
+    // 3주 등 필터가 있으면 그 주들만, 전체 월 뷰에서는 그 달에 실제로 걸친 주들만(앞뒤 인접 주는 제외) 보여줍니다.
     const weeksToShow = activeWeekFilter
       ? currentMonthWeeks.filter(w => activeWeekFilter.includes(w.sTime))
-      : currentMonthWeeks;
+      : currentMonthWeeks.filter(w => weekHasDayInMonth_(w, currentViewYear, currentViewMonth));
 
     let bodyHtml = '';
     weeksToShow.forEach((week, wIdx) => {

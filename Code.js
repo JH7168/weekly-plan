@@ -517,6 +517,13 @@ function getMonthlyCombinedData(year, month) {
   month = Number(month);
 
   const mondays = getOverlappingWeekMondays_(year, month);
+  // 첫 화면의 '전주·이번주·다음주' 3주 표시가 달 경계에서도 되도록, 그 달 주차들의 앞뒤에 인접 주 1개씩 더 포함합니다.
+  // (예: 9월 1주차가 8/31~9/4일 때, 그 앞의 8월 4주차(8/24~)도 함께 내려줍니다.)
+  let padStart = 0, padEnd = 0;
+  if (mondays.length > 0) {
+    const prevMon = new Date(mondays[0]); prevMon.setDate(prevMon.getDate() - 7); mondays.unshift(prevMon); padStart = 1;
+    const nextMon = new Date(mondays[mondays.length - 1]); nextMon.setDate(nextMon.getDate() + 7); mondays.push(nextMon); padEnd = 1;
+  }
   const { schMap, notVals, datVals } = readScheduleSheets_();
 
   const weeks = mondays.map(weekStart => {
@@ -535,11 +542,12 @@ function getMonthlyCombinedData(year, month) {
     };
   });
 
-  // 전달사항은 그 달(주차들 전체) 기준으로 한 번만 모아서, 여러 주에 걸친 항목이 중복 표시되지 않게 합니다.
+  // 전달사항은 '그 달의 실제 주차들'(위에서 앞뒤로 덧붙인 인접 주는 제외) 기준으로만 모읍니다.
+  const monthWeeks = weeks.slice(padStart, weeks.length - padEnd);
   let noticeItems = [];
-  if (weeks.length > 0) {
-    const monthStart = weeks[0].sTime;
-    const lastWeekEnd = weeks[weeks.length - 1].sTime + 4 * 86400000 + 86399999; // 마지막 주 금요일 23:59:59.999
+  if (monthWeeks.length > 0) {
+    const monthStart = monthWeeks[0].sTime;
+    const lastWeekEnd = monthWeeks[monthWeeks.length - 1].sTime + 4 * 86400000 + 86399999; // 마지막 주 금요일 23:59:59.999
     noticeItems = buildNoticeItems_(notVals, monthStart, lastWeekEnd);
   }
 
@@ -982,9 +990,10 @@ function saveMultipleAudiBookings(slots, purpose, manager) {
 // ===== 건의함 (시스템 발전 제안) =====
 // 사용자는 제목+내용으로 제안을 제출하고, 관리자는 관리자 패널에서 목록(작성일+제목)을 보고
 // 제목을 눌러 상세 내용을 확인합니다. 전용 "건의함" 시트(작성일시/제목/내용)에 저장합니다.
-function submitSuggestion(title, content) {
+function submitSuggestion(title, content, version) {
   title = String(title || '').trim();
   content = String(content || '').trim();
+  version = String(version || '').trim(); // 예: "PC" / "모바일" / "PC, 모바일"
   if (!title) return { success: false, msg: "제목을 입력해주세요." };
 
   const lock = LockService.getScriptLock();
@@ -993,9 +1002,9 @@ function submitSuggestion(title, content) {
     let sheet = SS.getSheetByName("건의함");
     if (!sheet) {
       sheet = SS.insertSheet("건의함");
-      sheet.appendRow(["작성일시", "제목", "내용"]);
+      sheet.appendRow(["작성일시", "제목", "내용", "구분"]);
     }
-    sheet.appendRow([new Date(), title, content]);
+    sheet.appendRow([new Date(), title, content, version]);
     invalidateSheetCache_("건의함");
     return { success: true };
   } finally {
@@ -1025,7 +1034,8 @@ function getSuggestions() {
       row: i + 1,
       dateLabel: dateLabel,
       title: escapeHtml_(String(data[i][1] || '')),
-      content: escapeHtml_(String(data[i][2] || ''))
+      content: escapeHtml_(String(data[i][2] || '')),
+      version: escapeHtml_(String(data[i][3] || ''))
     });
   }
   out.reverse(); // 최신 건의가 위로 오도록
