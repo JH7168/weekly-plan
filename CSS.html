@@ -46,6 +46,13 @@
     cursor: pointer; transition: 0.2s;
   }
   .admin-btn:hover { border-color: var(--danger); color: var(--danger); }
+  /* 인쇄 버튼: 관리자/건의함과 같은 톤의 상단 버튼 (파란 계열 강조) */
+  .print-btn {
+    background: #ffffff; border: 1px solid #cbd5e1; color: #64748b;
+    padding: 8px 14px; border-radius: 8px; font-size: 12.5px; font-weight: bold;
+    cursor: pointer; transition: 0.2s;
+  }
+  .print-btn:hover { border-color: var(--primary); color: var(--primary); }
   /* 건의함(시스템 발전 제안) 버튼 — 눈에 띄되 부담스럽지 않게 노란/앰버 계열로 */
   .suggest-btn {
     background: #ffffff; border: 1px solid #f5c518; color: #b8860b;
@@ -93,15 +100,15 @@
   /* 바로가기 버튼: 급식 카드 줄 오른쪽 끝에, 예전 배너처럼 옅은 흰 박스 안에 2열×3행 격자로 둡니다.
      1행: 전체 시간표 | 학교생활기록부   2행: 시청각실 예약 | 방과후 신청   3행: (빈칸) | 서식 */
   .shortcut-cluster {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 0 0 auto;
-    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 7px 14px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6.5px; flex: 0 0 auto;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 7.5px 14.5px;
   }
   .shortcut-empty { display: block; }
   .shortcut-link {
     --accent: #3b82f6;
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     background: #ffffff; border: 1px solid var(--accent); color: var(--accent);
-    padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: bold;
+    padding: 6px 15px; border-radius: 20px; font-size: 13.5px; font-weight: bold;
     cursor: pointer; transition: 0.2s; white-space: nowrap;
   }
   .shortcut-link:hover { background: var(--accent); color: #ffffff; }
@@ -369,15 +376,70 @@
   .schedule-file-original { grid-column: 1 / -1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #64748b; }
   .schedule-file-row input[type="text"] { min-width: 0; padding: 8px 10px; font-size: 13px; }
   .schedule-file-remove { border: none; background: #fee2e2; color: #b91c1c; border-radius: 6px; padding: 8px 10px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  /* 드래그&드롭 영역: 파일을 끌어다 놓거나 눌러서 선택 */
+  .schedule-dropzone {
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    border: 2px dashed #c4b5fd; border-radius: 9px; background: #ffffff;
+    color: #7c3aed; font-size: 13px; font-weight: 600; text-align: center;
+    padding: 14px 12px; margin-bottom: 9px; cursor: pointer; transition: 0.15s;
+  }
+  .schedule-dropzone i { font-size: 18px; }
+  .schedule-dropzone b { color: #5b21b6; }
+  .schedule-dropzone:hover { background: #f5f3ff; border-color: #a78bfa; }
+  .schedule-dropzone.dragover { background: #ede9fe; border-color: #7c3aed; transform: scale(1.01); }
+  /* 링크 입력 줄: [이름][주소][추가] */
+  .schedule-link-input { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) auto; gap: 8px; margin-bottom: 9px; }
+  .schedule-link-input input { min-width: 0; padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; }
+  .schedule-link-add { border: none; background: #7c3aed; color: #ffffff; border-radius: 8px; padding: 9px 16px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .schedule-link-add:hover { background: #6d28d9; }
+  @media (max-width: 520px) { .schedule-link-input { grid-template-columns: 1fr; } }
   .item-detail-attachment { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eef0f3; }
   .item-detail-attachment-label { margin-bottom: 7px; font-size: 13px; font-weight: 800; color: #6d28d9; }
-  .item-detail-attachment-list { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
+  /* 첨부파일 버튼: 가로로 나란히 두되, 팝업 폭을 넘치면 그때만 다음 줄로 내려갑니다. */
+  .item-detail-attachment-list { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 7px; }
   .item-detail-attachment button {
-    display: inline-flex; align-items: center; gap: 7px; max-width: 100%;
+    display: inline-flex; align-items: center; gap: 7px; max-width: 100%; flex: 0 0 auto;
     border: 1px solid #c4b5fd; background: #f5f3ff; color: #5b21b6;
     border-radius: 8px; padding: 9px 12px; font-size: 13.5px; font-weight: 700; cursor: pointer;
   }
   .item-detail-attachment button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 상세 팝업의 링크: 한 줄에 [이름(열기)][복사][QR코드 생성] 묶음, 그 오른쪽에 QR 그림 */
+  .item-detail-link-list { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .item-detail-link-row { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; max-width: 100%; }
+  .item-detail-link-item { display: inline-flex; align-items: stretch; max-width: 100%; flex: 0 0 auto; border: 1px solid #bfdbfe; border-radius: 8px; overflow: hidden; }
+  .item-detail-link-open {
+    display: inline-flex; align-items: center; gap: 7px; min-width: 0;
+    background: #eff6ff; color: #1d4ed8; text-decoration: none;
+    padding: 9px 12px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+  }
+  .item-detail-link-open span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-detail-link-open:hover { background: #dbeafe; }
+  .item-detail-link-copy {
+    display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto;
+    border: none; border-left: 1px solid #1d4ed8; background: #2563eb; color: #ffffff;
+    padding: 9px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .item-detail-link-copy:hover { background: #1d4ed8; }
+  .item-detail-link-copy.copied { background: #16a34a; border-left-color: #16a34a; color: #ffffff; }
+  /* QR코드 생성 버튼(보라 계열) + 그 오른쪽에 나오는 QR 박스 */
+  .item-detail-link-qr {
+    display: inline-flex; align-items: center; flex: 0 0 auto;
+    border: none; border-left: 1px solid #bfdbfe; background: #f5f3ff; color: #6d28d9;
+    padding: 9px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .item-detail-link-qr:hover { background: #ede9fe; }
+  .item-detail-qr-box {
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+    padding: 8px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;
+  }
+  .item-detail-qr-holder { line-height: 0; }
+  .item-detail-qr-holder img { display: block; }
+  .item-detail-qr-copy {
+    border: none; background: #6d28d9; color: #ffffff; border-radius: 6px;
+    padding: 7px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .item-detail-qr-copy:hover { background: #5b21b6; }
+  .item-detail-qr-copy.copied { background: #16a34a; }
 
   /* 일정 수정창: 기존 사이트의 초록/파랑 계열과 둥근 카드 분위기를 유지한 간결한 편집 화면 */
   .single-edit-content {
@@ -515,7 +577,15 @@
   .print-only-title { display: none; text-align: center; font-size: 26px; font-weight: bold; margin-bottom: 25px; color: black; }
   @media print {
     body { padding: 0; background: white; }
-    .btn-group, .search-box, .modal, .notice-container, .grade-filter, .top-panel, .meal-panel, .scroll-top-btn { display: none !important; }
+    /* 인쇄에는 '(2026년 9월) 주간 계획서' 제목과 현재 보고 있는 주(예: 1·2주차) 달력만 남깁니다.
+       화면용 상단 버튼(인쇄/건의함/일정등록)·급식·바로가기·부서별 등록 버튼·달 이동/학년필터 줄은 모두 숨깁니다. */
+    .header-top-actions, .header-area h2, .btn-group, .meal-inline, .shortcut-cluster,
+    .schedule-register-btn, .register-btn-row, .search-box, .modal, .notice-container,
+    .notice-toolbar, .grade-filter, .top-panel, .meal-panel, .scroll-top-btn,
+    .cal-heading-row, #rangeInfo, .mobile-list { display: none !important; }
+    /* 좁은 폭에서 인쇄해도(모바일 규칙이 PC 달력을 숨기더라도) 달력이 반드시 나오도록 강제로 표시합니다. */
+    #workTableWrap { display: block !important; overflow: visible !important; }
+    #workTable { min-width: 0 !important; }
     .print-only-title { display: block !important; }
     table, th, td { border: 1px solid black !important; }
     .event-bar { border-left: 4px solid black !important; background: transparent !important; color: black !important; }
@@ -532,6 +602,7 @@
 
     /* 1) 등록/관리자/주차 바로가기 버튼은 PC 버전(월간 달력)에서만 의미가 있으므로 모바일에서는 숨깁니다. */
     .admin-btn { display: none; }
+    .print-btn { display: none; }
     .header-top-actions { flex-direction: column; align-items: stretch; gap: 6px; }
     .mobile-register-btn {
       display: block;
@@ -542,6 +613,8 @@
     }
     .card-btn { display: none; }
     .register-btn-row { display: none; }
+    /* 모바일: 부서별 일정 등록 버튼을 바로가기(전체시간표/시청각실/방과후) 아래로 내려 전체폭으로 보여줍니다. */
+    .top-register-btn { display: inline-flex !important; order: 1; width: 100%; justify-content: center; margin-top: 2px; }
     #weekQuickNav { display: none; }
 
     /* 급식 카드가 한 줄 전체를 차지하고, 바로가기 버튼은 그 아래로 줄바꿈되어 가운데 정렬됩니다.
@@ -569,7 +642,6 @@
     #searchBtn { display: inline-block; }
     #gradeFilter { display: flex; }
     .cal-heading-row { display: none; }
-    #weekFilterBtns { display: none !important; }
 
     .search-box select { padding: 6px 4px; font-size: 12.5px; }
     .search-box select#ySel { width: 78px; }

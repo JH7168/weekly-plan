@@ -191,7 +191,6 @@
     toggleLoading(true, "조회 중...");
 
     activeFilterIndices = [0, 1, 2, 3, 4];
-    selectedWeeksForFilter = [];
     activeWeekFilter = null;
 
     if (isMobileLayout()) {
@@ -318,7 +317,6 @@
   // "N주차"/"이번주" 버튼은 누를 때마다 기존 선택을 유지한 채 추가/해제합니다.
   // 선택이 하나도 남지 않으면 현재 달의 전체 주차를 다시 보여줍니다.
   function toggleQuickWeek(sTime) {
-    selectedWeeksForFilter = [];
     const next = activeWeekFilter ? [...activeWeekFilter] : [];
     const pos = next.indexOf(sTime);
     if (pos >= 0) next.splice(pos, 1);
@@ -341,7 +339,6 @@
         return false;
       });
       if (weeksOfMonth.length === 0) return;
-      selectedWeeksForFilter = [];
       activeWeekFilter = weeksOfMonth.map(w => w.sTime);
       renderMonthView(activeFilterIndices);
     } else {
@@ -498,7 +495,7 @@
             ? { y: week.owningYear, m: week.owningMonth, w: week.weekNum } : null;
           const detailIdx = registerDetail(
             popupLabel, item.dateLabel || item.date || '', item.text, weekCtx,
-            item.attachments || [], item.rowNum || null
+            item.attachments || [], item.rowNum || null, item.links || []
           );
 
           rowHtml += `<div class="${barClass}" style="grid-column: ${gridStart} / span ${span}; ${fsStyle}" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">${title}</div>`;
@@ -549,10 +546,10 @@
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
     calendarItemDetails = [];
-    function registerDetail(label, dateLabel, text, weekCtx, attachments, rowNum) {
+    function registerDetail(label, dateLabel, text, weekCtx, attachments, rowNum, links) {
       calendarItemDetails.push({
         label, dateLabel, text, weekCtx: weekCtx || null,
-        attachments: attachments || [], rowNum: rowNum || null
+        attachments: attachments || [], links: links || [], rowNum: rowNum || null
       });
       return calendarItemDetails.length - 1;
     }
@@ -593,7 +590,7 @@
       } else {
         workMobileEl.innerHTML = visibleDepts.map(dept => {
           const rows = dept.items.map(item => {
-            const detailIdx = registerDetail(dept.name, item.date || '', item.text, null, item.attachments || [], item.rowNum || null);
+            const detailIdx = registerDetail(dept.name, item.date || '', item.text, null, item.attachments || [], item.rowNum || null, item.links || []);
             return `<div class="mobile-list-row cal-clickable" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">
               <div class="mobile-list-date">${item.date}</div>
               <div class="mobile-list-content">${extractDeptTitle(item.text)}</div>
@@ -608,34 +605,7 @@
   // (PC용) "N주차"를 선택확대/원래대로 하기 위한 상태. 이전의 날짜 단위 선택확대와 같은 방식이며,
   // 단위만 날짜에서 주차로 바뀐 것입니다. 주차 선택은 week.sTime(그 주 월요일 시각, 고유값)으로 구분합니다
   // — weekNum만으로는 "8월 달력에 곁다리로 보이는 9월 1주차"처럼 다른 달의 같은 번호와 겹칠 수 있어서입니다.
-  let selectedWeeksForFilter = []; // 유저가 클릭한 주(sTime)들
   let activeWeekFilter = null; // null이면 이번 달의 모든 주차, 배열(sTime)이면 그 주차들만 표시
-
-  // "N주차" 클릭 시 선택/해제 토글
-  function toggleWeekFilter(sTime) {
-    const pos = selectedWeeksForFilter.indexOf(sTime);
-    if (pos > -1) selectedWeeksForFilter.splice(pos, 1);
-    else selectedWeeksForFilter.push(sTime);
-    renderMonthView(activeFilterIndices);
-  }
-
-  // 선택확대 버튼 클릭 시
-  function applyWeekFilter() {
-    if (selectedWeeksForFilter.length === 0) {
-      showAlert("먼저 표 왼쪽의 'N주차'를 클릭하여 볼 주차를 선택해주세요.");
-      return;
-    }
-    activeWeekFilter = [...selectedWeeksForFilter].sort((a, b) => a - b);
-    selectedWeeksForFilter = [];
-    renderMonthView(activeFilterIndices);
-  }
-
-  // 원래대로 버튼 클릭 시
-  function resetWeekFilter() {
-    selectedWeeksForFilter = [];
-    activeWeekFilter = null;
-    renderMonthView(activeFilterIndices);
-  }
 
   // (PC용) 이번 달에 속한 주차들을 세로로 이어붙여 "월간 달력"처럼 그리는 렌더러.
   function renderMonthView(indices) {
@@ -648,10 +618,10 @@
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
     calendarItemDetails = [];
-    function registerDetail(label, dateLabel, text, weekCtx, attachments, rowNum) {
+    function registerDetail(label, dateLabel, text, weekCtx, attachments, rowNum, links) {
       calendarItemDetails.push({
         label, dateLabel, text, weekCtx: weekCtx || null,
-        attachments: attachments || [], rowNum: rowNum || null
+        attachments: attachments || [], links: links || [], rowNum: rowNum || null
       });
       return calendarItemDetails.length - 1;
     }
@@ -668,10 +638,9 @@
     let bodyHtml = '';
     weeksToShow.forEach((week, wIdx) => {
       const isCurrentWeek = todayTime >= week.sTime && todayTime <= week.sTime + 4 * 86400000 + 86399999;
-      const isSelected = selectedWeeksForFilter.includes(week.sTime);
       // 이 주가 실제로 소속된 달/주차(수요일 기준)를 두 줄로 보여줍니다. 지금 보고 있는 달과 다를 수 있습니다
       // (예: 8월 달력 맨 끝의 8/31~9/4 주는 "9월 1주차"로 표시됩니다).
-      const cornerHtml = `<div onclick="toggleWeekFilter(${week.sTime})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleWeekFilter(${week.sTime});}" role="button" tabindex="0" style="cursor:pointer; padding:6px; border-radius:6px; background:${isSelected ? '#dbeafe' : 'transparent'}; border:${isSelected ? '2px solid #3b82f6' : '1px solid transparent'}; transition:all 0.2s ease; display:inline-block; line-height:1.3;">${week.owningMonth}월<br>${week.weekNum}주차</div>`;
+      const cornerHtml = `<div style="padding:6px; display:inline-block; line-height:1.3;">${week.owningMonth}월<br>${week.weekNum}주차</div>`;
 
       const { html } = renderWeekBlockHtml(week, indices, fsStyle, deptCellStyle, registerDetail, true, isCurrentWeek, cornerHtml);
       bodyHtml += html;
@@ -761,9 +730,158 @@
     } else {
       attachmentWrap.style.display = 'none';
     }
+    // 링크: 등록 시 넣어둔 '이름 붙인 주소'를 버튼으로 보여줍니다. 버튼을 누르면 새 창으로 열리고,
+    //       옆의 '복사' 버튼으로 (긴 주소도) 클립보드에 바로 복사할 수 있습니다.
+    const linkWrap = document.getElementById('itemDetailLinkWrap');
+    const linkList = document.getElementById('itemDetailLinkList');
+    linkList.innerHTML = '';
+    if (d.links && d.links.length) {
+      d.links.forEach(link => {
+        const row = document.createElement('div');
+        row.className = 'item-detail-link-row';
+
+        const item = document.createElement('div');
+        item.className = 'item-detail-link-item';
+        const open = document.createElement('a');
+        open.href = link.url; open.target = '_blank'; open.rel = 'noopener noreferrer';
+        open.className = 'item-detail-link-open';
+        const icon = document.createElement('i'); icon.className = 'fas fa-link';
+        const name = document.createElement('span'); name.textContent = link.name || link.url;
+        open.append(icon, name);
+        const copy = document.createElement('button');
+        copy.type = 'button'; copy.className = 'item-detail-link-copy'; copy.title = '주소 복사';
+        copy.textContent = '복사';
+        copy.onclick = () => copyScheduleLink(link.url, copy);
+        const qrBtn = document.createElement('button');
+        qrBtn.type = 'button'; qrBtn.className = 'item-detail-link-qr'; qrBtn.title = 'QR 코드 만들기';
+        qrBtn.textContent = 'QR코드 생성';
+        item.append(open, copy, qrBtn);
+
+        // QR 박스(처음엔 숨김): 'QR코드 생성'을 누르면 링크 오른쪽에 QR 그림 + 'QR 복사' 버튼이 나옵니다.
+        const qrBox = document.createElement('div');
+        qrBox.className = 'item-detail-qr-box'; qrBox.style.display = 'none';
+        const qrHolder = document.createElement('div');
+        qrHolder.className = 'item-detail-qr-holder';
+        const qrCopy = document.createElement('button');
+        qrCopy.type = 'button'; qrCopy.className = 'item-detail-qr-copy'; qrCopy.textContent = 'QR 복사';
+        qrBox.append(qrHolder, qrCopy);
+        qrBtn.onclick = () => toggleLinkQR(link.url, qrBox, qrHolder, qrCopy, qrBtn);
+
+        row.append(item, qrBox);
+        linkList.appendChild(row);
+      });
+      linkWrap.style.display = 'block';
+    } else {
+      linkWrap.style.display = 'none';
+    }
     // 연간 행사(부서명 없음)는 학사일정표 시트에서 직접 관리하므로 이 화면에서는 수정/삭제할 수 없습니다.
     document.getElementById('itemDetailActions').style.display = (d.label === '연간 행사') ? 'none' : 'flex';
+    initItemDetailDrag();               // 드래그 기능 준비(최초 1회만 실제로 설정)
+    if (_resetItemDetailPos) _resetItemDetailPos(); // 열 때마다 가운데로 되돌립니다.
     openMod('itemDetailMod');
+  }
+
+  // 링크 주소를 클립보드에 복사합니다. (긴 주소도 한 번에) 복사되면 버튼에 잠깐 '복사됨'을 표시합니다.
+  function copyScheduleLink(url, btn) {
+    const flash = () => {
+      const original = btn.textContent;
+      btn.textContent = '복사됨';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1300);
+    };
+    const fallback = () => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url; ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        flash();
+      } catch (e) { showAlert('복사에 실패했습니다. 아래 주소를 직접 복사해주세요.\n\n' + url); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(flash).catch(fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  // 'QR코드 생성' 버튼: 링크 오른쪽에 QR 그림을 그려서 보여주거나(다시 누르면) 닫습니다.
+  // QR은 브라우저 안에서 직접 그려지므로 주소가 외부 서버로 나가지 않습니다.
+  function toggleLinkQR(url, box, holder, copyBtn, genBtn) {
+    if (box.style.display !== 'none') {          // 이미 열려 있으면 닫기
+      box.style.display = 'none';
+      genBtn.textContent = 'QR코드 생성';
+      return;
+    }
+    if (typeof QRCode === 'undefined') {
+      showAlert('QR 생성 기능을 아직 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    holder.innerHTML = '';
+    try {
+      new QRCode(holder, { text: url, width: 150, height: 150, correctLevel: QRCode.CorrectLevel.M });
+      box.style.display = 'flex';
+      genBtn.textContent = 'QR 닫기';
+      copyBtn.onclick = () => copyLinkQR(holder, copyBtn);
+    } catch (e) {
+      showAlert('QR 코드를 만들지 못했습니다.\n' + (e && e.message ? e.message : e));
+    }
+  }
+
+  // QR 그림을 이미지(PNG)로 클립보드에 복사합니다. (다른 곳에 붙여넣어 활용)
+  function copyLinkQR(holder, btn) {
+    const canvas = holder.querySelector('canvas');
+    if (!canvas || !canvas.toBlob) {
+      showAlert('QR 이미지를 준비하지 못했습니다. QR 그림을 마우스 오른쪽 클릭(모바일은 길게 눌러) → "이미지 복사"를 사용해주세요.');
+      return;
+    }
+    const flash = () => {
+      const o = btn.textContent;
+      btn.textContent = '복사됨'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = o; btn.classList.remove('copied'); }, 1300);
+    };
+    const manual = () => showAlert('이 브라우저에서는 버튼으로 바로 복사가 안 됩니다.\nQR 그림을 마우스 오른쪽 클릭(모바일은 길게 눌러) → "이미지 복사"를 사용해주세요.');
+    if (navigator.clipboard && window.ClipboardItem) {
+      canvas.toBlob(blob => {
+        if (!blob) { manual(); return; }
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(flash).catch(manual);
+      }, 'image/png');
+    } else {
+      manual();
+    }
+  }
+
+  // 세부 내용 팝업을 상단(제목/날짜 줄)을 잡고 자유롭게 옮길 수 있게 합니다. (닫기 × 버튼은 제외)
+  let _itemDetailDragReady = false;
+  let _resetItemDetailPos = null;
+  function initItemDetailDrag() {
+    if (_itemDetailDragReady) return;
+    const content = document.getElementById('itemDetailContent');
+    const handle = document.getElementById('itemDetailHeader');
+    if (!content || !handle) return;
+    _itemDetailDragReady = true;
+    let dragging = false, startX = 0, startY = 0, curX = 0, curY = 0;
+    const apply = () => { content.style.transform = `translate(${curX}px, ${curY}px)`; };
+    _resetItemDetailPos = () => { curX = 0; curY = 0; content.style.transform = ''; };
+    handle.addEventListener('mousedown', e => {
+      if (e.target.closest('[aria-label="닫기"]')) return; // 닫기 버튼 클릭은 드래그로 처리하지 않음
+      dragging = true;
+      startX = e.clientX - curX;
+      startY = e.clientY - curY;
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      curX = e.clientX - startX;
+      curY = e.clientY - startY;
+      apply();
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.userSelect = '';
+    });
   }
 
   function downloadScheduleAttachment(idx, fileIdx) {

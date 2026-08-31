@@ -421,7 +421,7 @@ function buildWeekResult_(weekStart, schMap, datVals) {
       deptMap[r[0]].push({
         date: formatSimple(r[1], r[2]), time: st, st: st, et: et,
         text: escapeHtml_(r[3]), grades: r[5] || '',
-        attachments: parseScheduleAttachments_(r[6]), rowNum: dataIdx + 2
+        attachments: parseScheduleAttachments_(r[6]), links: parseScheduleLinks_(r[7]), rowNum: dataIdx + 2
       });
     }
   });
@@ -475,6 +475,34 @@ function parseScheduleAttachments_(raw) {
   } catch (e) {
     return [];
   }
+}
+
+// 일정 링크(이름+주소)를 안전하게 파싱합니다. http/https 주소만 허용합니다.
+function parseScheduleLinks_(raw) {
+  if (!raw) return [];
+  try {
+    const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const list = Array.isArray(data) ? data : [data];
+    return list.filter(item => item && item.url).map(item => {
+      const url = String(item.url).trim();
+      const name = String(item.name || '').trim() || url;
+      return { name: name, url: url };
+    }).filter(item => /^https?:\/\//i.test(item.url));
+  } catch (e) {
+    return [];
+  }
+}
+
+// 저장용: 클라이언트가 보낸 링크 배열을 정제해 JSON 문자열로 만듭니다.(http/https만, 최대 20개)
+function buildScheduleLinksJson_(links) {
+  const list = Array.isArray(links) ? links : [];
+  const clean = list.map(item => {
+    const url = String((item && item.url) || '').trim();
+    let name = String((item && item.name) || '').trim();
+    if (!name) name = url;
+    return { name: name.slice(0, 100), url: url };
+  }).filter(item => /^https?:\/\//i.test(item.url)).slice(0, 20);
+  return clean.length ? JSON.stringify(clean) : '';
 }
 
 function scheduleFileExtension_(name) {
@@ -654,7 +682,7 @@ function parseYmd_(s) {
   return date;
 }
 
-function saveRangeToSheet(s, e, dept, text, author, weeks, grades, attachmentPayloads) {
+function saveRangeToSheet(s, e, dept, text, author, weeks, grades, attachmentPayloads, links) {
   const lock = LockService.getScriptLock();
   let newAttachments = [];
   try {
@@ -670,18 +698,20 @@ function saveRangeToSheet(s, e, dept, text, author, weeks, grades, attachmentPay
     const repeatCount = Math.max(1, Math.min(20, Number(weeks) || 1));
     newAttachments = createScheduleAttachments_(attachmentPayloads);
     const attachmentJson = newAttachments.length ? JSON.stringify(newAttachments) : '';
+    const linksJson = buildScheduleLinksJson_(links);
     const rows = [];
     for (let i = 0; i < repeatCount; i++) {
       const sd = new Date(startDate); sd.setDate(sd.getDate() + i * 7);
       const ed = new Date(endDate); ed.setDate(ed.getDate() + i * 7);
-      rows.push([dept, sd, ed, text, author || '', grades || '', attachmentJson]);
+      rows.push([dept, sd, ed, text, author || '', grades || '', attachmentJson, linksJson]);
     }
 
     const sheet = SS.getSheetByName("Data");
     if (!sheet) throw new Error('"Data" 시트를 찾을 수 없습니다.');
     if (sheet.getRange(1, 7).getValue() !== '첨부파일') sheet.getRange(1, 7).setValue('첨부파일');
+    if (sheet.getRange(1, 8).getValue() !== '링크') sheet.getRange(1, 8).setValue('링크');
     // 락으로 보호된 구간 안에서 getLastRow()를 다시 읽어, 다른 사용자가 그 사이 추가한 행과 겹치지 않게 합니다.
-    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 7).setValues(rows);
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
     invalidateSheetCache_("Data");
     return true;
   } catch (err) {
@@ -824,6 +854,7 @@ function getItemsForDelete(type, year, month, week, dept) {
       const displayContent = originalText.length > MAX_LEN ? originalText.substring(0, MAX_LEN) + "..." : originalText;
       const grades = obj.row[gIdx] || "";
       const attachments = type === 'data' ? parseScheduleAttachments_(obj.row[6]) : [];
+      const links = type === 'data' ? parseScheduleLinks_(obj.row[7]) : [];
 
       const startDate = obj.row[sIdx];
       const endDate = obj.row[eIdx];
@@ -839,6 +870,7 @@ function getItemsForDelete(type, year, month, week, dept) {
         fullText: originalText,
         grades: grades,
         attachments: attachments,
+        links: links,
         display: escapedDisplay,
         date: Utilities.formatDate(startDate, TZ, "M/d") +
               (Utilities.formatDate(startDate, TZ, "M/d") === Utilities.formatDate(endDate, TZ, "M/d") ?
@@ -849,7 +881,7 @@ function getItemsForDelete(type, year, month, week, dept) {
     });
 }
 
-function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, newGrades, attachmentAction) {
+function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, newGrades, attachmentAction, links) {
   const lock = LockService.getScriptLock();
   let createdAttachments = [];
   try {
@@ -905,9 +937,11 @@ function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, ne
         nextAttachments[0] = { fileId: old.fileId, fileName: renamed, mimeType: old.mimeType || '' };
       }
       if (sheet.getRange(1, 7).getValue() !== '첨부파일') sheet.getRange(1, 7).setValue('첨부파일');
-      sheet.getRange(row, 2, 1, 6).setValues([[
+      if (sheet.getRange(1, 8).getValue() !== '링크') sheet.getRange(1, 8).setValue('링크');
+      sheet.getRange(row, 2, 1, 7).setValues([[
         startDate, endDate, newText, newAuthor || '', newGrades || '',
-        nextAttachments.length ? JSON.stringify(nextAttachments) : ''
+        nextAttachments.length ? JSON.stringify(nextAttachments) : '',
+        buildScheduleLinksJson_(links)
       ]]);
       const nextIds = nextAttachments.map(item => item.fileId);
       oldAttachments.filter(item => nextIds.indexOf(item.fileId) === -1).forEach(item => trashScheduleAttachmentIfUnused_(item.fileId));

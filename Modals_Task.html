@@ -32,7 +32,7 @@
       <div style="display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px;">
         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0; font-weight:bold;">
           <input type="checkbox" id="wzIsRange" onclick="toggleWzRange()" style="width:20px; height:20px;">
-          <span style="color:var(--danger);">기간으로 설정</span> (<span style="color:var(--primary); text-decoration:underline;">시작일</span>과 <span style="color:var(--primary); text-decoration:underline;">종료일</span>을 차례로 클릭)
+          <span style="color:var(--danger);">기간으로 설정</span>
         </label>
         <span id="wzRangeStatus" style="color:var(--danger); font-weight:bold; font-size:13px; display:none;">시작일을 선택하세요</span>
       </div>
@@ -70,8 +70,22 @@
 
       <div class="field schedule-attachment-field">
         <label>첨부파일 <span class="field-hint">(선택 · 여러 번 추가 가능, 전체 30MB 이하)</span></label>
+        <div class="schedule-dropzone" id="wzDropzone" onclick="document.getElementById('wzAttachmentFile').click()">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <span>여기로 <b>파일을 끌어다 놓거나</b>, 눌러서 선택하세요</span>
+        </div>
         <input type="file" id="wzAttachmentFile" multiple accept=".hwp,.hwpx,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.ppt,.pptx,.pdf,.txt,.zip,.jpg,.jpeg,.png,.gif" onchange="addScheduleFiles('register', this)">
         <div id="wzAttachmentList" class="schedule-file-list"></div>
+      </div>
+
+      <div class="field schedule-attachment-field schedule-link-field">
+        <label>링크 <span class="field-hint">(선택 · 주소를 넣고 원하는 버튼 이름으로 저장 · 여러 개 가능)</span></label>
+        <div class="schedule-link-input">
+          <input type="text" id="wzLinkName" placeholder="버튼 이름 (예: 신청 폼)">
+          <input type="url" id="wzLinkUrl" placeholder="https://... 주소 붙여넣기" onkeydown="if(event.key==='Enter'){event.preventDefault();addScheduleLink('register');}">
+          <button type="button" class="schedule-link-add" onclick="addScheduleLink('register')">추가</button>
+        </div>
+        <div id="wzLinkList" class="schedule-file-list"></div>
       </div>
 
       <div class="field" style="margin-bottom:15px;">
@@ -200,8 +214,21 @@
     <div class="field schedule-attachment-field" id="singleEditAttachmentField">
       <label>첨부파일 <span class="field-hint">(여러 번 추가 가능 · 전체 30MB 이하)</span></label>
       <div id="singleEditExistingAttachment" class="schedule-file-list"></div>
+      <div class="schedule-dropzone" id="singleEditDropzone" onclick="document.getElementById('singleEditAttachmentFile').click()">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <span>여기로 <b>파일을 끌어다 놓거나</b>, 눌러서 선택하세요</span>
+      </div>
       <input type="file" id="singleEditAttachmentFile" multiple accept=".hwp,.hwpx,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.ppt,.pptx,.pdf,.txt,.zip,.jpg,.jpeg,.png,.gif" onchange="addScheduleFiles('edit', this)">
       <div id="singleEditNewAttachmentList" class="schedule-file-list"></div>
+    </div>
+    <div class="field schedule-attachment-field schedule-link-field" id="singleEditLinkField">
+      <label>링크 <span class="field-hint">(주소를 넣고 원하는 버튼 이름으로 저장 · 여러 개 가능)</span></label>
+      <div class="schedule-link-input">
+        <input type="text" id="singleEditLinkName" placeholder="버튼 이름 (예: 신청 폼)">
+        <input type="url" id="singleEditLinkUrl" placeholder="https://... 주소 붙여넣기" onkeydown="if(event.key==='Enter'){event.preventDefault();addScheduleLink('edit');}">
+        <button type="button" class="schedule-link-add" onclick="addScheduleLink('edit')">추가</button>
+      </div>
+      <div id="singleEditLinkList" class="schedule-file-list"></div>
     </div>
     <div class="field">
       <label>대상 학년</label>
@@ -268,6 +295,8 @@
   let wzAttachmentFiles = [];
   let currentEditAttachments = [];
   let currentEditNewFiles = [];
+  let wzLinks = [];            // 등록 마법사에서 추가한 링크 [{name, url}]
+  let currentEditLinks = [];   // 수정창의 링크 [{name, url}]
 
   function addScheduleFiles(mode, input) {
     const added = Array.from(input.files || []);
@@ -343,6 +372,79 @@
     })));
   }
 
+  // ===== 링크(이름+주소) =====
+  function addScheduleLink(mode) {
+    const prefix = mode === 'register' ? 'wz' : 'singleEdit';
+    const urlEl = document.getElementById(prefix + 'LinkUrl');
+    const nameEl = document.getElementById(prefix + 'LinkName');
+    let url = String(urlEl.value || '').trim();
+    const name = String(nameEl.value || '').trim();
+    if (!url) { showAlert('링크 주소를 입력해주세요.'); return; }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url.replace(/^\/+/, ''); // http/https가 없으면 https://를 붙여줍니다.
+    const target = mode === 'register' ? wzLinks : currentEditLinks;
+    target.push({ name: name || url, url: url });
+    urlEl.value = ''; nameEl.value = '';
+    renderScheduleLinkLists(mode);
+    nameEl.focus();
+  }
+
+  function makeScheduleLinkRow(item, onName, onRemove) {
+    const row = document.createElement('div');
+    row.className = 'schedule-file-row';
+    const original = document.createElement('div');
+    original.className = 'schedule-file-original';
+    original.textContent = '링크: ' + item.url;
+    const name = document.createElement('input');
+    name.type = 'text';
+    name.value = item.name || '';
+    name.placeholder = '버튼 이름';
+    name.addEventListener('input', () => onName(name.value));
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'schedule-file-remove';
+    remove.textContent = '삭제';
+    remove.onclick = onRemove;
+    row.append(original, name, remove);
+    return row;
+  }
+
+  function renderScheduleLinkLists(mode) {
+    const listId = mode === 'register' ? 'wzLinkList' : 'singleEditLinkList';
+    const arr = mode === 'register' ? wzLinks : currentEditLinks;
+    const list = document.getElementById(listId);
+    if (!list) return;
+    list.innerHTML = '';
+    arr.forEach((item, idx) => list.appendChild(makeScheduleLinkRow(
+      item,
+      value => { item.name = value; },
+      () => { arr.splice(idx, 1); renderScheduleLinkLists(mode); }
+    )));
+  }
+
+  // ===== 드래그&드롭 파일 업로드 =====
+  // 지정한 영역에 파일을 끌어다 놓으면, '파일추가' 버튼으로 고른 것과 똑같이 목록에 담깁니다.
+  function setupScheduleDropzone(zoneId, mode) {
+    const zone = document.getElementById(zoneId);
+    if (!zone || zone._dropReady) return;
+    zone._dropReady = true;
+    ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation(); zone.classList.add('dragover');
+    }));
+    ['dragleave', 'dragend', 'drop'].forEach(ev => zone.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation(); zone.classList.remove('dragover');
+    }));
+    zone.addEventListener('drop', e => {
+      const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+      if (!files.length) return;
+      const target = mode === 'register' ? wzAttachmentFiles : currentEditNewFiles;
+      files.forEach(file => target.push({ file: file, displayName: file.name }));
+      renderScheduleFileLists(mode);
+    });
+  }
+  // 창(문서) 아무 데나 파일을 떨어뜨렸을 때 브라우저가 그 파일을 열어버리지 않도록 막습니다.
+  window.addEventListener('dragover', e => { e.preventDefault(); });
+  window.addEventListener('drop', e => { e.preventDefault(); });
+
   function switchTo(t) {
     closeMod('choiceMod');
     if (t === 'workMod') {
@@ -354,6 +456,11 @@
       document.getElementById('wzAttachmentFile').value = '';
       wzAttachmentFiles = [];
       renderScheduleFileLists('register');
+      wzLinks = [];
+      document.getElementById('wzLinkName').value = '';
+      document.getElementById('wzLinkUrl').value = '';
+      renderScheduleLinkLists('register');
+      setupScheduleDropzone('wzDropzone', 'register');
       document.getElementById('wzIsRange').checked = false;
       setCheckedGrades('wzGradeGroup', '1,2,3');
       document.getElementById('wzRepeat').checked = false;
@@ -518,7 +625,7 @@
     }).withFailureHandler(err => {
       toggleLoading(false);
       showAlert('저장 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
-    }).saveRangeToSheet(wzStartD, wzEndD || wzStartD, dept, finalContent, '', weeks, grades, attachmentPayloads);
+    }).saveRangeToSheet(wzStartD, wzEndD || wzStartD, dept, finalContent, '', weeks, grades, attachmentPayloads, wzLinks);
   }
 
   function toggleDateFields(type) {
@@ -810,6 +917,13 @@
     currentEditAttachments = isNotice ? [] : (item.attachments || []).map(file => Object.assign({}, file, { displayName: file.fileName }));
     currentEditNewFiles = [];
     renderScheduleFileLists('edit');
+    // 링크: 기존에 저장된 링크를 그대로 불러와 수정/추가/삭제할 수 있게 합니다.
+    document.getElementById('singleEditLinkField').style.display = isNotice ? 'none' : 'block';
+    document.getElementById('singleEditLinkName').value = '';
+    document.getElementById('singleEditLinkUrl').value = '';
+    currentEditLinks = isNotice ? [] : (item.links || []).map(l => ({ name: l.name, url: l.url }));
+    renderScheduleLinkLists('edit');
+    setupScheduleDropzone('singleEditDropzone', 'edit');
     if (isNotice) {
       document.getElementById('singleEditText').value = item.fullText;
     } else {
@@ -871,7 +985,7 @@
       } else {
         showAlert("수정 실패");
       }
-    }).updateRowContent(currentEditType, rowNum, text, start, end, '', grades, attachmentAction);
+    }).updateRowContent(currentEditType, rowNum, text, start, end, '', grades, attachmentAction, currentEditLinks);
   }
 
   function closeEditModal() {

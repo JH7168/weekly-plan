@@ -63,6 +63,8 @@
     <? } ?>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- QR 코드 생성(브라우저 안에서 직접 그림 — 주소가 외부로 나가지 않습니다) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <?!= include('CSS'); ?>
   </head>
@@ -87,21 +89,24 @@
       <!-- 수정/삭제는 이제 각 항목을 클릭한 뒤 팝업에서 처리하므로 관리자 버튼만 우측 상단에 작게 둡니다.
            인쇄 버튼은 휴대성이 좋아져 더는 필요 없어 뺐습니다. -->
       <div class="header-top-actions">
+        <button class="print-btn" onclick="window.print()"><i class="fas fa-print"></i> 인쇄</button>
         <button class="suggest-btn" onclick="openSuggestBox()"><i class="fas fa-lightbulb"></i> 건의함</button>
-        <button class="mobile-register-btn schedule-register-btn" onclick="switchTo('workMod')"><i class="fas fa-edit"></i> 일정등록</button>
         <button class="admin-btn" onclick="openAdminLogin()"><i class="fas fa-lock"></i> 관리자</button>
       </div>
       <h2>주간 계획서</h2>
 
-      <!-- 급식/바로가기 버튼을 한 줄에: 왼쪽=오늘 급식, 오른쪽=바로가기 버튼(2열×3행 격자). -->
-      <div class="btn-group" style="display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 20px; width: 100%;">
+      <!-- 급식 · 부서별 일정 등록 · 바로가기 버튼을 한 줄에: 왼쪽=오늘 급식, 가운데=부서별 일정 등록(아래줄 기준 하단 정렬), 오른쪽=바로가기 버튼(2열×3행 격자). -->
+      <div class="btn-group" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 20px; width: 100%;">
 
         <!-- 왼쪽: 지금 보여줄 한 끼 (시간에 따라 점심 또는 저녁) -->
-        <div class="meal-inline meal-inline-left" id="mealNow" style="justify-self: start;"></div>
+        <div class="meal-inline meal-inline-left" id="mealNow" style="justify-self: start; align-self: start;"></div>
+
+        <!-- 가운데: 부서별 일정 등록 (세로로는 이 줄의 제일 아래를 기준으로 붙습니다) -->
+        <button class="schedule-register-btn top-register-btn" onclick="switchTo('workMod')" style="justify-self: center; align-self: end; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 11px 24px; border-radius: 9px; font-size: 15.5px; white-space: nowrap; box-shadow: 0 4px 10px rgba(124,58,237,0.24);"><i class="fas fa-edit"></i> 부서별 일정 등록</button>
 
         <!-- 오른쪽: 바로가기 버튼(2열×3행 격자, 흰 박스 안에).
              1행: 전체 시간표 | 시청각실 예약   2행: 학교생활기록부 | 방과후 신청   3행: (빈칸) | 서식 -->
-        <div class="shortcut-cluster" style="justify-self: end;">
+        <div class="shortcut-cluster" style="justify-self: end; align-self: end;">
           <button class="shortcut-link" style="--accent:#e11d48;" onclick="openTimetableModal()">
             <i class="fas fa-table"></i>전체 시간표
           </button>
@@ -162,22 +167,17 @@
     <div class="cal-heading-row">
       <!-- 맨 왼쪽: 이번 달에 속한 주차 바로가기 버튼들 (오늘이 포함된 주는 "이번주"로 표시) -->
       <div id="weekQuickNav" class="week-quick-nav"></div>
-      <!-- 가운데: 월 제목 + 그 바로 아래 부서별 일정 등록 버튼 -->
+      <!-- 가운데: 월 제목 -->
       <div class="cal-heading-center">
         <div id="monthYearHeading" class="cal-heading"></div>
-        <button class="schedule-register-btn desktop-register-btn" onclick="switchTo('workMod')"><i class="fas fa-edit"></i> 부서별 일정 등록</button>
       </div>
-      <!-- 오른쪽 칸: 학년 필터(1줄) 바로 아래 선택확대/원래대로(1줄) — 왼쪽 "N월/N주차" 두 줄과 높이를 맞춥니다. -->
+      <!-- 오른쪽 칸: 학년 필터 -->
       <div class="cal-heading-right-col">
         <div class="grade-filter grade-filter-group" id="gradeFilterTop">
           <button class="grade-chip active" data-grade="all" onclick="setGradeFilter('all', this)">전체</button>
           <button class="grade-chip" data-grade="1" onclick="setGradeFilter('1', this)">1학년</button>
           <button class="grade-chip" data-grade="2" onclick="setGradeFilter('2', this)">2학년</button>
           <button class="grade-chip" data-grade="3" onclick="setGradeFilter('3', this)">3학년</button>
-        </div>
-        <div id="weekFilterBtns" style="display:flex; justify-content:flex-end; gap:8px;">
-          <button onclick="applyWeekFilter()" class="btn-search" style="padding: 6px 15px; font-size: 13px; margin: 0; background: #3b82f6; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔍 선택확대</button>
-          <button onclick="resetWeekFilter()" class="btn-cancel" style="width: auto; padding: 6px 15px; font-size: 13px; margin: 0; background: #94a3b8; border: none; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔄 원래대로</button>
         </div>
       </div>
     </div>
@@ -204,8 +204,8 @@
 
     <!-- 항목(연간 행사/부서별 업무) 클릭 시 세부 내용을 보여주는 팝업. 제목만 보이는 항목을 클릭하면 열립니다. -->
     <div id="itemDetailMod" class="modal">
-      <div class="modal-content" style="max-width: 480px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:12px;">
+      <div class="modal-content" id="itemDetailContent" style="max-width: 480px;">
+        <div id="itemDetailHeader" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:12px; cursor:move;" title="여기를 잡고 팝업을 옮길 수 있어요">
           <div>
             <h3 style="margin:0 0 4px; color:var(--primary);" id="itemDetailDept"></h3>
             <div id="itemDetailDate" style="font-size:13px; color:#888;"></div>
@@ -224,6 +224,10 @@
         <div id="itemDetailAttachmentWrap" class="item-detail-attachment" style="display:none;">
           <div class="item-detail-attachment-label">첨부파일</div>
           <div id="itemDetailAttachmentList" class="item-detail-attachment-list"></div>
+        </div>
+        <div id="itemDetailLinkWrap" class="item-detail-attachment" style="display:none;">
+          <div class="item-detail-attachment-label">링크</div>
+          <div id="itemDetailLinkList" class="item-detail-link-list"></div>
         </div>
         <!-- 연간 행사(부서명 없음)는 이 화면에서 수정/삭제할 수 있는 데이터가 아니므로 버튼을 숨깁니다. -->
         <div id="itemDetailActions" style="display:flex; gap:10px; margin-top:20px;">
