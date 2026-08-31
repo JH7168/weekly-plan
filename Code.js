@@ -224,8 +224,8 @@ function nextSchoolDay_(d) {
 }
 
 // 현재 시각(한국시간) 기준으로 점심/저녁 두 카드를 반환합니다.
-//  - 13:30 이전 : [오늘 점심, 오늘 저녁]
-//  - 13:30~18:15: [오늘 저녁, 다음 등교일 점심]
+//  - 13:00 이전 : [오늘 점심, 오늘 저녁]
+//  - 13:00~18:15: [오늘 저녁, 다음 등교일 점심]
 //  - 18:15 이후 : [다음 등교일 점심, 다음 등교일 저녁]
 //  주말은 건너뛰어 다음 등교일(예: 금요일 → 월요일)을 사용합니다.
 //  각 카드: { label, items:[...], status:'ok'|'holiday'|'none', holidayName }
@@ -238,7 +238,7 @@ function getMealCards() {
   const date1 = nextSchoolDay_(date0);    // date0 다음 등교일
 
   let slots;
-  if (hm < 1330) {
+  if (hm < 1300) {
     slots = [{ date: date0, meal: '중식' }, { date: date0, meal: '석식' }];
   } else if (hm < 1815) {
     slots = [{ date: date0, meal: '석식' }, { date: date1, meal: '중식' }];
@@ -429,13 +429,11 @@ function buildWeekResult_(weekStart, schMap, datVals) {
   };
 }
 
-// 시트 3종(학사일정표/Notice/Data)을 한 번에 읽어옵니다. getCombinedData/getMonthlyCombinedData 공용.
+// 화면에 필요한 학사일정표/Data 두 시트만 읽습니다. (별도 전달사항 영역 제거로 Notice 조회 제외)
 function readScheduleSheets_() {
   // 여러 사용자가 짧은 시간에 같은 주/달을 반복 조회하는 경우가 많아 캐시로 재요청을 줄입니다.
   const rawSchVals = getCachedSheetValues_("학사일정표", 600);
   const schVals = rawSchVals.length > 1 ? rawSchVals.slice(1) : [];
-  const rawNotVals = getCachedSheetValues_("Notice", 1800);
-  const notVals = rawNotVals.length > 1 ? rawNotVals.slice(1) : [];
   const rawDatVals = getCachedSheetValues_("Data", 1800);
   const datVals = rawDatVals.length > 1 ? rawDatVals.slice(1) : [];
 
@@ -444,23 +442,7 @@ function readScheduleSheets_() {
     if (r[0] instanceof Date) schMap.set(Utilities.formatDate(r[0], TZ, "yyyyMMdd"), r[1]);
   });
 
-  return { schMap, notVals, datVals };
-}
-
-function buildNoticeItems_(notVals, sTime, eTime) {
-  const noticeItems = [];
-  notVals.forEach(r => {
-    if (!(r[0] instanceof Date && r[1] instanceof Date)) return;
-    if (r[0].getTime() <= eTime && r[1].getTime() >= sTime) {
-      const linesHtml = String(r[2]).split('\n')
-        .map(line => line.trim())
-        .filter(line => line)
-        .map(line => `<div class="notice-line">${escapeHtml_(line)}</div>`)
-        .join("");
-      if (linesHtml) noticeItems.push({ html: linesHtml, grades: r[4] || '' });
-    }
-  });
-  return noticeItems;
+  return { schMap, datVals };
 }
 
 /**
@@ -475,11 +457,10 @@ function getCombinedData(year, month, week) {
   const mondays = getWeekMondaysForMonth_(year, month);
   const weekStart = mondays[week - 1] || mondays[0] || new Date(year, month - 1, 1);
 
-  const { schMap, notVals, datVals } = readScheduleSheets_();
+  const { schMap, datVals } = readScheduleSheets_();
   const wr = buildWeekResult_(weekStart, schMap, datVals);
-  const noticeItems = buildNoticeItems_(notVals, wr.sTime, wr.eTime);
 
-  return { schedule: wr.schedule, list: wr.list, sTime: wr.sTime, rangeText: wr.rangeText, noticeItems };
+  return { schedule: wr.schedule, list: wr.list, sTime: wr.sTime, rangeText: wr.rangeText };
 }
 
 // getWeekMondaysForMonth_는 "그 주 수요일이 속한 달"을 기준으로 주차를 정확히 한 달에만 배정합니다
@@ -519,12 +500,11 @@ function getMonthlyCombinedData(year, month) {
   const mondays = getOverlappingWeekMondays_(year, month);
   // 첫 화면의 '전주·이번주·다음주' 3주 표시가 달 경계에서도 되도록, 그 달 주차들의 앞뒤에 인접 주 1개씩 더 포함합니다.
   // (예: 9월 1주차가 8/31~9/4일 때, 그 앞의 8월 4주차(8/24~)도 함께 내려줍니다.)
-  let padStart = 0, padEnd = 0;
   if (mondays.length > 0) {
-    const prevMon = new Date(mondays[0]); prevMon.setDate(prevMon.getDate() - 7); mondays.unshift(prevMon); padStart = 1;
-    const nextMon = new Date(mondays[mondays.length - 1]); nextMon.setDate(nextMon.getDate() + 7); mondays.push(nextMon); padEnd = 1;
+    const prevMon = new Date(mondays[0]); prevMon.setDate(prevMon.getDate() - 7); mondays.unshift(prevMon);
+    const nextMon = new Date(mondays[mondays.length - 1]); nextMon.setDate(nextMon.getDate() + 7); mondays.push(nextMon);
   }
-  const { schMap, notVals, datVals } = readScheduleSheets_();
+  const { schMap, datVals } = readScheduleSheets_();
 
   const weeks = mondays.map(weekStart => {
     const wr = buildWeekResult_(weekStart, schMap, datVals);
@@ -542,16 +522,7 @@ function getMonthlyCombinedData(year, month) {
     };
   });
 
-  // 전달사항은 '그 달의 실제 주차들'(위에서 앞뒤로 덧붙인 인접 주는 제외) 기준으로만 모읍니다.
-  const monthWeeks = weeks.slice(padStart, weeks.length - padEnd);
-  let noticeItems = [];
-  if (monthWeeks.length > 0) {
-    const monthStart = monthWeeks[0].sTime;
-    const lastWeekEnd = monthWeeks[monthWeeks.length - 1].sTime + 4 * 86400000 + 86399999; // 마지막 주 금요일 23:59:59.999
-    noticeItems = buildNoticeItems_(notVals, monthStart, lastWeekEnd);
-  }
-
-  return { year, month, weeks, noticeItems };
+  return { year, month, weeks };
 }
 
 // 부서별 업무 표시 순서: 지정된 부서는 이 순서대로, 목록에 없는 부서는 맨 뒤에 등록 시간순으로 표시합니다.

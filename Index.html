@@ -88,12 +88,12 @@
            인쇄 버튼은 휴대성이 좋아져 더는 필요 없어 뺐습니다. -->
       <div class="header-top-actions">
         <button class="suggest-btn" onclick="openSuggestBox()"><i class="fas fa-lightbulb"></i> 건의함</button>
+        <button class="mobile-register-btn schedule-register-btn" onclick="switchTo('workMod')"><i class="fas fa-edit"></i> 일정등록</button>
         <button class="admin-btn" onclick="openAdminLogin()"><i class="fas fa-lock"></i> 관리자</button>
       </div>
       <h2>주간 계획서</h2>
 
-      <!-- 급식/바로가기 버튼을 한 줄에: 왼쪽=오늘 급식, 오른쪽=바로가기 버튼(2열×3행 격자).
-           등록 버튼은 아래(월 제목 아래=부서별 등록, 전달사항 칸 위=전달사항 등록)로 옮겼습니다. -->
+      <!-- 급식/바로가기 버튼을 한 줄에: 왼쪽=오늘 급식, 오른쪽=바로가기 버튼(2열×3행 격자). -->
       <div class="btn-group" style="display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 20px; width: 100%;">
 
         <!-- 왼쪽: 지금 보여줄 한 끼 (시간에 따라 점심 또는 저녁) -->
@@ -153,17 +153,6 @@
 
     <div id="printTitle" class="print-only-title"></div>
 
-    <div class="notice-container" style="position:relative;">
-      <div class="notice-badge">전달사항</div>
-      <div id="noticeTxt" class="notice-content">조회 버튼을 눌러주세요.</div>
-      <!-- 노란 박스 안 우측 상단: 전달사항만 따로 등록/수정/삭제 (부서업무 등록은 아래 월 제목 밑 버튼 사용) -->
-      <div class="notice-toolbar" style="position:absolute; top:8px; right:10px; display:flex; gap:6px; z-index:2;">
-        <button onclick="switchTo('notMod')" style="padding:5px 12px; font-size:12.5px; margin:0; background:var(--notice); border:none; border-radius:5px; color:#fff; cursor:pointer; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.12);">➕ 등록</button>
-        <button onclick="openNoticeEdit()" style="padding:5px 12px; font-size:12.5px; margin:0; background:#3b82f6; border:none; border-radius:5px; color:#fff; cursor:pointer; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.12);">✏️ 수정</button>
-        <button onclick="openNoticeDelete()" style="padding:5px 12px; font-size:12.5px; margin:0; background:#ef4444; border:none; border-radius:5px; color:#fff; cursor:pointer; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.12);">🗑 삭제</button>
-      </div>
-    </div>
-
     <!-- PC는 이제 "그 달 전체"를 달력처럼 보여주므로(주차 개념 없이), 표 바로 위에 지금 몇 년 몇 월인지
          크게 보여주고 좌우 화살표로 달을 옮길 수 있게 합니다. 학년 필터도 이 줄 맨 오른쪽에 둡니다.
          모바일에서는 이 줄 전체를 CSS로 숨기고, 검색창 안의 학년 필터(위)를 그대로 씁니다. -->
@@ -173,10 +162,10 @@
     <div class="cal-heading-row">
       <!-- 맨 왼쪽: 이번 달에 속한 주차 바로가기 버튼들 (오늘이 포함된 주는 "이번주"로 표시) -->
       <div id="weekQuickNav" class="week-quick-nav"></div>
-      <!-- 가운데: 월 제목 + 그 바로 아래 '부서별 등록' 버튼(부서업무 전용). 전달사항은 위쪽 전달사항 칸 버튼으로 등록합니다. -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+      <!-- 가운데: 월 제목 + 그 바로 아래 부서별 일정 등록 버튼 -->
+      <div class="cal-heading-center">
         <div id="monthYearHeading" class="cal-heading"></div>
-        <button onclick="switchTo('workMod')" style="padding:6px 15px; font-size:13px; margin:0; background:var(--primary); border:none; border-radius:5px; color:#fff; cursor:pointer; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.1);"><i class="fas fa-edit"></i> 부서별 일정 등록</button>
+        <button class="schedule-register-btn desktop-register-btn" onclick="switchTo('workMod')"><i class="fas fa-edit"></i> 부서별 일정 등록</button>
       </div>
       <!-- 오른쪽 칸: 학년 필터(1줄) 바로 아래 선택확대/원래대로(1줄) — 왼쪽 "N월/N주차" 두 줄과 높이를 맞춥니다. -->
       <div class="cal-heading-right-col">

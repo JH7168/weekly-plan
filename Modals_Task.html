@@ -281,9 +281,13 @@
     return Array.from(boxes).map(b => b.value).join(',');
   }
 
-  // 대상 학년 체크박스 그룹을 주어진 "1,2,3" 문자열에 맞게 되돌립니다. 값이 없으면 전체 학년을 기본으로 체크합니다.
+  // 대상 학년 체크박스 그룹을 저장된 값 그대로 되돌립니다.
+  // 값이 비어 있으면 "학년 미선택" 상태이므로 어느 체크박스도 선택하지 않습니다.
   function setCheckedGrades(containerId, gradesStr) {
-    const grades = gradesStr ? gradesStr.split(',') : ['1', '2', '3'];
+    const grades = String(gradesStr || '')
+      .split(',')
+      .map(grade => grade.trim())
+      .filter(Boolean);
     document.querySelectorAll(`#${containerId} input[type="checkbox"]`).forEach(cb => {
       cb.checked = grades.includes(cb.value);
     });

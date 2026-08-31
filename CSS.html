@@ -53,6 +53,22 @@
     cursor: pointer; transition: 0.2s;
   }
   .suggest-btn:hover { background: #fffbeb; border-color: #eab308; color: #a16207; }
+  .mobile-register-btn {
+    display: none;
+    padding: 8px 12px; border-radius: 8px; font-size: 12.5px; font-weight: bold;
+    cursor: pointer; transition: 0.2s; white-space: nowrap;
+  }
+  /* 일정 등록은 조회 기능의 파란색과 겹치지 않도록 PC/모바일 모두 보라색 계열로 강조합니다. */
+  .schedule-register-btn {
+    background: #7c3aed;
+    border: 1px solid #7c3aed;
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 800;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  }
+  .schedule-register-btn:hover { background: #6d28d9; border-color: #6d28d9; }
+  .schedule-register-btn:active { transform: translateY(1px); }
   /* 관리자 건의함 목록: 작성일 + 제목 한 줄, 클릭하면 상세 */
   .suggest-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: 0.15s; }
   .suggest-row:hover { border-color: #f5c518; background: #fffbeb; }
@@ -158,6 +174,18 @@
   .cal-heading-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px; margin-bottom: 15px; }
   .cal-heading-row #weekQuickNav { justify-self: start; }
   .cal-heading-row #monthYearHeading { padding-top: 2px; }
+  .cal-heading-center { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+  /* PC에서는 월 이동 화살표 양끝 폭에 맞춰 등록 버튼을 넓고 크게 보여줍니다. */
+  .desktop-register-btn {
+    width: 100%;
+    min-height: 46px;
+    margin: 0;
+    padding: 11px 20px;
+    border-radius: 9px;
+    font-size: 15.5px;
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.24);
+    white-space: nowrap;
+  }
   /* 오른쪽 칸: 학년 필터(1줄) + 선택확대/원래대로(1줄)를 같은 세로 간격(6px)으로 쌓아, 왼쪽의
      "N월/N주차" 두 줄과 높이가 맞도록 합니다. 학년 칩은 기본 크기(8px 20px)가 주차 버튼보다 커서
      그대로 두면 첫 줄 높이가 달라 둘째 줄이 서로 어긋나므로, 여기서만 주차 버튼과 같은 크기로 줄입니다. */
@@ -211,21 +239,7 @@
   .btn-cancel { background: #94a3b8; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; width: 100%; text-align: center; margin-top: 10px; }
   .btn-cancel:hover { background: #64748b; }
 
-  /* 4. 전달사항 박스 */
-  .notice-container {
-    display: flex; background: #fffdf0; border: 1px solid #fde08b; border-radius: 8px; 
-    overflow: hidden; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-  }
-  .notice-badge {
-    background: var(--notice); color: white; font-weight: bold; padding: 15px 20px; 
-    display: flex; align-items: center; justify-content: center; min-width: 100px; font-size: 14px;
-  }
-  .notice-content {
-    padding: 15px 20px; color: #333; flex: 1; line-height: 1.6; font-size: 14.5px; text-align: left;
-  }
-  .notice-line { margin-bottom: 5px; }
-
-  /* 5. 주간 계획표 메인 테이블 */
+  /* 4. 주간 계획표 메인 테이블 */
   table { width: 100%; border-collapse: collapse; min-width: 800px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
   th, td { padding: 12px; border: 1px solid var(--border); text-align: center; }
   th { background: #f8fafc; font-weight: bold; color: #333; font-size: 14px; }
@@ -242,6 +256,37 @@
   .mobile-list-date { flex: 0 0 auto; min-width: 66px; font-weight: bold; color: #1e293b; font-size: 13px; white-space: nowrap; }
   .mobile-list-content { flex: 1 1 auto; color: #334155; font-size: 13px; word-break: break-word; overflow-wrap: break-word; }
   .mobile-list-content.mobile-list-empty { color: #cbd5e1; }
+  /* 모바일 연간 행사 표식: 부서 머리글과 달리 글자 크기만큼만 색을 채워 별도 자료임을 구분합니다. */
+  .mobile-list-annual-label {
+    display: inline-block;
+    width: fit-content;
+    margin: 12px 14px 4px 8px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #fff7ed;
+    color: #c2410c;
+    font-size: 12.5px;
+    font-weight: 800;
+  }
+  /* 연간 행사 영역은 표식 주변까지 흰 박스로 감싸지 않고, 실제 날짜/일정 줄만 흰색으로 표시합니다. */
+  #dateMobileList {
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+  #dateMobileList .mobile-list-row {
+    background: #ffffff;
+  }
+  #dateMobileList .mobile-list-annual-label + .mobile-list-row {
+    border-radius: 12px 12px 0 0;
+  }
+  #dateMobileList .mobile-list-row:last-child {
+    border-radius: 0 0 12px 12px;
+  }
+  #dateMobileList .mobile-list-annual-label + .mobile-list-row:last-child {
+    border-radius: 12px;
+  }
   /* 부서 이름 줄: 날짜/내용 줄과 확실히 구분되도록 진하게, 부서마다 다른 색을 씁니다(색은 JS에서 inline으로 지정). */
   .mobile-list-dept-header { background: #64748b; padding: 10px 14px; font-weight: bold; color: #ffffff; font-size: 13.5px; letter-spacing: 0.2px; }
   /* 부서별 업무는 제목만 보이므로, 눌러서 세부 내용 팝업을 열 수 있음을 알려줍니다. */
@@ -259,8 +304,8 @@
   /* 연간 행사 막대는 부서 업무 막대와 색을 다르게 해서 "부서명 없는 행사 줄"임을 한눈에 구분되게 합니다.
      맨 왼쪽 칸은 글자 없이 비어 있으므로(구분 표시 불필요) 주황 배경 없이 다른 행과 같게 둡니다. */
   .event-bar.cal-event-bar { background: #fff7ed; border-left-color: #f97316; }
-  /* 행정실 업무 막대는 녹색 계열로 구분합니다. */
-  .event-bar.dept-haengjeong { background: #dcfce7; border-left-color: #16a34a; color: #166534; }
+  /* 별도 전달사항 영역을 없애면서, 그 노란색 계열을 행정실 업무 막대에 사용합니다. */
+  .event-bar.dept-haengjeong { background: #fff8e1; border-left-color: #f5b026; color: #92400e; }
   /* PC 월간 달력에서 주차와 주차 사이를 살짝 띄우고, 눈에 보이는 구분선도 그어줍니다.
      (달 전체를 볼 때나 2개 이상 주차를 확대해서 볼 때 특히 필요합니다.) */
   .cal-week-gap td { height: 18px; border: none; background: transparent; padding: 0; position: relative; }
@@ -379,9 +424,16 @@
 
     /* 1) 등록/관리자/주차 바로가기 버튼은 PC 버전(월간 달력)에서만 의미가 있으므로 모바일에서는 숨깁니다. */
     .admin-btn { display: none; }
+    .header-top-actions { flex-direction: column; align-items: stretch; gap: 6px; }
+    .mobile-register-btn {
+      display: block;
+      align-self: center;
+      width: auto;
+      min-height: 40px;
+      padding: 8px 18px;
+    }
     .card-btn { display: none; }
     .register-btn-row { display: none; }
-    .notice-toolbar { display: none; }
     #weekQuickNav { display: none; }
 
     /* 급식 카드가 한 줄 전체를 차지하고, 바로가기 버튼은 그 아래로 줄바꿈되어 가운데 정렬됩니다.

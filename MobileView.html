@@ -38,11 +38,6 @@
   #mbRoot .mb-sdate{ width:66px; flex:none; font-weight:700; color:#334155; }
   #mbRoot .mb-scont{ flex:1; color:#111827; } #mbRoot .mb-scont.emp{ color:#cbd5e1; }
 
-  #mbRoot .mb-noticecard{ background:#fffdf0; border-color:#fde08b; }
-  #mbRoot .mb-noticecard .mb-ctitle{ color:#b7791f; }
-  #mbRoot .notice-line{ margin-bottom:4px; }
-  #mbRoot #mbNotice{ font-size:14.5px; color:#3f3f46; }
-
   #mbRoot .mb-dept{ border:1px solid #eef2f7; border-radius:12px; margin-bottom:10px; overflow:hidden; }
   #mbRoot .mb-dept:last-child{ margin-bottom:0; }
   #mbRoot .mb-dhead{ background:#f8fafc; padding:9px 12px; font-weight:800; font-size:14.5px; color:#111827; border-bottom:1px solid #eef2f7; }
@@ -103,7 +98,6 @@
     <div class="mb-range" id="mbRange"></div>
 
     <div class="mb-card"><div class="mb-ctitle">📅 학사일정</div><div id="mbSched"></div></div>
-    <div class="mb-card mb-noticecard"><div class="mb-ctitle">📌 전달사항</div><div id="mbNotice">조회 버튼을 눌러주세요.</div></div>
     <div class="mb-card"><div class="mb-ctitle">🗂️ 부서별 업무</div><div id="mbDept"><div class="mb-empty">상단에서 조회해 주세요.</div></div></div>
 
     <p class="mb-foot">등록·수정·삭제, 결보강 계획서는 PC 버전에서 이용해 주세요.</p>
@@ -117,7 +111,7 @@
     var g = google.script.run;
     var sd = window.serverData || { currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1 };
     var gradeF = 'all';
-    var weekSchedule = [], weekList = [], noticeItems = [];
+    var weekSchedule = [], weekList = [];
     var el = function (id) { return document.getElementById(id); };
     var mbLoad = function (s) { el('mbLoading').style.display = s ? 'flex' : 'none'; };
 
@@ -168,28 +162,24 @@
       var bs = el('mbGrades').querySelectorAll('button');
       for (var i = 0; i < bs.length; i++) bs[i].classList.remove('on');
       btn.classList.add('on');
-      mbRenderNotices(); mbRenderDepts();
+      mbRenderDepts();
     };
     window.mbLoadAll = function () {
       var y = el('mbY').value, m = el('mbM').value, w = el('mbW').value;
       mbLoad(true);
       g.withSuccessHandler(function (res) {
         mbLoad(false);
-        weekSchedule = res.schedule || []; weekList = res.list || []; noticeItems = res.noticeItems || [];
+        weekSchedule = res.schedule || []; weekList = res.list || [];
         el('mbRange').innerText = res.rangeText || '';
-        mbRenderSched(); mbRenderNotices(); mbRenderDepts();
+        mbRenderSched(); mbRenderDepts();
       }).withFailureHandler(function () {
-        mbLoad(false); el('mbNotice').innerText = '데이터를 불러오지 못했습니다.';
+        mbLoad(false); el('mbDept').innerHTML = '<div class="mb-empty">데이터를 불러오지 못했습니다.</div>';
       }).getCombinedData(y, m, w);
     };
     function mbRenderSched() {
       el('mbSched').innerHTML = weekSchedule.map(function (s) {
         return '<div class="mb-srow"><div class="mb-sdate">' + s.date + '</div><div class="mb-scont ' + (s.content ? '' : 'emp') + '">' + (s.content || '-') + '</div></div>';
       }).join('') || '<div class="mb-empty">학사일정이 없습니다.</div>';
-    }
-    function mbRenderNotices() {
-      var vis = (noticeItems || []).filter(function (it) { return mbMatch(it.grades); });
-      el('mbNotice').innerHTML = vis.map(function (it) { return it.html; }).join('<div style="height:12px"></div>') || '전달사항이 없습니다.';
     }
     function mbRenderDepts() {
       var depts = (weekList || []).map(function (d) {
