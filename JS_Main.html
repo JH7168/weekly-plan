@@ -498,7 +498,7 @@
             ? { y: week.owningYear, m: week.owningMonth, w: week.weekNum } : null;
           const detailIdx = registerDetail(
             popupLabel, item.dateLabel || item.date || '', item.text, weekCtx,
-            item.attachment || null, item.rowNum || null
+            item.attachments || [], item.rowNum || null
           );
 
           rowHtml += `<div class="${barClass}" style="grid-column: ${gridStart} / span ${span}; ${fsStyle}" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">${title}</div>`;
@@ -549,10 +549,10 @@
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
     calendarItemDetails = [];
-    function registerDetail(label, dateLabel, text, weekCtx, attachment, rowNum) {
+    function registerDetail(label, dateLabel, text, weekCtx, attachments, rowNum) {
       calendarItemDetails.push({
         label, dateLabel, text, weekCtx: weekCtx || null,
-        attachment: attachment || null, rowNum: rowNum || null
+        attachments: attachments || [], rowNum: rowNum || null
       });
       return calendarItemDetails.length - 1;
     }
@@ -593,7 +593,7 @@
       } else {
         workMobileEl.innerHTML = visibleDepts.map(dept => {
           const rows = dept.items.map(item => {
-            const detailIdx = registerDetail(dept.name, item.date || '', item.text, null, item.attachment || null, item.rowNum || null);
+            const detailIdx = registerDetail(dept.name, item.date || '', item.text, null, item.attachments || [], item.rowNum || null);
             return `<div class="mobile-list-row cal-clickable" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">
               <div class="mobile-list-date">${item.date}</div>
               <div class="mobile-list-content">${extractDeptTitle(item.text)}</div>
@@ -648,10 +648,10 @@
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
     calendarItemDetails = [];
-    function registerDetail(label, dateLabel, text, weekCtx, attachment, rowNum) {
+    function registerDetail(label, dateLabel, text, weekCtx, attachments, rowNum) {
       calendarItemDetails.push({
         label, dateLabel, text, weekCtx: weekCtx || null,
-        attachment: attachment || null, rowNum: rowNum || null
+        attachments: attachments || [], rowNum: rowNum || null
       });
       return calendarItemDetails.length - 1;
     }
@@ -743,8 +743,20 @@
       noticeWrap.style.display = 'none';
     }
     const attachmentWrap = document.getElementById('itemDetailAttachmentWrap');
-    if (d.attachment && d.rowNum) {
-      document.getElementById('itemDetailAttachmentName').innerText = d.attachment.fileName;
+    const attachmentList = document.getElementById('itemDetailAttachmentList');
+    attachmentList.innerHTML = '';
+    if (d.attachments && d.attachments.length && d.rowNum) {
+      d.attachments.forEach((file, fileIdx) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.onclick = () => downloadScheduleAttachment(currentDetailIdx, fileIdx);
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-download';
+        const name = document.createElement('span');
+        name.textContent = file.fileName;
+        button.append(icon, name);
+        attachmentList.appendChild(button);
+      });
       attachmentWrap.style.display = 'block';
     } else {
       attachmentWrap.style.display = 'none';
@@ -754,9 +766,10 @@
     openMod('itemDetailMod');
   }
 
-  function downloadScheduleAttachment(idx) {
+  function downloadScheduleAttachment(idx, fileIdx) {
     const d = calendarItemDetails[idx];
-    if (!d || !d.attachment || !d.rowNum) return;
+    const attachment = d && d.attachments ? d.attachments[fileIdx] : null;
+    if (!d || !attachment || !d.rowNum) return;
     toggleLoading(true, '첨부파일을 준비 중...');
     g.withSuccessHandler(res => {
       toggleLoading(false);
@@ -768,7 +781,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = res.fileName || d.attachment.fileName || 'download';
+      a.download = res.fileName || attachment.fileName || 'download';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -776,7 +789,7 @@
     }).withFailureHandler(err => {
       toggleLoading(false);
       showAlert('첨부파일 다운로드 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
-    }).getScheduleAttachmentContent(d.rowNum, d.attachment.fileId);
+    }).getScheduleAttachmentContent(d.rowNum, attachment.fileId);
   }
 
   // "주간 일정" 달력 막대는 칸 폭에 맞춰 한 줄로 자동으로 잘립니다(...). 일정명이 칸보다 길어 잘렸으면,

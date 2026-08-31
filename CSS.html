@@ -360,14 +360,18 @@
   }
   .schedule-attachment-field input[type="file"] { width: 100%; margin-bottom: 9px; font-size: 13px; }
   .schedule-attachment-field input[type="text"] { width: 100%; }
-  .existing-attachment {
-    display: none; align-items: center; justify-content: space-between; gap: 8px;
-    margin-bottom: 10px; padding: 9px 10px; border-radius: 8px; background: #ffffff; border: 1px solid #e2e8f0;
-    font-size: 13px; color: #475569;
+  .schedule-file-list { display: flex; flex-direction: column; gap: 8px; }
+  .schedule-file-list:empty { display: none; }
+  .schedule-file-row {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center;
+    padding: 9px 10px; border-radius: 8px; background: #ffffff; border: 1px solid #e2e8f0;
   }
-  .existing-attachment button { border: none; background: #fee2e2; color: #b91c1c; border-radius: 6px; padding: 6px 9px; font-weight: 700; cursor: pointer; }
+  .schedule-file-original { grid-column: 1 / -1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #64748b; }
+  .schedule-file-row input[type="text"] { min-width: 0; padding: 8px 10px; font-size: 13px; }
+  .schedule-file-remove { border: none; background: #fee2e2; color: #b91c1c; border-radius: 6px; padding: 8px 10px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .item-detail-attachment { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eef0f3; }
   .item-detail-attachment-label { margin-bottom: 7px; font-size: 13px; font-weight: 800; color: #6d28d9; }
+  .item-detail-attachment-list { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
   .item-detail-attachment button {
     display: inline-flex; align-items: center; gap: 7px; max-width: 100%;
     border: 1px solid #c4b5fd; background: #f5f3ff; color: #5b21b6;
