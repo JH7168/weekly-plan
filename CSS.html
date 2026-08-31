@@ -306,12 +306,27 @@
   .event-bar.cal-event-bar { background: #fff7ed; border-left-color: #f97316; }
   /* 별도 전달사항 영역을 없애면서, 그 노란색 계열을 행정실 업무 막대에 사용합니다. */
   .event-bar.dept-haengjeong { background: #fff8e1; border-left-color: #f5b026; color: #92400e; }
-  /* PC 월간 달력에서 주차와 주차 사이를 살짝 띄우고, 눈에 보이는 구분선도 그어줍니다.
-     (달 전체를 볼 때나 2개 이상 주차를 확대해서 볼 때 특히 필요합니다.) */
-  .cal-week-gap td { height: 18px; border: none; background: transparent; padding: 0; position: relative; }
-  .cal-week-gap td::after {
-    content: ''; position: absolute; left: 0; right: 0; top: 50%;
-    border-top: 2px dashed #cbd5e1;
+  /* PC 월간 달력의 각 주차를 2px 짙은 테두리로 묶습니다. 이번 주의 3px 주황색보다는 한 단계 얇습니다. */
+  .cal-week-card > td:first-child, .cal-week-card > th:first-child {
+    border-left: 2px solid #1f2937 !important;
+  }
+  .cal-week-card > td:last-child, .cal-week-card > th:last-child {
+    border-right: 2px solid #1f2937 !important;
+  }
+  .cal-week-card-start > td, .cal-week-card-start > th {
+    border-top: 2px solid #1f2937 !important;
+  }
+  .cal-week-card-end > td, .cal-week-card-end > th {
+    border-bottom: 2px solid #1f2937 !important;
+  }
+  .cal-week-card-start > th { background: #f8fafc !important; }
+  /* border-collapse 표에서는 둥근 모서리가 외곽선을 끊어 보이게 하므로 직각으로 정확히 연결합니다. */
+  /* 점선 대신 페이지 배경색이 보이는 넓은 간격으로 주차를 확실하게 분리합니다. */
+  .cal-week-gap td {
+    height: 22px;
+    padding: 0;
+    border: none !important;
+    background: var(--bg);
   }
 
   /* PC 월간 달력에서 오늘이 포함된 주를 "이번 주는 여기예요" 느낌으로 감싸는 테두리.
@@ -336,6 +351,95 @@
     width: 100%; padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s;
   }
   .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary); }
+  .field-hint { font-weight: normal; color: #94a3b8; font-size: 12px; }
+  .schedule-attachment-field {
+    padding: 12px;
+    border: 1px solid #ddd6fe;
+    border-radius: 10px;
+    background: #faf8ff;
+  }
+  .schedule-attachment-field input[type="file"] { width: 100%; margin-bottom: 9px; font-size: 13px; }
+  .schedule-attachment-field input[type="text"] { width: 100%; }
+  .existing-attachment {
+    display: none; align-items: center; justify-content: space-between; gap: 8px;
+    margin-bottom: 10px; padding: 9px 10px; border-radius: 8px; background: #ffffff; border: 1px solid #e2e8f0;
+    font-size: 13px; color: #475569;
+  }
+  .existing-attachment button { border: none; background: #fee2e2; color: #b91c1c; border-radius: 6px; padding: 6px 9px; font-weight: 700; cursor: pointer; }
+  .item-detail-attachment { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eef0f3; }
+  .item-detail-attachment-label { margin-bottom: 7px; font-size: 13px; font-weight: 800; color: #6d28d9; }
+  .item-detail-attachment button {
+    display: inline-flex; align-items: center; gap: 7px; max-width: 100%;
+    border: 1px solid #c4b5fd; background: #f5f3ff; color: #5b21b6;
+    border-radius: 8px; padding: 9px 12px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+  }
+  .item-detail-attachment button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* 일정 수정창: 기존 사이트의 초록/파랑 계열과 둥근 카드 분위기를 유지한 간결한 편집 화면 */
+  .single-edit-content {
+    position: relative;
+    max-width: 620px !important;
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 1px solid #dbe4ee;
+    box-shadow: 0 22px 55px rgba(15, 23, 42, 0.24);
+  }
+  .single-edit-close {
+    position: absolute; top: 13px; right: 16px; z-index: 2;
+    width: 36px; height: 36px; border: none; border-radius: 50%;
+    background: rgba(255,255,255,0.82); color: #64748b; font-size: 25px; line-height: 1;
+    cursor: pointer; transition: 0.2s;
+  }
+  .single-edit-close:hover { background: #ffffff; color: #0f172a; }
+  .single-edit-header {
+    display: flex; align-items: center; gap: 13px;
+    padding: 20px 58px 18px 24px;
+    background: linear-gradient(135deg, #ecfdf5 0%, #eff6ff 100%);
+    border-bottom: 1px solid #dbeafe;
+  }
+  .single-edit-header-icon {
+    display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+    width: 42px; height: 42px; border-radius: 12px;
+    background: var(--edit); color: #ffffff; box-shadow: 0 5px 12px rgba(16,185,129,0.22);
+  }
+  .single-edit-header h3 { margin: 0 0 3px; color: #047857; font-size: 19px; }
+  .single-edit-header p { margin: 0; color: #64748b; font-size: 12.5px; }
+  .single-edit-body { padding: 20px 24px 22px; }
+  .single-edit-body .field { margin-bottom: 13px; }
+  .single-edit-body .field label { margin-bottom: 6px; color: #334155; font-size: 13.5px; }
+  .single-edit-body .field input[type="text"],
+  .single-edit-body .field input[type="date"],
+  .single-edit-body .field textarea {
+    border-color: #cbd5e1;
+    border-radius: 9px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+  }
+  .single-edit-body .field input:focus,
+  .single-edit-body .field textarea:focus {
+    border-color: var(--edit);
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.12);
+  }
+  .single-edit-body textarea { resize: vertical; line-height: 1.55; }
+  .single-edit-date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .single-edit-date-row .field { min-width: 0; }
+  .single-edit-date-row input[type="date"] { min-width: 0; }
+  #singleEditNotice {
+    background: #fffbeb;
+    border-color: #fcd34d;
+  }
+  #singleEditNotice:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.12); }
+  .single-edit-body .schedule-attachment-field { margin-top: 2px; padding: 12px 13px; }
+  .single-edit-body .grade-check-item { min-height: 42px; background: #f8fafc; }
+  .single-edit-actions { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-top: 18px; }
+  .single-edit-save, .single-edit-cancel {
+    min-height: 46px; border: none; border-radius: 9px; font-size: 14.5px; font-weight: 800; cursor: pointer; transition: 0.2s;
+  }
+  .single-edit-save { background: var(--edit); color: #ffffff; box-shadow: 0 4px 10px rgba(16,185,129,0.22); }
+  .single-edit-save:hover { background: #059669; transform: translateY(-1px); }
+  .single-edit-cancel { background: #e2e8f0; color: #475569; }
+  .single-edit-cancel:hover { background: #cbd5e1; }
 
   /* 7. 등록 선택창 스타일 */
   .type-select-btn {
@@ -480,6 +584,16 @@
        목록형 화면(.mobile-list)으로 바꿔서 좁은 화면에서도 잘리거나 겹치지 않게 합니다. */
     #workTableWrap { display: none; }
     .mobile-list { display: block; }
+
+    /* 모바일 수정창도 날짜 두 칸은 한 줄로 유지하되, 여백을 줄여 입력값이 잘리지 않게 합니다. */
+    .single-edit-header { padding: 17px 52px 15px 17px; gap: 10px; }
+    .single-edit-header-icon { width: 38px; height: 38px; border-radius: 10px; }
+    .single-edit-header h3 { font-size: 18px; }
+    .single-edit-header p { font-size: 11.5px; }
+    .single-edit-body { padding: 16px 14px 18px; }
+    .single-edit-date-row { gap: 8px; }
+    .single-edit-date-row input[type="date"] { padding: 9px 7px; font-size: 12.5px; }
+    .single-edit-actions { margin-top: 15px; }
 
     /* 오늘 급식 카드: 2열 그리드(PC와 동일)를 그대로 쓰되, 폭이 좁아 줄바꿈이 필요할 때를
        대비해 항목 줄바꿈만 허용하고, 혹시 넘치면 박스 안에서만 스크롤되게 안전장치를 둡니다. */

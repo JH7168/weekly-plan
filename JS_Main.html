@@ -496,7 +496,10 @@
           // 항목도 현재 달력의 월이 아니라 '항목이 속한 주'로 정확히 조회(수정/삭제)되게 합니다.
           const weekCtx = (week && week.owningYear && week.owningMonth)
             ? { y: week.owningYear, m: week.owningMonth, w: week.weekNum } : null;
-          const detailIdx = registerDetail(popupLabel, item.dateLabel || item.date || '', item.text, weekCtx);
+          const detailIdx = registerDetail(
+            popupLabel, item.dateLabel || item.date || '', item.text, weekCtx,
+            item.attachment || null, item.rowNum || null
+          );
 
           rowHtml += `<div class="${barClass}" style="grid-column: ${gridStart} / span ${span}; ${fsStyle}" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">${title}</div>`;
         }
@@ -514,18 +517,20 @@
     if (eventItems.length > 0) rows.push(renderCalendarRow('', '연간 행사', eventItems, true));
     visibleDepts.forEach(dept => { rows.push(renderCalendarRow(formatDeptName(dept.name), dept.name, dept.items, false)); });
 
-    // 오늘이 포함된 주라면, 그 주에 해당하는 행 전체(첫 행~마지막 행)를 감싸는 굵은 테두리를 그립니다.
-    // ("이번 주는 여기예요" 표시. 각 <tr>의 여는 태그에 클래스만 얹으면 되므로 문자열 맨 앞에 끼워 넣습니다.)
-    let finalRows = rows;
-    if (isCurrentWeek && rows.length > 0) {
-      finalRows = rows.map((rowHtml, i) => {
-        let cls = 'cal-current-week';
+    // 모든 주를 하나의 카드처럼 묶고, 오늘이 포함된 주에만 주황색 강조 테두리를 추가합니다.
+    // 각 <tr>에 첫 행/중간 행/마지막 행 클래스를 붙여 표 구조를 유지하면서도 주차별 외곽선을 만듭니다.
+    const finalRows = rows.map((rowHtml, i) => {
+      let cls = 'cal-week-card';
+      if (i === 0) cls += ' cal-week-card-start';
+      if (i === rows.length - 1) cls += ' cal-week-card-end';
+      if (isCurrentWeek) {
+        cls += ' cal-current-week';
         if (i === 0) cls += ' cal-current-week-start';
         if (i === rows.length - 1) cls += ' cal-current-week-end';
-        return rowHtml.replace(/^<tr style="([^"]*)"( class="([^"]*)")?/,
-          (m, styleVal, _g2, existingClass) => `<tr style="${styleVal}" class="${existingClass ? existingClass + ' ' : ''}${cls}"`);
-      });
-    }
+      }
+      return rowHtml.replace(/^<tr style="([^"]*)"( class="([^"]*)")?/,
+        (m, styleVal, _g2, existingClass) => `<tr style="${styleVal}" class="${existingClass ? existingClass + ' ' : ''}${cls}"`);
+    });
 
     return { html: finalRows.join(''), visibleDepts };
   }
@@ -544,8 +549,11 @@
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
     calendarItemDetails = [];
-    function registerDetail(label, dateLabel, text, weekCtx) {
-      calendarItemDetails.push({ label, dateLabel, text, weekCtx: weekCtx || null });
+    function registerDetail(label, dateLabel, text, weekCtx, attachment, rowNum) {
+      calendarItemDetails.push({
+        label, dateLabel, text, weekCtx: weekCtx || null,
+        attachment: attachment || null, rowNum: rowNum || null
+      });
       return calendarItemDetails.length - 1;
     }
 
@@ -585,7 +593,7 @@
       } else {
         workMobileEl.innerHTML = visibleDepts.map(dept => {
           const rows = dept.items.map(item => {
-            const detailIdx = registerDetail(dept.name, item.date || '', item.text);
+            const detailIdx = registerDetail(dept.name, item.date || '', item.text, null, item.attachment || null, item.rowNum || null);
             return `<div class="mobile-list-row cal-clickable" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">
               <div class="mobile-list-date">${item.date}</div>
               <div class="mobile-list-content">${extractDeptTitle(item.text)}</div>
@@ -640,8 +648,11 @@
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
     calendarItemDetails = [];
-    function registerDetail(label, dateLabel, text, weekCtx) {
-      calendarItemDetails.push({ label, dateLabel, text, weekCtx: weekCtx || null });
+    function registerDetail(label, dateLabel, text, weekCtx, attachment, rowNum) {
+      calendarItemDetails.push({
+        label, dateLabel, text, weekCtx: weekCtx || null,
+        attachment: attachment || null, rowNum: rowNum || null
+      });
       return calendarItemDetails.length - 1;
     }
 
@@ -731,9 +742,41 @@
     } else {
       noticeWrap.style.display = 'none';
     }
+    const attachmentWrap = document.getElementById('itemDetailAttachmentWrap');
+    if (d.attachment && d.rowNum) {
+      document.getElementById('itemDetailAttachmentName').innerText = d.attachment.fileName;
+      attachmentWrap.style.display = 'block';
+    } else {
+      attachmentWrap.style.display = 'none';
+    }
     // 연간 행사(부서명 없음)는 학사일정표 시트에서 직접 관리하므로 이 화면에서는 수정/삭제할 수 없습니다.
     document.getElementById('itemDetailActions').style.display = (d.label === '연간 행사') ? 'none' : 'flex';
     openMod('itemDetailMod');
+  }
+
+  function downloadScheduleAttachment(idx) {
+    const d = calendarItemDetails[idx];
+    if (!d || !d.attachment || !d.rowNum) return;
+    toggleLoading(true, '첨부파일을 준비 중...');
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      if (!res || !res.success) { showAlert((res && res.message) || '첨부파일을 불러오지 못했습니다.'); return; }
+      const byteChars = atob(res.base64);
+      const bytes = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([bytes], { type: res.mimeType || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = res.fileName || d.attachment.fileName || 'download';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      showAlert('첨부파일 다운로드 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
+    }).getScheduleAttachmentContent(d.rowNum, d.attachment.fileId);
   }
 
   // "주간 일정" 달력 막대는 칸 폭에 맞춰 한 줄로 자동으로 잘립니다(...). 일정명이 칸보다 길어 잘렸으면,

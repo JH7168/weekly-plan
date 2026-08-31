@@ -221,6 +221,10 @@
           <div style="font-size:13px; font-weight:800; color:var(--notice); margin-bottom:6px;">전달사항</div>
           <div id="itemDetailNotice" style="background:#fffdf0; border:1px solid #fde08b; border-radius:8px; padding:12px 14px; font-size:14px; color:#3f3f46; line-height:1.6; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word;"></div>
         </div>
+        <div id="itemDetailAttachmentWrap" class="item-detail-attachment" style="display:none;">
+          <div class="item-detail-attachment-label">첨부파일</div>
+          <button id="itemDetailAttachmentBtn" type="button" onclick="downloadScheduleAttachment(currentDetailIdx)"><i class="fas fa-download"></i> <span id="itemDetailAttachmentName"></span></button>
+        </div>
         <!-- 연간 행사(부서명 없음)는 이 화면에서 수정/삭제할 수 있는 데이터가 아니므로 버튼을 숨깁니다. -->
         <div id="itemDetailActions" style="display:flex; gap:10px; margin-top:20px;">
           <button class="btn-search" style="flex:1; margin:0; background:var(--edit);" onclick="editItemFromDetail(currentDetailIdx)">✏️ 수정</button>

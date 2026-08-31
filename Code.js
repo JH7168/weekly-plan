@@ -80,6 +80,13 @@ function refreshCaches() {
 // --- 관리자 자료실 (서식/학교생활기록부 자료 업로드·다운로드) ---
 const ADMIN_PASSWORD = 'HY4312';
 const MATERIALS_FOLDER_NAME = '주간계획서_자료실';
+const SCHEDULE_ATTACHMENTS_FOLDER_NAME = '주간계획서_일정첨부';
+const SCHEDULE_ATTACHMENT_MAX_BYTES = 30 * 1024 * 1024;
+const SCHEDULE_ATTACHMENT_EXTENSIONS = [
+  'hwp', 'hwpx', 'xls', 'xlsx', 'xlsm', 'csv',
+  'doc', 'docx', 'ppt', 'pptx', 'pdf', 'txt', 'zip',
+  'jpg', 'jpeg', 'png', 'gif'
+];
 
 function verifyAdminPassword(pw) {
   return pw === ADMIN_PASSWORD;
@@ -405,13 +412,17 @@ function buildWeekResult_(weekStart, schMap, datVals) {
   }
 
   const deptMap = {};
-  datVals.forEach(r => {
+  datVals.forEach((r, dataIdx) => {
     if (!(r[1] instanceof Date) || !(r[2] instanceof Date)) return;
     const st = r[1].getTime();
     const et = r[2].getTime();
     if (st <= eTime && et >= sTime) {
       if (!deptMap[r[0]]) deptMap[r[0]] = [];
-      deptMap[r[0]].push({ date: formatSimple(r[1], r[2]), time: st, st: st, et: et, text: escapeHtml_(r[3]), grades: r[5] || '' });
+      deptMap[r[0]].push({
+        date: formatSimple(r[1], r[2]), time: st, st: st, et: et,
+        text: escapeHtml_(r[3]), grades: r[5] || '',
+        attachment: parseScheduleAttachment_(r[6]), rowNum: dataIdx + 2
+      });
     }
   });
   const list = Object.keys(deptMap).map(name => {
@@ -443,6 +454,69 @@ function readScheduleSheets_() {
   });
 
   return { schMap, datVals };
+}
+
+function getScheduleAttachmentsFolder_() {
+  const folders = DriveApp.getFoldersByName(SCHEDULE_ATTACHMENTS_FOLDER_NAME);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(SCHEDULE_ATTACHMENTS_FOLDER_NAME);
+}
+
+function parseScheduleAttachment_(raw) {
+  if (!raw) return null;
+  try {
+    const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (!data || !data.fileId || !data.fileName) return null;
+    return { fileId: String(data.fileId), fileName: String(data.fileName), mimeType: String(data.mimeType || '') };
+  } catch (e) {
+    return null;
+  }
+}
+
+function scheduleFileExtension_(name) {
+  const match = String(name || '').trim().match(/\.([^.\\/]+)$/);
+  return match ? match[1].toLowerCase() : '';
+}
+
+function buildScheduleDownloadName_(displayName, originalName) {
+  const original = String(originalName || '').trim();
+  const originalExt = scheduleFileExtension_(original);
+  if (!originalExt || SCHEDULE_ATTACHMENT_EXTENSIONS.indexOf(originalExt) === -1) {
+    throw new Error('지원하지 않는 파일 형식입니다. 한글, Excel, Word, PDF, 이미지 파일 등을 올려주세요.');
+  }
+  let name = String(displayName || '').trim() || original;
+  name = name.replace(/[\\/:*?"<>|]/g, '_').replace(/[. ]+$/, '');
+  if (!name) name = original;
+  const requestedExt = scheduleFileExtension_(name);
+  if (!requestedExt) name += '.' + originalExt;
+  else if (requestedExt !== originalExt) throw new Error('파일 확장자는 원본과 같아야 합니다: .' + originalExt);
+  return name;
+}
+
+function createScheduleAttachment_(payload) {
+  if (!payload || !payload.base64 || !payload.originalName) return null;
+  const estimatedBytes = Math.floor(String(payload.base64).length * 3 / 4);
+  if (estimatedBytes > SCHEDULE_ATTACHMENT_MAX_BYTES) throw new Error('첨부파일은 30MB 이하로 올려주세요.');
+  const fileName = buildScheduleDownloadName_(payload.displayName, payload.originalName);
+  const mimeType = String(payload.mimeType || 'application/octet-stream');
+  const bytes = Utilities.base64Decode(payload.base64);
+  if (bytes.length > SCHEDULE_ATTACHMENT_MAX_BYTES) throw new Error('첨부파일은 30MB 이하로 올려주세요.');
+  const file = getScheduleAttachmentsFolder_().createFile(Utilities.newBlob(bytes, mimeType, fileName));
+  return { fileId: file.getId(), fileName: fileName, mimeType: mimeType };
+}
+
+function trashScheduleAttachmentIfUnused_(fileId) {
+  if (!fileId) return;
+  const sheet = SS.getSheetByName('Data');
+  if (sheet && sheet.getLastRow() >= 2 && sheet.getLastColumn() >= 7) {
+    const refs = sheet.getRange(2, 7, sheet.getLastRow() - 1, 1).getValues().flat();
+    const stillUsed = refs.some(raw => {
+      const data = parseScheduleAttachment_(raw);
+      return data && data.fileId === fileId;
+    });
+    if (stillUsed) return;
+  }
+  try { DriveApp.getFileById(fileId).setTrashed(true); } catch (e) {}
 }
 
 /**
@@ -560,8 +634,9 @@ function parseYmd_(s) {
   return date;
 }
 
-function saveRangeToSheet(s, e, dept, text, author, weeks, grades) {
+function saveRangeToSheet(s, e, dept, text, author, weeks, grades, attachmentPayload) {
   const lock = LockService.getScriptLock();
+  let newAttachment = null;
   try {
     lock.waitLock(10000);
   } catch (e2) {
@@ -573,20 +648,26 @@ function saveRangeToSheet(s, e, dept, text, author, weeks, grades) {
     const endDate = e ? parseYmd_(e) : startDate;
 
     const repeatCount = Math.max(1, Math.min(20, Number(weeks) || 1));
+    newAttachment = createScheduleAttachment_(attachmentPayload);
+    const attachmentJson = newAttachment ? JSON.stringify(newAttachment) : '';
     const rows = [];
     for (let i = 0; i < repeatCount; i++) {
       const sd = new Date(startDate); sd.setDate(sd.getDate() + i * 7);
       const ed = new Date(endDate); ed.setDate(ed.getDate() + i * 7);
-      rows.push([dept, sd, ed, text, author || '', grades || '']);
+      rows.push([dept, sd, ed, text, author || '', grades || '', attachmentJson]);
     }
 
     const sheet = SS.getSheetByName("Data");
     if (!sheet) throw new Error('"Data" 시트를 찾을 수 없습니다.');
+    if (sheet.getRange(1, 7).getValue() !== '첨부파일') sheet.getRange(1, 7).setValue('첨부파일');
     // 락으로 보호된 구간 안에서 getLastRow()를 다시 읽어, 다른 사용자가 그 사이 추가한 행과 겹치지 않게 합니다.
-    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 7).setValues(rows);
     invalidateSheetCache_("Data");
     return true;
   } catch (err) {
+    if (newAttachment && newAttachment.fileId) {
+      try { DriveApp.getFileById(newAttachment.fileId).setTrashed(true); } catch (cleanupErr) {}
+    }
     console.error("saveRangeToSheet 오류: " + err.toString());
     throw new Error("업무 저장 중 오류가 발생했습니다: " + err.message);
   } finally {
@@ -647,6 +728,9 @@ function processBulkDelete(type, rowNums) {
       .map(Number)
       .filter(num => Number.isInteger(num) && num >= 2 && num <= lastRow);
 
+    const attachmentIds = type === 'data' && sheet.getLastColumn() >= 7
+      ? validRows.map(num => parseScheduleAttachment_(sheet.getRange(num, 7).getValue())).filter(Boolean).map(a => a.fileId)
+      : [];
     validRows.sort((a, b) => b - a); // 아래에서 위로 지워야 앞 행 삭제가 뒤 행 번호에 영향을 주지 않습니다.
     validRows.forEach(num => {
       try {
@@ -658,6 +742,7 @@ function processBulkDelete(type, rowNums) {
     });
 
     invalidateSheetCache_(sheetName);
+    attachmentIds.forEach(trashScheduleAttachmentIfUnused_);
     return true;
   } catch (err) {
     console.error("processBulkDelete 오류: " + err.toString());
@@ -720,6 +805,7 @@ function getItemsForDelete(type, year, month, week, dept) {
       const originalText = obj.row[tIdx] || "";
       const displayContent = originalText.length > MAX_LEN ? originalText.substring(0, MAX_LEN) + "..." : originalText;
       const grades = obj.row[gIdx] || "";
+      const attachment = type === 'data' ? parseScheduleAttachment_(obj.row[6]) : null;
 
       const startDate = obj.row[sIdx];
       const endDate = obj.row[eIdx];
@@ -734,6 +820,7 @@ function getItemsForDelete(type, year, month, week, dept) {
         rowNum: obj.i + 1,
         fullText: originalText,
         grades: grades,
+        attachment: attachment,
         display: escapedDisplay,
         date: Utilities.formatDate(startDate, TZ, "M/d") +
               (Utilities.formatDate(startDate, TZ, "M/d") === Utilities.formatDate(endDate, TZ, "M/d") ?
@@ -744,8 +831,9 @@ function getItemsForDelete(type, year, month, week, dept) {
     });
 }
 
-function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, newGrades) {
+function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, newGrades, attachmentAction) {
   const lock = LockService.getScriptLock();
+  let createdAttachment = null;
   try {
     lock.waitLock(10000);
   } catch (e) {
@@ -769,12 +857,35 @@ function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, ne
     if (type === 'notice') {
       sheet.getRange(row, 1, 1, 5).setValues([[startDate, endDate, newText, newAuthor || '', newGrades || '']]);
     } else {
-      sheet.getRange(row, 2, 1, 5).setValues([[startDate, endDate, newText, newAuthor || '', newGrades || '']]);
+      const oldAttachment = parseScheduleAttachment_(sheet.getRange(row, 7).getValue());
+      let nextAttachment = oldAttachment;
+      const mode = attachmentAction && attachmentAction.mode ? attachmentAction.mode : 'keep';
+      if (mode === 'remove') nextAttachment = null;
+      if (mode === 'replace') {
+        createdAttachment = createScheduleAttachment_(attachmentAction.file);
+        nextAttachment = createdAttachment;
+      }
+      if (mode === 'rename' && oldAttachment) {
+        const renamed = buildScheduleDownloadName_(attachmentAction.displayName, oldAttachment.fileName);
+        DriveApp.getFileById(oldAttachment.fileId).setName(renamed);
+        nextAttachment = { fileId: oldAttachment.fileId, fileName: renamed, mimeType: oldAttachment.mimeType || '' };
+      }
+      if (sheet.getRange(1, 7).getValue() !== '첨부파일') sheet.getRange(1, 7).setValue('첨부파일');
+      sheet.getRange(row, 2, 1, 6).setValues([[
+        startDate, endDate, newText, newAuthor || '', newGrades || '',
+        nextAttachment ? JSON.stringify(nextAttachment) : ''
+      ]]);
+      if (oldAttachment && (!nextAttachment || oldAttachment.fileId !== nextAttachment.fileId)) {
+        trashScheduleAttachmentIfUnused_(oldAttachment.fileId);
+      }
     }
     invalidateSheetCache_(sheetName);
 
     return true;
   } catch (e) {
+    if (createdAttachment && createdAttachment.fileId) {
+      try { DriveApp.getFileById(createdAttachment.fileId).setTrashed(true); } catch (cleanupErr) {}
+    }
     console.error("수정 오류: " + e.toString());
     return false;
   } finally {
@@ -1074,5 +1185,30 @@ function deleteMultipleAudiBookingsFromSheet(slotsToDelete) {
     return { success: true };
   } finally {
     lock.releaseLock();
+  }
+}
+
+// 일정 상세보기의 다운로드 요청은 해당 Data 행이 실제로 그 파일을 참조하는지 확인한 뒤에만 반환합니다.
+function getScheduleAttachmentContent(rowNum, fileId) {
+  try {
+    const sheet = SS.getSheetByName('Data');
+    const row = Number(rowNum);
+    if (!sheet || !Number.isInteger(row) || row < 2 || row > sheet.getLastRow() || sheet.getLastColumn() < 7) {
+      return { success: false, message: '첨부파일 정보를 찾을 수 없습니다.' };
+    }
+    const attachment = parseScheduleAttachment_(sheet.getRange(row, 7).getValue());
+    if (!attachment || attachment.fileId !== String(fileId || '')) {
+      return { success: false, message: '첨부파일 정보가 변경되었습니다.' };
+    }
+    const blob = DriveApp.getFileById(attachment.fileId).getBlob();
+    return {
+      success: true,
+      fileName: attachment.fileName,
+      mimeType: attachment.mimeType || blob.getContentType() || 'application/octet-stream',
+      base64: Utilities.base64Encode(blob.getBytes())
+    };
+  } catch (e) {
+    console.error('일정 첨부 다운로드 오류: ' + e.toString());
+    return { success: false, message: '첨부파일을 불러오지 못했습니다.' };
   }
 }
