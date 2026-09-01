@@ -40,6 +40,17 @@
   }
 
   .header-top-actions { position: absolute; top: 0; right: 0; z-index: 5; display: flex; gap: 8px; }
+  .school-home-btn {
+    position: absolute; top: 0; left: 0; z-index: 5;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    min-height: 36px; padding: 8px 14px; border: 1px solid #2563eb; border-radius: 8px;
+    background: #ffffff; color: #2563eb; font-size: 12.5px; font-weight: bold;
+    line-height: 1; text-decoration: none; white-space: nowrap;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  }
+  .school-home-btn:hover { background: #2563eb; color: #ffffff; box-shadow: 0 4px 10px rgba(37,99,235,0.2); transform: translateY(-1px); }
+  .school-home-btn:focus-visible { outline: 3px solid rgba(37,99,235,0.28); outline-offset: 2px; }
+  .school-home-btn:active { transform: translateY(0); }
   .admin-btn {
     background: #ffffff; border: 1px solid #cbd5e1; color: #64748b;
     padding: 8px 14px; border-radius: 8px; font-size: 12.5px; font-weight: bold;
@@ -579,7 +590,7 @@
     body { padding: 0; background: white; }
     /* 인쇄에는 '(2026년 9월) 주간 계획서' 제목과 현재 보고 있는 주(예: 1·2주차) 달력만 남깁니다.
        화면용 상단 버튼(인쇄/건의함/일정등록)·급식·바로가기·부서별 등록 버튼·달 이동/학년필터 줄은 모두 숨깁니다. */
-    .header-top-actions, .header-area h2, .btn-group, .meal-inline, .shortcut-cluster,
+    .header-top-actions, .school-home-btn, .header-area h2, .btn-group, .meal-inline, .shortcut-cluster,
     .schedule-register-btn, .register-btn-row, .search-box, .modal, .notice-container,
     .notice-toolbar, .grade-filter, .top-panel, .meal-panel, .scroll-top-btn,
     .cal-heading-row, #rangeInfo, .mobile-list { display: none !important; }
@@ -597,6 +608,8 @@
     /* 예전에는 min-width:850px + overflow-x:auto로 PC 화면을 그대로 축소 없이 가로 스크롤만
        시켰습니다. 폰 폭에 맞춰 실제로 줄어들도록 그 강제 최소폭을 제거합니다. */
     body { padding: 10px; }
+    .header-area { padding-top: 42px; }
+    .school-home-btn { min-height: 40px; padding: 8px 11px; font-size: 12px; }
     .search-box { padding: 10px 10px; }
     .card-btn { height: 80px; font-size: 13px; }
 
