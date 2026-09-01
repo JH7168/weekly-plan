@@ -124,6 +124,93 @@
   }
   .shortcut-link:hover { background: var(--accent); color: #ffffff; }
 
+  /* 하단 교육기관 배너: 데스크톱 한 줄에 4개가 들어가는 공식 포털형 규격 */
+  .institution-links { margin: 34px 0 14px; padding-top: 20px; border-top: 1px solid #dbe3ee; }
+  .institution-links-heading { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+  .institution-links-heading h3 { margin: 0; color: #172033; font-size: 16px; letter-spacing: -0.3px; }
+  .institution-banner-viewport { overflow: hidden; padding: 4px 0 12px; margin-bottom: -12px; }
+  .institution-banner-grid {
+    --visible-count: 4; --banner-gap: 12px;
+    display: flex; gap: var(--banner-gap); width: 100%;
+    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform;
+  }
+  .institution-banner {
+    --banner-start: #123564; --banner-end: #1e5a92; --banner-accent: #67d5ff;
+    position: relative; isolation: isolate; min-width: 0; height: auto; aspect-ratio: 3 / 1; overflow: hidden;
+    flex: 0 0 calc((100% - (var(--banner-gap) * (var(--visible-count) - 1))) / var(--visible-count));
+    display: grid; grid-template-columns: 44px minmax(0, 1fr) 20px; align-items: center; gap: 10px;
+    padding: 16px 14px; border: 1px solid rgba(255,255,255,0.16); border-radius: 13px;
+    background: linear-gradient(135deg, var(--banner-start), var(--banner-end)); color: #ffffff;
+    box-shadow: 0 8px 20px rgba(15,36,68,0.14); text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+  .institution-banner::after {
+    content: ""; position: absolute; z-index: -1; right: -34px; bottom: -46px;
+    width: 128px; height: 128px; border: 22px solid rgba(255,255,255,0.07); border-radius: 50%;
+  }
+  .institution-banner-pattern {
+    position: absolute; inset: 0; z-index: -1; opacity: 0.18;
+    background-image: linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px);
+    background-size: 18px 18px; mask-image: linear-gradient(90deg, transparent 20%, #000 100%);
+  }
+  .institution-banner-icon {
+    display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+    border: 1px solid rgba(255,255,255,0.26); border-radius: 12px;
+    background: rgba(255,255,255,0.13); box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+    color: var(--banner-accent); font-size: 18px; backdrop-filter: blur(4px);
+  }
+  .institution-banner-province, .institution-banner-yeosu { grid-template-columns: 62px minmax(0, 1fr) 20px; }
+  .institution-banner-official-mark { width: 62px; background: #ffffff; border-color: rgba(255,255,255,0.72); padding: 5px; }
+  .institution-banner-official-mark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .official-mark-sun { fill: #ef642d; }
+  .official-mark-green { fill: #17945c; }
+  .official-mark-navy { fill: #30318b; }
+  .official-mark-blue { fill: #0878b5; }
+  .official-mark-person { fill: #ffffff; }
+  .official-mark-yellow { fill: #f4bd30; }
+  .official-mark-orange { fill: #ef6528; }
+  .institution-banner-training-mark {
+    background: #ffffff; border-color: rgba(255,255,255,0.75); border-radius: 50%; padding: 3px;
+    box-shadow: 0 4px 12px rgba(16,25,60,0.2);
+  }
+  .institution-banner-training-mark svg { display: block; width: 100%; height: 100%; }
+  .training-mark-disc { fill: #f0f1f3; }
+  .training-mark-blue { fill: #005a93; }
+  .training-mark-red { fill: #d92744; }
+  .institution-banner-copy { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .institution-banner-label { overflow: hidden; color: var(--banner-accent); font-size: 8.5px; font-weight: 900; letter-spacing: 0.85px; white-space: nowrap; text-overflow: ellipsis; }
+  .institution-banner-copy strong { color: #ffffff; font-size: 14px; line-height: 1.35; letter-spacing: -0.45px; word-break: keep-all; }
+  .institution-banner-arrow { align-self: start; color: rgba(255,255,255,0.72); font-size: 11px; transition: color 0.2s ease, transform 0.2s ease; }
+  .institution-banner:hover { color: #ffffff; filter: saturate(1.08); transform: translateY(-3px); box-shadow: 0 13px 26px rgba(15,36,68,0.22); }
+  .institution-banner:hover .institution-banner-arrow { color: #ffffff; transform: translate(2px, -2px); }
+  .institution-banner:focus-visible { outline: 3px solid rgba(37,99,235,0.32); outline-offset: 3px; }
+  .institution-banner-province { --banner-start: #0d3b66; --banner-end: #176b87; --banner-accent: #9ee7f5; }
+  .institution-banner-yeosu { --banner-start: #0b4a53; --banner-end: #138074; --banner-accent: #a7f3d0; }
+  .institution-banner-training { --banner-start: #37306b; --banner-end: #6656a3; --banner-accent: #ddd6fe; }
+  .institution-banner-records {
+    --banner-start: #ffffff; --banner-end: #f5f9ff; --banner-accent: #138fba;
+    border-color: #cbd9ea; color: #253348; box-shadow: 0 8px 20px rgba(28,67,112,0.12);
+  }
+  .institution-banner-records::after { border-color: rgba(20,143,186,0.08); }
+  .institution-banner-records .institution-banner-pattern {
+    opacity: 0.5; background-image: radial-gradient(circle, rgba(19,143,186,0.14) 1px, transparent 1.5px);
+    background-size: 14px 14px; mask-image: linear-gradient(90deg, transparent 28%, #000 100%);
+  }
+  .institution-banner-records .institution-banner-copy strong { color: #26364a; font-size: 13.5px; }
+  .institution-banner-records .institution-banner-label { color: #147da2; }
+  .institution-banner-records .institution-banner-arrow { color: #315d91; }
+  .institution-banner-records:hover { color: #26364a; box-shadow: 0 13px 26px rgba(28,67,112,0.2); }
+  .institution-banner-records:hover .institution-banner-arrow { color: #0f4d8a; }
+  .institution-banner-star-logo {
+    display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px;
+    border: 1px solid #d6e1ef; border-radius: 13px; background: rgba(255,255,255,0.88);
+    box-shadow: 0 4px 12px rgba(20,68,119,0.1); transform: rotate(-3deg);
+  }
+  .institution-banner-star-logo svg { width: 42px; height: 42px; overflow: visible; }
+  .institution-banner-star-logo .star-outline { fill: #ffffff; stroke: #164887; stroke-width: 3.2; stroke-linejoin: round; }
+  .institution-banner-star-logo .star-person { fill: #10a5c8; }
+  .institution-banner-star-logo .star-point { fill: #f5c400; stroke: #ffffff; stroke-width: 1.5; }
+
   /* 3. 조회 필터 박스 (무조건 한 줄 유지) */
   /* 상단 패널: (윗줄) 학년+조회 컨트롤 한 줄, (아랫줄) 오늘 급식 오른쪽 정렬 */
   /* year/월/주차/조회/학년필터가 모두 위(◀ 2026년 8월 ▶ 줄)나 모바일 전용으로 옮겨가서, PC에서는
@@ -590,7 +677,7 @@
     body { padding: 0; background: white; }
     /* 인쇄에는 '(2026년 9월) 주간 계획서' 제목과 현재 보고 있는 주(예: 1·2주차) 달력만 남깁니다.
        화면용 상단 버튼(인쇄/건의함/일정등록)·급식·바로가기·부서별 등록 버튼·달 이동/학년필터 줄은 모두 숨깁니다. */
-    .header-top-actions, .school-home-btn, .header-area h2, .btn-group, .meal-inline, .shortcut-cluster,
+    .header-top-actions, .school-home-btn, .header-area h2, .btn-group, .meal-inline, .shortcut-cluster, .institution-links,
     .schedule-register-btn, .register-btn-row, .search-box, .modal, .notice-container,
     .notice-toolbar, .grade-filter, .top-panel, .meal-panel, .scroll-top-btn,
     .cal-heading-row, #rangeInfo, .mobile-list { display: none !important; }
@@ -639,6 +726,15 @@
     #scRecordBtn, #scFormsBtn, .shortcut-empty { display: none; }
     .shortcut-link { padding: 6px 8px; font-size: 11px; gap: 4px; }
     .shortcut-link i { font-size: 12px; }
+    .institution-links { margin-top: 26px; }
+    .institution-links-heading { align-items: center; justify-content: space-between; }
+    .institution-banner-grid { --visible-count: 1; --banner-gap: 9px; }
+    .institution-banner { grid-template-columns: 38px minmax(0, 1fr) 14px; gap: 8px; padding: 13px 12px; }
+    .institution-banner-icon { width: 38px; height: 38px; border-radius: 10px; font-size: 16px; }
+    .institution-banner-star-logo { width: 40px; height: 40px; border-radius: 10px; }
+    .institution-banner-star-logo svg { width: 35px; height: 35px; }
+    .institution-banner-copy strong { font-size: 12.5px; }
+    .institution-banner-label { font-size: 7.5px; letter-spacing: 0.55px; }
 
     /* 2) 조회 컨트롤 순서 재배치: 위 줄엔 [년][월][주차][조회]만, 아래 줄엔 학년 버튼만.
        폭이 좁은 폰에서도 한 줄에 다 들어가도록 select/버튼 크기를 줄이되,
