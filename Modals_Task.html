@@ -301,7 +301,7 @@
   function addScheduleFiles(mode, input) {
     const added = Array.from(input.files || []);
     const target = mode === 'register' ? wzAttachmentFiles : currentEditNewFiles;
-    added.forEach(file => target.push({ file: file, displayName: file.name }));
+    added.forEach(file => target.push({ file: file, displayName: file.name, allowView: false, allowDownload: true }));
     input.value = ''; // 같은 파일도 필요하면 다시 선택할 수 있게 초기화합니다.
     renderScheduleFileLists(mode);
   }
@@ -322,7 +322,24 @@
     remove.className = 'schedule-file-remove';
     remove.textContent = '삭제';
     remove.onclick = onRemove;
-    row.append(original, name, remove);
+    const permissions = document.createElement('div');
+    permissions.className = 'schedule-file-permissions';
+    const makePermission = (key, labelText, iconClass) => {
+      const label = document.createElement('label');
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.checked = item[key] === true;
+      check.addEventListener('change', () => { item[key] = check.checked; });
+      const icon = document.createElement('i'); icon.className = iconClass;
+      const text = document.createElement('span'); text.textContent = labelText;
+      label.append(check, icon, text);
+      return label;
+    };
+    permissions.append(
+      makePermission('allowDownload', '다운로드 허용', 'fas fa-download'),
+      makePermission('allowView', '간편 뷰어 허용', 'fas fa-eye')
+    );
+    row.append(original, name, remove, permissions);
     return row;
   }
 
@@ -357,6 +374,8 @@
   }
 
   function readScheduleAttachmentPayloads(items) {
+    const blocked = items.find(item => !item.allowView && !item.allowDownload);
+    if (blocked) return Promise.reject(new Error((blocked.file ? blocked.file.name : blocked.fileName) + ' 파일은 다운로드 또는 간편 뷰어 중 하나 이상을 허용해주세요.'));
     const totalSize = items.reduce((sum, item) => sum + item.file.size, 0);
     if (totalSize > 30 * 1024 * 1024) return Promise.reject(new Error('한 번에 저장하는 첨부파일 전체 용량은 30MB 이하로 올려주세요.'));
     return Promise.all(items.map(item => new Promise((resolve, reject) => {
@@ -365,7 +384,9 @@
         base64: String(reader.result || '').split(',')[1] || '',
         originalName: item.file.name,
         displayName: String(item.displayName || '').trim(),
-        mimeType: item.file.type || 'application/octet-stream'
+        mimeType: item.file.type || 'application/octet-stream',
+        allowView: item.allowView === true,
+        allowDownload: item.allowDownload !== false
       });
       reader.onerror = () => reject(new Error(item.file.name + ' 파일을 읽지 못했습니다. 다시 선택해주세요.'));
       reader.readAsDataURL(item.file);
@@ -437,7 +458,7 @@
       const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
       if (!files.length) return;
       const target = mode === 'register' ? wzAttachmentFiles : currentEditNewFiles;
-      files.forEach(file => target.push({ file: file, displayName: file.name }));
+      files.forEach(file => target.push({ file: file, displayName: file.name, allowView: false, allowDownload: true }));
       renderScheduleFileLists(mode);
     });
   }
@@ -968,7 +989,12 @@
         const newFiles = await readScheduleAttachmentPayloads(currentEditNewFiles);
         attachmentAction = {
           mode: 'sync',
-          existing: currentEditAttachments.map(file => ({ fileId: file.fileId, fileName: String(file.displayName || '').trim() || file.fileName })),
+          existing: currentEditAttachments.map(file => ({
+            fileId: file.fileId,
+            fileName: String(file.displayName || '').trim() || file.fileName,
+            allowView: file.allowView === true,
+            allowDownload: file.allowDownload !== false
+          })),
           newFiles: newFiles
         };
       } catch (err) {

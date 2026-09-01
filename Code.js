@@ -485,7 +485,10 @@ function parseScheduleAttachments_(raw) {
     return list.filter(item => item && item.fileId && item.fileName).map(item => ({
       fileId: String(item.fileId),
       fileName: String(item.fileName),
-      mimeType: String(item.mimeType || '')
+      mimeType: String(item.mimeType || ''),
+      // 예전 첨부에는 권한 값이 없으므로 기존 동작(둘 다 허용)을 유지합니다.
+      allowView: item.allowView === undefined ? true : item.allowView === true,
+      allowDownload: item.allowDownload === undefined ? true : item.allowDownload === true
     }));
   } catch (e) {
     return [];
@@ -549,7 +552,11 @@ function createScheduleAttachment_(payload) {
   const bytes = Utilities.base64Decode(payload.base64);
   if (bytes.length > SCHEDULE_ATTACHMENT_MAX_BYTES) throw new Error('첨부파일은 30MB 이하로 올려주세요.');
   const file = getScheduleAttachmentsFolder_().createFile(Utilities.newBlob(bytes, mimeType, fileName));
-  return { fileId: file.getId(), fileName: fileName, mimeType: mimeType };
+  return {
+    fileId: file.getId(), fileName: fileName, mimeType: mimeType,
+    allowView: payload.allowView === true,
+    allowDownload: payload.allowDownload !== false
+  };
 }
 
 function createScheduleAttachments_(payloads) {
@@ -942,12 +949,20 @@ function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, ne
         const existingPlans = requestedExisting.map(requested => {
           const old = oldById[String(requested.fileId || '')];
           if (!old) throw new Error('기존 첨부파일 정보가 변경되었습니다. 화면을 새로고침해주세요.');
-          return { old: old, renamed: buildScheduleDownloadName_(requested.fileName, old.fileName) };
+          return {
+            old: old,
+            renamed: buildScheduleDownloadName_(requested.fileName, old.fileName),
+            allowView: requested.allowView === true,
+            allowDownload: requested.allowDownload !== false
+          };
         });
         createdAttachments = createScheduleAttachments_(attachmentAction.newFiles);
         nextAttachments = existingPlans.map(plan => {
           if (plan.renamed !== plan.old.fileName) DriveApp.getFileById(plan.old.fileId).setName(plan.renamed);
-          return { fileId: plan.old.fileId, fileName: plan.renamed, mimeType: plan.old.mimeType || '' };
+          return {
+            fileId: plan.old.fileId, fileName: plan.renamed, mimeType: plan.old.mimeType || '',
+            allowView: plan.allowView, allowDownload: plan.allowDownload
+          };
         });
         nextAttachments = nextAttachments.concat(createdAttachments);
       } else if (mode === 'remove') {
@@ -959,7 +974,10 @@ function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, ne
         const old = oldAttachments[0];
         const renamed = buildScheduleDownloadName_(attachmentAction.displayName, old.fileName);
         DriveApp.getFileById(old.fileId).setName(renamed);
-        nextAttachments[0] = { fileId: old.fileId, fileName: renamed, mimeType: old.mimeType || '' };
+        nextAttachments[0] = {
+          fileId: old.fileId, fileName: renamed, mimeType: old.mimeType || '',
+          allowView: old.allowView, allowDownload: old.allowDownload
+        };
       }
       if (sheet.getRange(1, 7).getValue() !== '첨부파일') sheet.getRange(1, 7).setValue('첨부파일');
       if (sheet.getRange(1, 8).getValue() !== '링크') sheet.getRange(1, 8).setValue('링크');
@@ -1279,7 +1297,7 @@ function deleteMultipleAudiBookingsFromSheet(slotsToDelete) {
 }
 
 // 일정 상세보기의 다운로드 요청은 해당 Data 행이 실제로 그 파일을 참조하는지 확인한 뒤에만 반환합니다.
-function getScheduleAttachmentContent(rowNum, fileId) {
+function getScheduleAttachmentContent(rowNum, fileId, action) {
   try {
     const sheet = SS.getSheetByName('Data');
     const row = Number(rowNum);
@@ -1290,6 +1308,13 @@ function getScheduleAttachmentContent(rowNum, fileId) {
       .find(item => item.fileId === String(fileId || ''));
     if (!attachment) {
       return { success: false, message: '첨부파일 정보가 변경되었습니다.' };
+    }
+    const requestedAction = action === 'view' ? 'view' : 'download';
+    if (requestedAction === 'view' && !attachment.allowView) {
+      return { success: false, message: '등록자가 간편 뷰어 사용을 허용하지 않은 파일입니다.' };
+    }
+    if (requestedAction === 'download' && !attachment.allowDownload) {
+      return { success: false, message: '등록자가 다운로드를 허용하지 않은 파일입니다.' };
     }
     const blob = DriveApp.getFileById(attachment.fileId).getBlob();
     return {
@@ -1318,6 +1343,9 @@ function getScheduleAttachmentViewUrl(rowNum, fileId) {
       .find(item => item.fileId === String(fileId || ''));
     if (!attachment) {
       return { success: false, message: '첨부파일 정보가 변경되었습니다.' };
+    }
+    if (!attachment.allowView) {
+      return { success: false, message: '등록자가 간편 뷰어 사용을 허용하지 않은 파일입니다.' };
     }
     try {
       DriveApp.getFileById(attachment.fileId).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);

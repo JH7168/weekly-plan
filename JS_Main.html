@@ -880,8 +880,7 @@
       // 연간행사: 학사일정표 '명칭'을 제목으로 항상 보여주고, 그 아래에 세부(있으면)를 표시합니다.
       titleEl.textContent = d.annual.name || '';
       titleEl.style.display = 'block';
-      document.getElementById('itemDetailText').innerHTML = p.detail
-        || '<span style="color:#94a3b8;">등록된 세부 내용이 없습니다. 아래 \'세부 내용 등록\'으로 추가할 수 있어요.</span>';
+      document.getElementById('itemDetailText').innerHTML = p.detail || '';
     } else {
       if (p.title) { titleEl.innerHTML = p.title; titleEl.style.display = 'block'; }
       else { titleEl.style.display = 'none'; }
@@ -901,7 +900,7 @@
       d.attachments.forEach((file, fileIdx) => {
         const button = document.createElement('button');
         button.type = 'button';
-        // 누르면 '뷰어로 보기 / 다운로드'를 고르는 선택창을 엽니다. (바로 다운로드가 아니라)
+        // 등록자가 허용한 방식에 따라 간편 뷰어 또는 다운로드를 바로 실행합니다.
         button.onclick = () => openAttachmentAction(currentDetailIdx, fileIdx, file.fileName);
         const icon = document.createElement('i');
         icon.className = 'fas fa-file';
@@ -1085,12 +1084,20 @@
     });
   }
 
-  // 첨부파일을 눌렀을 때: '뷰어로 보기 / 다운로드'를 고르는 선택창을 엽니다.
+  // 첨부파일을 누르면 뷰어 우선으로 바로 실행하고, 다운로드만 허용된 파일은 즉시 내려받습니다.
   let _attachAction = { idx: -1, fileIdx: -1 };
   function openAttachmentAction(idx, fileIdx, fileName) {
     _attachAction = { idx: idx, fileIdx: fileIdx };
-    document.getElementById('attachActionName').textContent = fileName || '첨부파일';
-    openMod('attachActionMod');
+    const d = calendarItemDetails[idx];
+    const attachment = d && d.attachments ? d.attachments[fileIdx] : null;
+    if (!attachment) return;
+    if (attachment.allowView) {
+      viewSelectedAttachment();
+    } else if (attachment.allowDownload) {
+      downloadSelectedAttachment();
+    } else {
+      showAlert('등록자가 이 첨부파일의 열람 방식을 허용하지 않았습니다.');
+    }
   }
   function viewSelectedAttachment() {
     const { idx, fileIdx } = _attachAction;
@@ -1099,18 +1106,107 @@
     if (!d || !attachment || !d.rowNum) return;
     const ext = String(attachment.fileName || '').split('.').pop().toLowerCase();
     const HwpViewer = window.__HwpViewer;
-    // .hwp이면서 hwp.js가 준비됐으면 브라우저 안에서 직접 렌더링, 그 외(hwpx·pdf·이미지·오피스 등)는 드라이브 미리보기.
+    if (!attachment.allowView) { showAlert('등록자가 간편 뷰어 사용을 허용하지 않은 파일입니다.'); return; }
+    // 이미지·PDF·텍스트는 앱 안의 간편 뷰어, HWP는 전용 뷰어, 나머지는 드라이브 미리보기를 사용합니다.
     if (ext === 'hwp' && HwpViewer) {
-      closeMod('attachActionMod');
       openHwpViewer(d, attachment);
+    } else if (/^(jpg|jpeg|png|gif|webp|bmp|pdf|txt|csv)$/.test(ext)) {
+      openSimpleAttachmentViewer(d, attachment, ext);
     } else {
       openDriveViewer(d, attachment);
     }
   }
 
+  let _simpleViewerCtx = null;
+  let _simpleViewerUrl = '';
+  let _simpleViewerDragReady = false;
+  let _resetSimpleViewerPos = null;
+  function initSimpleViewerDrag() {
+    if (_simpleViewerDragReady || window.matchMedia('(max-width: 768px)').matches) return;
+    const content = document.querySelector('#simpleAttachmentViewerMod .simple-attachment-viewer');
+    const handle = document.querySelector('#simpleAttachmentViewerMod .simple-viewer-header');
+    if (!content || !handle) return;
+    _simpleViewerDragReady = true;
+    let dragging = false, startX = 0, startY = 0, curX = 0, curY = 0;
+    const apply = () => { content.style.transform = `translate(${curX}px, ${curY}px)`; };
+    _resetSimpleViewerPos = () => { curX = 0; curY = 0; content.style.transform = ''; };
+    handle.addEventListener('mousedown', e => {
+      if (e.button !== 0 || e.target.closest('button')) return;
+      dragging = true;
+      startX = e.clientX - curX;
+      startY = e.clientY - curY;
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      curX = e.clientX - startX;
+      curY = e.clientY - startY;
+      apply();
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.userSelect = '';
+    });
+  }
+  function openSimpleAttachmentViewer(d, attachment, ext) {
+    _simpleViewerCtx = { idx: _attachAction.idx, fileIdx: _attachAction.fileIdx, d: d, attachment: attachment };
+    const body = document.getElementById('simpleViewerBody');
+    document.getElementById('simpleViewerName').textContent = attachment.fileName || '첨부파일';
+    document.getElementById('simpleViewerDownloadBtn').style.display = attachment.allowDownload ? 'inline-flex' : 'none';
+    initSimpleViewerDrag();
+    if (_resetSimpleViewerPos) _resetSimpleViewerPos();
+    body.innerHTML = '<div style="color:#e2e8f0; padding:30px;">파일을 불러오는 중...</div>';
+    openMod('simpleAttachmentViewerMod');
+    toggleLoading(true, '간편 뷰어를 준비 중...');
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      if (!res || !res.success) { closeSimpleAttachmentViewer(); showAlert((res && res.message) || '파일을 열지 못했습니다.'); return; }
+      try {
+        const bytes = base64ToBytes_(res.base64);
+        const mime = res.mimeType || attachment.mimeType || 'application/octet-stream';
+        const blob = new Blob([bytes], { type: mime });
+        _simpleViewerUrl = URL.createObjectURL(blob);
+        body.innerHTML = '';
+        if (/^(jpg|jpeg|png|gif|webp|bmp)$/.test(ext)) {
+          const img = document.createElement('img');
+          img.src = _simpleViewerUrl;
+          img.alt = attachment.fileName || '첨부 이미지';
+          body.appendChild(img);
+        } else if (ext === 'pdf') {
+          const frame = document.createElement('iframe');
+          frame.src = _simpleViewerUrl;
+          frame.title = attachment.fileName || 'PDF 미리보기';
+          body.appendChild(frame);
+        } else {
+          const pre = document.createElement('pre');
+          pre.textContent = new TextDecoder('utf-8').decode(bytes);
+          body.appendChild(pre);
+        }
+      } catch (e) {
+        closeSimpleAttachmentViewer();
+        showAlert('간편 뷰어에서 파일을 표시하지 못했습니다.');
+      }
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      closeSimpleAttachmentViewer();
+      showAlert('간편 뷰어를 여는 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
+    }).getScheduleAttachmentContent(d.rowNum, attachment.fileId, 'view');
+  }
+  function closeSimpleAttachmentViewer() {
+    const body = document.getElementById('simpleViewerBody');
+    if (body) body.innerHTML = '';
+    if (_simpleViewerUrl) URL.revokeObjectURL(_simpleViewerUrl);
+    _simpleViewerUrl = '';
+    closeMod('simpleAttachmentViewerMod');
+  }
+  function downloadFromSimpleViewer() {
+    if (_simpleViewerCtx) downloadScheduleAttachment(_simpleViewerCtx.idx, _simpleViewerCtx.fileIdx);
+  }
+
   // 그 외 형식: 구글 드라이브 미리보기를 새 창으로 엽니다.
   function openDriveViewer(d, attachment) {
-    closeMod('attachActionMod');
     const viewer = window.open('', '_blank'); // 팝업 차단 회피: 먼저 빈 창을 열어둡니다.
     toggleLoading(true, '미리보기를 여는 중...');
     g.withSuccessHandler(res => {
@@ -1131,6 +1227,7 @@
     _hwpDownloadCtx = { idx: _attachAction.idx, fileIdx: _attachAction.fileIdx, d: d, attachment: attachment };
     const body = document.getElementById('hwpViewerBody');
     document.getElementById('hwpViewerName').textContent = attachment.fileName || '한글 문서';
+    document.getElementById('hwpViewerDownloadBtn').style.display = attachment.allowDownload ? 'inline-flex' : 'none';
     body.innerHTML = '<div style="text-align:center; color:#64748b; padding:34px;">한글 문서를 여는 중...</div>';
     openMod('hwpViewerMod');
     toggleLoading(true, '한글 문서를 불러오는 중...');
@@ -1147,14 +1244,17 @@
     }).withFailureHandler(err => {
       toggleLoading(false);
       hwpViewerFallback(d, attachment, '문서를 불러오지 못했습니다.');
-    }).getScheduleAttachmentContent(d.rowNum, attachment.fileId);
+    }).getScheduleAttachmentContent(d.rowNum, attachment.fileId, 'view');
   }
   function hwpViewerFallback(d, attachment, msg) {
     const body = document.getElementById('hwpViewerBody');
+    const downloadButton = attachment.allowDownload
+      ? '<button class="btn-search" style="width:auto; margin:0 4px; padding:8px 16px;" onclick="downloadFromHwpViewer()">⬇ 다운로드</button>'
+      : '';
     body.innerHTML = '<div style="text-align:center; color:#475569; padding:26px; line-height:1.7;">'
       + (msg || '미리보기가 어렵습니다.')
-      + '<br><span style="font-size:13px; color:#94a3b8;">다운로드해서 한글에서 열거나, 드라이브 미리보기를 이용해보세요.</span><br><br>'
-      + '<button class="btn-search" style="width:auto; margin:0 4px; padding:8px 16px;" onclick="downloadFromHwpViewer()">⬇ 다운로드</button>'
+      + '<br><span style="font-size:13px; color:#94a3b8;">브라우저에서 표시하기 어려운 문서입니다. 드라이브 미리보기를 이용해보세요.</span><br><br>'
+      + downloadButton
       + '<button class="btn-cancel" style="width:auto; margin:0 4px; padding:8px 16px;" onclick="hwpToDriveViewer()">드라이브 미리보기</button>'
       + '</div>';
   }
@@ -1180,7 +1280,6 @@
   }
 
   function downloadSelectedAttachment() {
-    closeMod('attachActionMod');
     downloadScheduleAttachment(_attachAction.idx, _attachAction.fileIdx);
   }
 
@@ -1188,6 +1287,7 @@
     const d = calendarItemDetails[idx];
     const attachment = d && d.attachments ? d.attachments[fileIdx] : null;
     if (!d || !attachment || !d.rowNum) return;
+    if (!attachment.allowDownload) { showAlert('등록자가 다운로드를 허용하지 않은 파일입니다.'); return; }
     toggleLoading(true, '첨부파일을 준비 중...');
     g.withSuccessHandler(res => {
       toggleLoading(false);
@@ -1207,7 +1307,7 @@
     }).withFailureHandler(err => {
       toggleLoading(false);
       showAlert('첨부파일 다운로드 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
-    }).getScheduleAttachmentContent(d.rowNum, attachment.fileId);
+    }).getScheduleAttachmentContent(d.rowNum, attachment.fileId, 'download');
   }
 
   // "주간 일정" 달력 막대는 칸 폭에 맞춰 한 줄로 자동으로 잘립니다(...). 일정명이 칸보다 길어 잘렸으면,

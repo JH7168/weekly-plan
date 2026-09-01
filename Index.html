@@ -276,31 +276,32 @@
       </div>
     </section>
 
-    <!-- 첨부파일을 눌렀을 때: 뷰어로 볼지 다운로드할지 고르는 선택창 (상세 팝업 위에 뜨도록 z-index 높임) -->
-    <div id="attachActionMod" class="modal" style="z-index:10002;">
-      <div class="modal-content" style="text-align:center; max-width:340px;">
-        <h3 style="margin-top:0;">첨부파일 열기</h3>
-        <p id="attachActionName" style="font-weight:bold; color:#5b21b6; word-break:break-all; margin:6px 0 16px;"></p>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-          <button class="btn-search" style="width:100%; margin:0; background:#7c3aed;" onclick="viewSelectedAttachment()"><i class="fas fa-eye"></i> 뷰어로 보기</button>
-          <button class="btn-search" style="width:100%; margin:0;" onclick="downloadSelectedAttachment()"><i class="fas fa-download"></i> 다운로드</button>
-          <button class="btn-cancel" style="width:100%; margin:0;" onclick="closeMod('attachActionMod')">취소</button>
-        </div>
-        <p style="font-size:12px; color:#94a3b8; margin:14px 0 0;">‘뷰어로 보기’는 새 창에서 구글 드라이브 미리보기로 열립니다.</p>
-      </div>
-    </div>
-
     <!-- 한글(HWP) 브라우저 뷰어 팝업 -->
     <div id="hwpViewerMod" class="modal" style="z-index:10003;">
       <div class="modal-content" style="max-width:96vw; width:920px; max-height:92vh; display:flex; flex-direction:column; padding:14px;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
           <h3 id="hwpViewerName" style="margin:0; font-size:15px; color:#5b21b6; word-break:break-all;"></h3>
           <div style="display:flex; gap:8px; align-items:center; flex:0 0 auto;">
-            <button class="btn-search" style="width:auto; margin:0; padding:6px 12px; font-size:13px; background:#7c3aed;" onclick="downloadFromHwpViewer()"><i class="fas fa-download"></i> 다운로드</button>
+            <button id="hwpViewerDownloadBtn" class="btn-search" style="width:auto; margin:0; padding:6px 12px; font-size:13px; background:#7c3aed;" onclick="downloadFromHwpViewer()"><i class="fas fa-download"></i> 다운로드</button>
             <span onclick="closeHwpViewer()" role="button" tabindex="0" aria-label="닫기" style="cursor:pointer; font-size:24px; color:#999; line-height:1;">&times;</span>
           </div>
         </div>
         <div id="hwpViewerBody" style="flex:1; overflow:auto; background:#e9edf3; border-radius:8px; padding:10px; min-height:200px;"></div>
+      </div>
+    </div>
+
+    <!-- 이미지·PDF·텍스트를 새 창 없이 빠르게 확인하는 간편 뷰어 -->
+    <div id="simpleAttachmentViewerMod" class="modal" style="z-index:10004;">
+      <div class="modal-content simple-attachment-viewer">
+        <div class="simple-viewer-header" title="이 영역을 끌어서 창을 옮길 수 있습니다.">
+          <h3 id="simpleViewerName"></h3>
+          <div class="simple-viewer-actions">
+            <button id="simpleViewerDownloadBtn" class="btn-search" onclick="downloadFromSimpleViewer()"><i class="fas fa-download"></i> 다운로드</button>
+            <button type="button" class="simple-viewer-close" onclick="closeSimpleAttachmentViewer()" aria-label="간편 뷰어 닫기">&times;</button>
+          </div>
+        </div>
+        <div id="simpleViewerBody" class="simple-viewer-body"></div>
+        <div class="simple-viewer-hint"><i class="fas fa-arrows-alt"></i> 상단을 끌면 창이 이동하고, 가장자리나 오른쪽 아래 모서리를 끌면 크기가 조절됩니다.</div>
       </div>
     </div>
 
