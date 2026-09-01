@@ -128,7 +128,7 @@
   .institution-links { margin: 34px 0 14px; padding-top: 20px; border-top: 1px solid #dbe3ee; }
   .institution-links-heading { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
   .institution-links-heading h3 { margin: 0; color: #172033; font-size: 16px; letter-spacing: -0.3px; }
-  .institution-banner-viewport { overflow: hidden; padding: 4px 0 12px; margin-bottom: -12px; }
+  .institution-banner-viewport { overflow: hidden; padding: 4px 0 12px; margin-bottom: -12px; touch-action: pan-y; }
   .institution-banner-grid {
     --visible-count: 4; --banner-gap: 12px;
     display: flex; gap: var(--banner-gap); width: 100%;
@@ -729,12 +729,15 @@
     .institution-links { margin-top: 26px; }
     .institution-links-heading { align-items: center; justify-content: space-between; }
     .institution-banner-grid { --visible-count: 1; --banner-gap: 9px; }
-    .institution-banner { grid-template-columns: 38px minmax(0, 1fr) 14px; gap: 8px; padding: 13px 12px; }
-    .institution-banner-icon { width: 38px; height: 38px; border-radius: 10px; font-size: 16px; }
-    .institution-banner-star-logo { width: 40px; height: 40px; border-radius: 10px; }
-    .institution-banner-star-logo svg { width: 35px; height: 35px; }
-    .institution-banner-copy strong { font-size: 12.5px; }
-    .institution-banner-label { font-size: 7.5px; letter-spacing: 0.55px; }
+    .institution-banner { aspect-ratio: 5 / 1; grid-template-columns: 34px minmax(0, 1fr) 14px; gap: 7px; padding: 7px 10px; border-radius: 11px; }
+    .institution-banner-province, .institution-banner-yeosu { grid-template-columns: 46px minmax(0, 1fr) 14px; }
+    .institution-banner-icon { width: 34px; height: 34px; border-radius: 9px; padding: 3px; font-size: 15px; }
+    .institution-banner-official-mark { width: 46px; height: 34px; padding: 3px; }
+    .institution-banner-star-logo { width: 34px; height: 34px; border-radius: 9px; }
+    .institution-banner-star-logo svg { width: 30px; height: 30px; }
+    .institution-banner-copy { gap: 0; }
+    .institution-banner-copy strong { font-size: 12px; line-height: 1.25; }
+    .institution-banner-label { display: none; }
 
     /* 2) 조회 컨트롤 순서 재배치: 위 줄엔 [년][월][주차][조회]만, 아래 줄엔 학년 버튼만.
        폭이 좁은 폰에서도 한 줄에 다 들어가도록 select/버튼 크기를 줄이되,
