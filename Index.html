@@ -65,6 +65,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- QR 코드 생성(브라우저 안에서 직접 그림 — 주소가 외부로 나가지 않습니다) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- 한글(HWP) 브라우저 뷰어(hwp.js). 로드되면 window.__HwpViewer로 사용. 실패해도 앱은 정상 동작하며 HWP는 드라이브 미리보기로 대체됩니다. -->
+    <script>
+      (function () {
+        try {
+          import('https://cdn.jsdelivr.net/npm/hwp.js@0.0.3/+esm')
+            .then(function (m) { window.__HwpViewer = (m && (m.Viewer || (m.default && m.default.Viewer))) || null; })
+            .catch(function () { window.__HwpViewer = null; });
+        } catch (e) { window.__HwpViewer = null; }
+      })();
+    </script>
 
     <?!= include('CSS'); ?>
   </head>
@@ -265,6 +275,34 @@
       </div>
       </div>
     </section>
+
+    <!-- 첨부파일을 눌렀을 때: 뷰어로 볼지 다운로드할지 고르는 선택창 (상세 팝업 위에 뜨도록 z-index 높임) -->
+    <div id="attachActionMod" class="modal" style="z-index:10002;">
+      <div class="modal-content" style="text-align:center; max-width:340px;">
+        <h3 style="margin-top:0;">첨부파일 열기</h3>
+        <p id="attachActionName" style="font-weight:bold; color:#5b21b6; word-break:break-all; margin:6px 0 16px;"></p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <button class="btn-search" style="width:100%; margin:0; background:#7c3aed;" onclick="viewSelectedAttachment()"><i class="fas fa-eye"></i> 뷰어로 보기</button>
+          <button class="btn-search" style="width:100%; margin:0;" onclick="downloadSelectedAttachment()"><i class="fas fa-download"></i> 다운로드</button>
+          <button class="btn-cancel" style="width:100%; margin:0;" onclick="closeMod('attachActionMod')">취소</button>
+        </div>
+        <p style="font-size:12px; color:#94a3b8; margin:14px 0 0;">‘뷰어로 보기’는 새 창에서 구글 드라이브 미리보기로 열립니다.</p>
+      </div>
+    </div>
+
+    <!-- 한글(HWP) 브라우저 뷰어 팝업 -->
+    <div id="hwpViewerMod" class="modal" style="z-index:10003;">
+      <div class="modal-content" style="max-width:96vw; width:920px; max-height:92vh; display:flex; flex-direction:column; padding:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+          <h3 id="hwpViewerName" style="margin:0; font-size:15px; color:#5b21b6; word-break:break-all;"></h3>
+          <div style="display:flex; gap:8px; align-items:center; flex:0 0 auto;">
+            <button class="btn-search" style="width:auto; margin:0; padding:6px 12px; font-size:13px; background:#7c3aed;" onclick="downloadFromHwpViewer()"><i class="fas fa-download"></i> 다운로드</button>
+            <span onclick="closeHwpViewer()" role="button" tabindex="0" aria-label="닫기" style="cursor:pointer; font-size:24px; color:#999; line-height:1;">&times;</span>
+          </div>
+        </div>
+        <div id="hwpViewerBody" style="flex:1; overflow:auto; background:#e9edf3; border-radius:8px; padding:10px; min-height:200px;"></div>
+      </div>
+    </div>
 
     <!-- 항목(연간 행사/부서별 업무) 클릭 시 세부 내용을 보여주는 팝업. 제목만 보이는 항목을 클릭하면 열립니다. -->
     <div id="itemDetailMod" class="modal">

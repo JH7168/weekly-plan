@@ -389,6 +389,11 @@ function getWeekMondaysForMonth_(year, month) {
   return mondays;
 }
 
+// 연간행사(학사일정표) 항목에 붙는 '세부 내용'을 저장할 때 쓰는 예약 부서명입니다.
+// 이 부서명으로 Data 시트에 저장된 행은 부서 업무 목록에는 나오지 않고, 학사일정표의 '명칭'(작성자 열)과
+// 매칭해 연간행사 팝업의 상세/전달사항/첨부/링크로만 사용됩니다. (부서 업무와 동일한 코드 재사용)
+const ANNUAL_DEPT_ = '__연간행사__';
+
 // 한 주(월요일 시작)에 대한 연간 행사/부서별 업무를 계산합니다.
 // getCombinedData(주간 조회, 모바일용)와 getMonthlyCombinedData(월간 조회, PC용)가 공통으로 사용합니다.
 function buildWeekResult_(weekStart, schMap, datVals) {
@@ -412,11 +417,21 @@ function buildWeekResult_(weekStart, schMap, datVals) {
   }
 
   const deptMap = {};
+  const annualDetails = []; // 연간행사(학사일정표 명칭)에 붙는 세부: {name, st, et, text, attachments, links, rowNum}
   datVals.forEach((r, dataIdx) => {
     if (!(r[1] instanceof Date) || !(r[2] instanceof Date)) return;
     const st = r[1].getTime();
     const et = r[2].getTime();
     if (st <= eTime && et >= sTime) {
+      if (r[0] === ANNUAL_DEPT_) {
+        // 연간행사 세부: 명칭은 col5(author)에 저장해 학사일정표 명칭과 매칭합니다.
+        annualDetails.push({
+          name: String(r[4] || ''), st: st, et: et,
+          text: escapeHtml_(r[3]), rawText: String(r[3] || ''),
+          attachments: parseScheduleAttachments_(r[6]), links: parseScheduleLinks_(r[7]), rowNum: dataIdx + 2
+        });
+        return; // 부서 업무 목록에는 넣지 않습니다.
+      }
       if (!deptMap[r[0]]) deptMap[r[0]] = [];
       deptMap[r[0]].push({
         date: formatSimple(r[1], r[2]), time: st, st: st, et: et,
@@ -435,7 +450,7 @@ function buildWeekResult_(weekStart, schMap, datVals) {
   });
 
   return {
-    schedule, list, sTime, eTime,
+    schedule, list, annualDetails, sTime, eTime,
     rangeText: Utilities.formatDate(weekStart, TZ, "yyyy-MM-dd") + " ~ " + Utilities.formatDate(weekEnd, TZ, "yyyy-MM-dd")
   };
 }
@@ -582,7 +597,7 @@ function getCombinedData(year, month, week) {
   const { schMap, datVals } = readScheduleSheets_();
   const wr = buildWeekResult_(weekStart, schMap, datVals);
 
-  return { schedule: wr.schedule, list: wr.list, sTime: wr.sTime, rangeText: wr.rangeText };
+  return { schedule: wr.schedule, list: wr.list, annualDetails: wr.annualDetails, sTime: wr.sTime, rangeText: wr.rangeText };
 }
 
 // getWeekMondaysForMonth_는 "그 주 수요일이 속한 달"을 기준으로 주차를 정확히 한 달에만 배정합니다
@@ -640,7 +655,7 @@ function getMonthlyCombinedData(year, month) {
     const weekNum = owningMondays.findIndex(m => m.getTime() === weekStart.getTime()) + 1;
     return {
       weekNum: weekNum || 1, owningYear, owningMonth,
-      schedule: wr.schedule, list: wr.list, sTime: wr.sTime, rangeText: wr.rangeText
+      schedule: wr.schedule, list: wr.list, annualDetails: wr.annualDetails, sTime: wr.sTime, rangeText: wr.rangeText
     };
   });
 
@@ -721,6 +736,16 @@ function saveRangeToSheet(s, e, dept, text, author, weeks, grades, attachmentPay
   } finally {
     lock.releaseLock();
   }
+}
+
+// ===== 연간행사 세부(상세/전달사항/첨부/링크) — 부서 업무 저장 로직을 그대로 재사용 =====
+// 명칭(name)은 학사일정표에서 오는 값이라 그대로 col5(author)에 보관해, 나중에 매칭합니다.
+function saveAnnualDetail(name, start, end, text, attachmentPayloads, links) {
+  return saveRangeToSheet(start, end, ANNUAL_DEPT_, text, String(name || ''), 1, '', attachmentPayloads, links);
+}
+// 세부 수정: 명칭(col5)을 유지해야 매칭이 깨지지 않으므로, 전용 함수로 author=name을 항상 넣어 저장합니다.
+function updateAnnualDetail(rowNum, name, start, end, text, attachmentAction, links) {
+  return updateRowContent('data', rowNum, text, start, end, String(name || ''), '', attachmentAction, links);
 }
 
 function saveNoticeToSheet(s, e, text, author, weeks, grades) {
@@ -1276,5 +1301,30 @@ function getScheduleAttachmentContent(rowNum, fileId) {
   } catch (e) {
     console.error('일정 첨부 다운로드 오류: ' + e.toString());
     return { success: false, message: '첨부파일을 불러오지 못했습니다.' };
+  }
+}
+
+// 첨부파일을 '뷰어(구글 드라이브 미리보기)'로 열기 위한 URL을 돌려줍니다.
+// 앱은 이미 첨부를 누구나 다운로드할 수 있으므로, 미리보기가 되도록 '링크가 있는 사람 보기'로 열어둡니다.
+// (검증: 다운로드와 동일하게 rowNum+fileId가 실제 등록된 첨부일 때만 처리합니다.)
+function getScheduleAttachmentViewUrl(rowNum, fileId) {
+  try {
+    const sheet = SS.getSheetByName('Data');
+    const row = Number(rowNum);
+    if (!sheet || !Number.isInteger(row) || row < 2 || row > sheet.getLastRow() || sheet.getLastColumn() < 7) {
+      return { success: false, message: '첨부파일 정보를 찾을 수 없습니다.' };
+    }
+    const attachment = parseScheduleAttachments_(sheet.getRange(row, 7).getValue())
+      .find(item => item.fileId === String(fileId || ''));
+    if (!attachment) {
+      return { success: false, message: '첨부파일 정보가 변경되었습니다.' };
+    }
+    try {
+      DriveApp.getFileById(attachment.fileId).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (shareErr) {}
+    return { success: true, fileName: attachment.fileName, url: 'https://drive.google.com/file/d/' + attachment.fileId + '/view' };
+  } catch (e) {
+    console.error('일정 첨부 뷰어 URL 오류: ' + e.toString());
+    return { success: false, message: '미리보기를 열지 못했습니다.' };
   }
 }

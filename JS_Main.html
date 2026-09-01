@@ -302,6 +302,14 @@
   let currentMonthWeeks = []; // (PC용) 이번 달에 속한 주차들의 데이터 배열 (앞뒤로 인접 주 1개씩 포함)
   let currentViewYear = null, currentViewMonth = null; // (PC용) 지금 보고 있는 달 — 전체 월 뷰에서 인접 주 제외용
 
+  // 타임스탬프를 'yyyy-MM-dd'로 (연간행사 세부 저장용 날짜)
+  function toIsoDate_(ts) {
+    const dt = new Date(ts);
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    return dt.getFullYear() + '-' + mm + '-' + dd;
+  }
+
   // 한 주(월~금 5일 중 하루라도)가 지정한 연·월에 걸쳐 있는지 확인합니다.
   function weekHasDayInMonth_(week, y, m) {
     if (!y || !m) return true;
@@ -632,14 +640,35 @@
           const gridStart = Math.min(...mappedIndices) + 1;
           const span = Math.max(...mappedIndices) - Math.min(...mappedIndices) + 1;
           const title = isEventRow ? item.text : extractDeptTitle(item.text);
-          const barClass = 'event-bar' + (isEventRow ? ' cal-event-bar' : '') + (!isEventRow && popupLabel === '행정실' ? ' dept-haengjeong' : '');
+          // 이 일정이 '이 주에서 실제로 시작/끝나는지' 확인합니다.
+          //  - 시작 주가 아니면(전 주에서 이어져옴) 왼쪽 진한 캡을 없앱니다(예: 9/1~9/7 일정의 9/7 왼쪽).
+          //  - 끝나는 주에만 오른쪽 끝에 진한 캡을 넣어 "여기까지 일정"임을 표시합니다(9/4 같은 가짜 끝엔 없음).
+          const rawStartIdx = Math.round((item.st - week.sTime) / 86400000);
+          const rawEndIdx = Math.round((item.et - week.sTime) / 86400000);
+          const startsHere = rawStartIdx >= 0;
+          const endsHere = rawEndIdx <= 4;
+          const barClass = 'event-bar'
+            + (isEventRow ? ' cal-event-bar' : '')
+            + (!isEventRow && popupLabel === '행정실' ? ' dept-haengjeong' : '')
+            + (startsHere ? '' : ' bar-open-start')
+            + (endsHere ? ' bar-cap-end' : '');
           // 이 항목이 실제로 속한 주(연/월/주차, 수요일 기준)를 함께 저장해, 월경계 주(예: 8/31~9/4=9월1주차)의
           // 항목도 현재 달력의 월이 아니라 '항목이 속한 주'로 정확히 조회(수정/삭제)되게 합니다.
           const weekCtx = (week && week.owningYear && week.owningMonth)
             ? { y: week.owningYear, m: week.owningMonth, w: week.weekNum } : null;
+          // 연간행사(isEventRow)면 학사일정표 명칭에 붙는 세부(Data의 예약부서 행)를 이름+날짜로 매칭해 연결합니다.
+          let dText = item.text, dAttach = item.attachments || [], dLinks = item.links || [], dRow = item.rowNum || null, annual = null;
+          if (isEventRow) {
+            const matched = (week.annualDetails || []).find(a => a.name === item.text && a.st <= item.et && a.et >= item.st);
+            annual = { name: item.text, startIso: toIsoDate_(item.st), endIso: toIsoDate_(item.et), rawText: matched ? (matched.rawText || '') : '' };
+            dText = matched ? matched.text : '';
+            dAttach = matched ? (matched.attachments || []) : [];
+            dLinks = matched ? (matched.links || []) : [];
+            dRow = matched ? matched.rowNum : null;
+          }
           const detailIdx = registerDetail(
-            popupLabel, item.dateLabel || item.date || '', item.text, weekCtx,
-            item.attachments || [], item.rowNum || null, item.links || []
+            popupLabel, item.dateLabel || item.date || '', dText, weekCtx,
+            dAttach, dRow, dLinks, annual
           );
 
           rowHtml += `<div class="${barClass}" style="grid-column: ${gridStart} / span ${span}; ${fsStyle}" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">${title}</div>`;
@@ -690,10 +719,11 @@
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
     calendarItemDetails = [];
-    function registerDetail(label, dateLabel, text, weekCtx, attachments, rowNum, links) {
+    function registerDetail(label, dateLabel, text, weekCtx, attachments, rowNum, links, annual) {
       calendarItemDetails.push({
         label, dateLabel, text, weekCtx: weekCtx || null,
-        attachments: attachments || [], links: links || [], rowNum: rowNum || null
+        attachments: attachments || [], links: links || [], rowNum: rowNum || null,
+        annual: annual || null
       });
       return calendarItemDetails.length - 1;
     }
@@ -762,10 +792,11 @@
     const deptCellStyle = `width:${deptWidth}px; min-width:${deptWidth}px; box-sizing:border-box; padding:8px 4px; text-align:center; vertical-align:middle; border-right:1px solid #cbd5e1; ${fsStyle}`;
 
     calendarItemDetails = [];
-    function registerDetail(label, dateLabel, text, weekCtx, attachments, rowNum, links) {
+    function registerDetail(label, dateLabel, text, weekCtx, attachments, rowNum, links, annual) {
       calendarItemDetails.push({
         label, dateLabel, text, weekCtx: weekCtx || null,
-        attachments: attachments || [], links: links || [], rowNum: rowNum || null
+        attachments: attachments || [], links: links || [], rowNum: rowNum || null,
+        annual: annual || null
       });
       return calendarItemDetails.length - 1;
     }
@@ -845,9 +876,17 @@
     //  - 제목: 대괄호 없이 가운데·굵게·크게(별도 요소)  - 전달사항: 아래 박스(라벨+색)
     const p = parseTaskText(d.text);
     const titleEl = document.getElementById('itemDetailTitle');
-    if (p.title) { titleEl.innerHTML = p.title; titleEl.style.display = 'block'; }
-    else { titleEl.style.display = 'none'; }
-    document.getElementById('itemDetailText').innerHTML = p.detail;
+    if (d.annual) {
+      // 연간행사: 학사일정표 '명칭'을 제목으로 항상 보여주고, 그 아래에 세부(있으면)를 표시합니다.
+      titleEl.textContent = d.annual.name || '';
+      titleEl.style.display = 'block';
+      document.getElementById('itemDetailText').innerHTML = p.detail
+        || '<span style="color:#94a3b8;">등록된 세부 내용이 없습니다. 아래 \'세부 내용 등록\'으로 추가할 수 있어요.</span>';
+    } else {
+      if (p.title) { titleEl.innerHTML = p.title; titleEl.style.display = 'block'; }
+      else { titleEl.style.display = 'none'; }
+      document.getElementById('itemDetailText').innerHTML = p.detail;
+    }
     const noticeWrap = document.getElementById('itemDetailNoticeWrap');
     if (p.notice) {
       document.getElementById('itemDetailNotice').innerHTML = p.notice;
@@ -862,9 +901,10 @@
       d.attachments.forEach((file, fileIdx) => {
         const button = document.createElement('button');
         button.type = 'button';
-        button.onclick = () => downloadScheduleAttachment(currentDetailIdx, fileIdx);
+        // 누르면 '뷰어로 보기 / 다운로드'를 고르는 선택창을 엽니다. (바로 다운로드가 아니라)
+        button.onclick = () => openAttachmentAction(currentDetailIdx, fileIdx, file.fileName);
         const icon = document.createElement('i');
-        icon.className = 'fas fa-download';
+        icon.className = 'fas fa-file';
         const name = document.createElement('span');
         name.textContent = file.fileName;
         button.append(icon, name);
@@ -918,8 +958,25 @@
     } else {
       linkWrap.style.display = 'none';
     }
-    // 연간 행사(부서명 없음)는 학사일정표 시트에서 직접 관리하므로 이 화면에서는 수정/삭제할 수 없습니다.
-    document.getElementById('itemDetailActions').style.display = (d.label === '연간 행사') ? 'none' : 'flex';
+    // 액션 버튼: 부서 업무는 수정/삭제, 연간행사는 세부 등록(없을 때)/세부 수정·삭제(있을 때).
+    // 연간행사의 '명칭'은 학사일정표에서 관리하므로 여기서는 세부 내용만 다루고 명칭은 지우지 않습니다.
+    const actionsEl = document.getElementById('itemDetailActions');
+    if (d.annual) {
+      actionsEl.style.display = 'flex';
+      if (d.rowNum) {
+        actionsEl.innerHTML =
+          '<button class="btn-search" style="flex:1; margin:0; background:var(--edit);" onclick="editAnnualDetail(currentDetailIdx)">✏️ 세부 수정</button>'
+          + '<button class="btn-search" style="flex:1; margin:0; background:var(--danger);" onclick="deleteAnnualDetail(currentDetailIdx)">🗑️ 세부 삭제</button>';
+      } else {
+        actionsEl.innerHTML =
+          '<button class="btn-search" style="flex:1; margin:0; background:#7c3aed;" onclick="registerAnnualDetail(currentDetailIdx)">➕ 세부 내용 등록</button>';
+      }
+    } else {
+      actionsEl.style.display = (d.label === '연간 행사') ? 'none' : 'flex';
+      actionsEl.innerHTML =
+        '<button class="btn-search" style="flex:1; margin:0; background:var(--edit);" onclick="editItemFromDetail(currentDetailIdx)">✏️ 수정</button>'
+        + '<button class="btn-search" style="flex:1; margin:0; background:var(--danger);" onclick="deleteItemFromDetail(currentDetailIdx)">🗑️ 삭제</button>';
+    }
     initItemDetailDrag();               // 드래그 기능 준비(최초 1회만 실제로 설정)
     if (_resetItemDetailPos) _resetItemDetailPos(); // 열 때마다 가운데로 되돌립니다.
     openMod('itemDetailMod');
@@ -1026,6 +1083,105 @@
       dragging = false;
       document.body.style.userSelect = '';
     });
+  }
+
+  // 첨부파일을 눌렀을 때: '뷰어로 보기 / 다운로드'를 고르는 선택창을 엽니다.
+  let _attachAction = { idx: -1, fileIdx: -1 };
+  function openAttachmentAction(idx, fileIdx, fileName) {
+    _attachAction = { idx: idx, fileIdx: fileIdx };
+    document.getElementById('attachActionName').textContent = fileName || '첨부파일';
+    openMod('attachActionMod');
+  }
+  function viewSelectedAttachment() {
+    const { idx, fileIdx } = _attachAction;
+    const d = calendarItemDetails[idx];
+    const attachment = d && d.attachments ? d.attachments[fileIdx] : null;
+    if (!d || !attachment || !d.rowNum) return;
+    const ext = String(attachment.fileName || '').split('.').pop().toLowerCase();
+    const HwpViewer = window.__HwpViewer;
+    // .hwp이면서 hwp.js가 준비됐으면 브라우저 안에서 직접 렌더링, 그 외(hwpx·pdf·이미지·오피스 등)는 드라이브 미리보기.
+    if (ext === 'hwp' && HwpViewer) {
+      closeMod('attachActionMod');
+      openHwpViewer(d, attachment);
+    } else {
+      openDriveViewer(d, attachment);
+    }
+  }
+
+  // 그 외 형식: 구글 드라이브 미리보기를 새 창으로 엽니다.
+  function openDriveViewer(d, attachment) {
+    closeMod('attachActionMod');
+    const viewer = window.open('', '_blank'); // 팝업 차단 회피: 먼저 빈 창을 열어둡니다.
+    toggleLoading(true, '미리보기를 여는 중...');
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      if (!res || !res.success) { if (viewer) viewer.close(); showAlert((res && res.message) || '미리보기를 열지 못했습니다.'); return; }
+      if (viewer) viewer.location = res.url;
+      else window.open(res.url, '_blank', 'noopener,noreferrer');
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      if (viewer) viewer.close();
+      showAlert('미리보기 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
+    }).getScheduleAttachmentViewUrl(d.rowNum, attachment.fileId);
+  }
+
+  // HWP: 파일 내용을 받아 hwp.js로 브라우저 안에서 렌더링합니다. 실패하면 드라이브 미리보기로 대체 제안.
+  let _hwpDownloadCtx = null;
+  function openHwpViewer(d, attachment) {
+    _hwpDownloadCtx = { idx: _attachAction.idx, fileIdx: _attachAction.fileIdx, d: d, attachment: attachment };
+    const body = document.getElementById('hwpViewerBody');
+    document.getElementById('hwpViewerName').textContent = attachment.fileName || '한글 문서';
+    body.innerHTML = '<div style="text-align:center; color:#64748b; padding:34px;">한글 문서를 여는 중...</div>';
+    openMod('hwpViewerMod');
+    toggleLoading(true, '한글 문서를 불러오는 중...');
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      if (!res || !res.success) { hwpViewerFallback(d, attachment, '문서를 불러오지 못했습니다.'); return; }
+      try {
+        const bytes = base64ToBytes_(res.base64);
+        body.innerHTML = '';
+        new window.__HwpViewer(body, bytes);
+      } catch (e) {
+        hwpViewerFallback(d, attachment, '이 문서는 브라우저 미리보기가 어렵습니다.');
+      }
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      hwpViewerFallback(d, attachment, '문서를 불러오지 못했습니다.');
+    }).getScheduleAttachmentContent(d.rowNum, attachment.fileId);
+  }
+  function hwpViewerFallback(d, attachment, msg) {
+    const body = document.getElementById('hwpViewerBody');
+    body.innerHTML = '<div style="text-align:center; color:#475569; padding:26px; line-height:1.7;">'
+      + (msg || '미리보기가 어렵습니다.')
+      + '<br><span style="font-size:13px; color:#94a3b8;">다운로드해서 한글에서 열거나, 드라이브 미리보기를 이용해보세요.</span><br><br>'
+      + '<button class="btn-search" style="width:auto; margin:0 4px; padding:8px 16px;" onclick="downloadFromHwpViewer()">⬇ 다운로드</button>'
+      + '<button class="btn-cancel" style="width:auto; margin:0 4px; padding:8px 16px;" onclick="hwpToDriveViewer()">드라이브 미리보기</button>'
+      + '</div>';
+  }
+  function hwpToDriveViewer() {
+    if (!_hwpDownloadCtx) return;
+    closeHwpViewer();
+    openDriveViewer(_hwpDownloadCtx.d, _hwpDownloadCtx.attachment);
+  }
+  function closeHwpViewer() {
+    const body = document.getElementById('hwpViewerBody');
+    if (body) body.innerHTML = ''; // 렌더링 중단 + 메모리 정리
+    closeMod('hwpViewerMod');
+  }
+  function downloadFromHwpViewer() {
+    if (_hwpDownloadCtx) downloadScheduleAttachment(_hwpDownloadCtx.idx, _hwpDownloadCtx.fileIdx);
+  }
+  function base64ToBytes_(b64) {
+    const bin = atob(String(b64 || ''));
+    const len = bin.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  function downloadSelectedAttachment() {
+    closeMod('attachActionMod');
+    downloadScheduleAttachment(_attachAction.idx, _attachAction.fileIdx);
   }
 
   function downloadScheduleAttachment(idx, fileIdx) {

@@ -911,6 +911,9 @@
     document.getElementById('singleEditEnd').value = item.isoEnd;
     // 전달사항(공지) 수정은 일정명/전달사항 칸이 필요 없어 숨기고 본문만 그대로 편집합니다.
     document.getElementById('singleEditTitleField').style.display = isNotice ? 'none' : 'block';
+    // 연간행사 세부 편집에서 숨겼을 수 있는 '대상 학년' 칸을 부서/전달 수정에서는 다시 보이게 복원합니다.
+    const _gradeField = document.getElementById('singleEditGradeGroup').closest('.field');
+    if (_gradeField) _gradeField.style.display = '';
     document.getElementById('singleEditNoticeField').style.display = isNotice ? 'none' : 'block';
     document.getElementById('singleEditAttachmentField').style.display = isNotice ? 'none' : 'block';
     document.getElementById('singleEditAttachmentFile').value = '';
@@ -951,7 +954,8 @@
       const title = document.getElementById('singleEditTitle').value.trim();
       const detail = document.getElementById('singleEditText').value.trim();
       const notice = document.getElementById('singleEditNotice').value.trim();
-      if (!start || !end || !detail) { showAlert("날짜와 내용을 모두 입력하세요."); return; }
+      // 연간행사 세부는 상세가 비어도(첨부/링크만) 허용합니다. 부서 업무는 상세 필수.
+      if (!start || !end || (currentEditType !== 'annual' && !detail)) { showAlert("날짜와 내용을 모두 입력하세요."); return; }
       // 일정명/내용/전달사항을 다시 저장 형식으로 결합합니다.
       text = title ? `[${title}]\n${detail}` : detail;
       if (notice) text += `\n\n【전달사항】\n${notice}`;
@@ -973,19 +977,95 @@
       }
     }
 
-    toggleLoading(true, attachmentAction.newFiles && attachmentAction.newFiles.length ? "파일과 내용을 수정 중..." : "수정 중...");
-    g.withSuccessHandler(res => {
+    toggleLoading(true, attachmentAction.newFiles && attachmentAction.newFiles.length ? "파일과 내용을 저장 중..." : "저장 중...");
+    const onSaved = res => {
       toggleLoading(false);
+      if (res && res.success === false) { showAlert(res.msg || res.message || "저장 실패"); return; }
       if (res) {
         closeMod('singleEditMod');
         closeMod('editMod'); // 목록 창은 더 이상 띄우지 않고 바로 달력으로 돌아갑니다.
         isEdited = true;
-        showAlert("수정 완료");
+        showAlert(currentEditType === 'annual' ? "세부 내용이 저장되었습니다." : "수정 완료");
         loadAll(); // 달력 새로고침
       } else {
-        showAlert("수정 실패");
+        showAlert("저장 실패");
       }
-    }).updateRowContent(currentEditType, rowNum, text, start, end, '', grades, attachmentAction, currentEditLinks);
+    };
+    const onFail = err => { toggleLoading(false); showAlert('저장 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err)); };
+    if (currentEditType === 'annual') {
+      // 연간행사 세부: 명칭(학사일정표)은 유지하고 상세/전달사항/첨부/링크만 저장/수정합니다.
+      const name = _annualEdit ? _annualEdit.name : '';
+      if (rowNum) {
+        g.withSuccessHandler(onSaved).withFailureHandler(onFail).updateAnnualDetail(rowNum, name, start, end, text, attachmentAction, currentEditLinks);
+      } else {
+        g.withSuccessHandler(onSaved).withFailureHandler(onFail).saveAnnualDetail(name, start, end, text, attachmentAction.newFiles || [], currentEditLinks);
+      }
+    } else {
+      g.withSuccessHandler(onSaved).withFailureHandler(onFail).updateRowContent(currentEditType, rowNum, text, start, end, '', grades, attachmentAction, currentEditLinks);
+    }
+  }
+
+  // ===== 연간행사 '세부 내용'(상세/전달사항/첨부/링크) 등록·수정·삭제 =====
+  // singleEditMod를 재사용하되, 명칭(학사일정표)·학년 칸은 숨기고 세부만 다룹니다.
+  let _annualEdit = null;
+  function registerAnnualDetail(idx) { openAnnualDetailEditor(idx, null); }
+  function editAnnualDetail(idx) {
+    const d = calendarItemDetails[idx];
+    openAnnualDetailEditor(idx, (d && d.rowNum) || null);
+  }
+  function openAnnualDetailEditor(idx, rowNum) {
+    const d = calendarItemDetails[idx];
+    if (!d || !d.annual) return;
+    _annualEdit = { name: d.annual.name };
+    currentEditType = 'annual';
+    isEdited = false;
+    closeMod('itemDetailMod');
+
+    document.getElementById('singleEditRow').value = rowNum || '';
+    document.getElementById('singleEditStart').value = d.annual.startIso || '';
+    document.getElementById('singleEditEnd').value = d.annual.endIso || '';
+
+    // 명칭(제목)·학년 칸 숨김: 명칭은 학사일정표에서 관리, 연간행사는 학년 구분 없음.
+    document.getElementById('singleEditTitleField').style.display = 'none';
+    document.getElementById('singleEditTitle').value = '';
+    document.getElementById('singleEditNoticeField').style.display = 'block';
+    const gradeField = document.getElementById('singleEditGradeGroup').closest('.field');
+    if (gradeField) gradeField.style.display = 'none';
+
+    // 세부(상세/전달사항) 채우기 — 수정창엔 이스케이프 안 된 원문(rawText)을 넣습니다.
+    const p = parseTaskText((d.annual && d.annual.rawText) || '');
+    document.getElementById('singleEditText').value = p.detail;
+    document.getElementById('singleEditNotice').value = p.notice;
+
+    // 첨부/링크
+    document.getElementById('singleEditAttachmentField').style.display = 'block';
+    document.getElementById('singleEditAttachmentFile').value = '';
+    currentEditAttachments = (d.attachments || []).map(f => Object.assign({}, f, { displayName: f.fileName }));
+    currentEditNewFiles = [];
+    renderScheduleFileLists('edit');
+    document.getElementById('singleEditLinkField').style.display = 'block';
+    document.getElementById('singleEditLinkName').value = '';
+    document.getElementById('singleEditLinkUrl').value = '';
+    currentEditLinks = (d.links || []).map(l => ({ name: l.name, url: l.url }));
+    renderScheduleLinkLists('edit');
+    setupScheduleDropzone('singleEditDropzone', 'edit');
+
+    openMod('singleEditMod');
+  }
+  function deleteAnnualDetail(idx) {
+    const d = calendarItemDetails[idx];
+    if (!d || !d.annual || !d.rowNum) return;
+    showConfirm("이 연간행사의 '세부 내용'을 삭제할까요?\n(행사 명칭은 학사일정표에 그대로 남습니다.)", () => {
+      toggleLoading(true, '삭제 중...');
+      g.withSuccessHandler(() => {
+        toggleLoading(false);
+        closeMod('itemDetailMod');
+        loadAll();
+      }).withFailureHandler(err => {
+        toggleLoading(false);
+        showAlert('삭제 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
+      }).processBulkDelete('data', [d.rowNum]);
+    });
   }
 
   function closeEditModal() {

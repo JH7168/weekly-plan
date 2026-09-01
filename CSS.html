@@ -411,6 +411,13 @@
   .event-bar.cal-event-bar { background: #fff7ed; border-left-color: #f97316; }
   /* 별도 전달사항 영역을 없애면서, 그 노란색 계열을 행정실 업무 막대에 사용합니다. */
   .event-bar.dept-haengjeong { background: #fff8e1; border-left-color: #f5b026; color: #92400e; }
+  /* 일정이 '실제로 끝나는 주'의 막대 오른쪽 끝에 진한 캡을 넣어 "여기까지 일정"임을 표시합니다.
+     (주 경계로 잘려 다음 주로 이어지는 막대에는 넣지 않습니다.) 색은 막대 종류에 맞춥니다. */
+  /* 전 주에서 이어져온(이 주에서 시작하지 않은) 막대는 왼쪽 시작 캡을 없앱니다(자리는 유지). */
+  .event-bar.bar-open-start { border-left-color: transparent; }
+  .event-bar.bar-cap-end { border-right: 4px solid var(--primary); }
+  .event-bar.cal-event-bar.bar-cap-end { border-right-color: #f97316; }
+  .event-bar.dept-haengjeong.bar-cap-end { border-right-color: #f5b026; }
   /* PC 월간 달력의 각 주차를 2px 짙은 테두리로 묶습니다. 이번 주의 3px 주황색보다는 한 단계 얇습니다. */
   .cal-week-card > td:first-child, .cal-week-card > th:first-child {
     border-left: 2px solid #1f2937 !important;
