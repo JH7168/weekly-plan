@@ -542,7 +542,7 @@
       '교무기획부': '교무부', '교육과정부': '교육<br>과정부', '교육연구부': '교육<br>연구부',
       '학생안전부': '학생<br>안전부', '체육인성부': '체육<br>인성부', '융합과학정보부': '융합<br>과학<br>정보부',
       '방과후활동부': '방과후<br>활동부', '진로상담부': '진로<br>상담부', '보건실': '보건실',
-      '1학년부': '1학년', '2학년부': '2학년', '3학년부': '3학년', '행정실': '행정실'
+      '1학년부': '1학년', '2학년부': '2학년', '3학년부': '3학년', '행정실': '행정실', '급식실': '급식실'
     };
     return map[name] || name;
   }
@@ -552,7 +552,7 @@
     '교무기획부': '#3b82f6', '교육과정부': '#8b5cf6', '교육연구부': '#06b6d4',
     '학생안전부': '#ef4444', '방과후활동부': '#f97316', '융합과학정보부': '#14b8a6',
     '체육인성부': '#22c55e', '진로상담부': '#d97706', '보건실': '#ec4899',
-    '1학년부': '#0ea5e9', '2학년부': '#a855f7', '3학년부': '#64748b', '행정실': '#f5b026'
+    '1학년부': '#0ea5e9', '2학년부': '#a855f7', '3학년부': '#64748b', '행정실': '#f5b026', '급식실': '#16a34a'
   };
   function deptHeaderColor(name) { return DEPT_COLORS[name] || '#64748b'; }
 
@@ -650,6 +650,7 @@
           const barClass = 'event-bar'
             + (isEventRow ? ' cal-event-bar' : '')
             + (!isEventRow && popupLabel === '행정실' ? ' dept-haengjeong' : '')
+            + (!isEventRow && popupLabel === '급식실' ? ' dept-gupsik' : '')
             + (startsHere ? '' : ' bar-open-start')
             + (endsHere ? ' bar-cap-end' : '');
           // 이 항목이 실제로 속한 주(연/월/주차, 수요일 기준)를 함께 저장해, 월경계 주(예: 8/31~9/4=9월1주차)의
@@ -1127,22 +1128,36 @@
     const handle = document.querySelector('#simpleAttachmentViewerMod .simple-viewer-header');
     if (!content || !handle) return;
     _simpleViewerDragReady = true;
-    let dragging = false, startX = 0, startY = 0, curX = 0, curY = 0;
-    const apply = () => { content.style.transform = `translate(${curX}px, ${curY}px)`; };
-    _resetSimpleViewerPos = () => { curX = 0; curY = 0; content.style.transform = ''; };
+    // 가운데 정렬(flex/transform)이면 크기를 늘릴 때 중심 기준으로 재정렬돼 좌상단까지 커집니다.
+    // 그래서 데스크톱에서는 top/left(px)로 고정 배치해, 우하단만 늘어나고 우측/아래를 따로 조절할 수 있게 합니다.
+    content.style.position = 'absolute';
+    content.style.margin = '0';
+    let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    _resetSimpleViewerPos = () => {
+      // 열 때마다 화면 가운데에 놓되, 좌표를 px로 고정합니다(리사이즈 시 좌상단 안 움직이게).
+      content.style.left = '';
+      content.style.top = '';
+      const r = content.getBoundingClientRect();
+      const left = Math.max(8, Math.round((window.innerWidth - r.width) / 2));
+      const top = Math.max(8, Math.round((window.innerHeight - r.height) / 2));
+      content.style.left = left + 'px';
+      content.style.top = top + 'px';
+    };
     handle.addEventListener('mousedown', e => {
       if (e.button !== 0 || e.target.closest('button')) return;
       dragging = true;
-      startX = e.clientX - curX;
-      startY = e.clientY - curY;
+      startX = e.clientX;
+      startY = e.clientY;
+      const r = content.getBoundingClientRect();
+      startLeft = r.left;
+      startTop = r.top;
       document.body.style.userSelect = 'none';
       e.preventDefault();
     });
     document.addEventListener('mousemove', e => {
       if (!dragging) return;
-      curX = e.clientX - startX;
-      curY = e.clientY - startY;
-      apply();
+      content.style.left = (startLeft + (e.clientX - startX)) + 'px';
+      content.style.top = (startTop + (e.clientY - startY)) + 'px';
     });
     document.addEventListener('mouseup', () => {
       if (!dragging) return;
@@ -1156,9 +1171,9 @@
     document.getElementById('simpleViewerName').textContent = attachment.fileName || '첨부파일';
     document.getElementById('simpleViewerDownloadBtn').style.display = attachment.allowDownload ? 'inline-flex' : 'none';
     initSimpleViewerDrag();
-    if (_resetSimpleViewerPos) _resetSimpleViewerPos();
     body.innerHTML = '<div style="color:#e2e8f0; padding:30px;">파일을 불러오는 중...</div>';
     openMod('simpleAttachmentViewerMod');
+    if (_resetSimpleViewerPos) _resetSimpleViewerPos(); // 표시 후 실제 크기 기준으로 가운데 배치(좌상단 px 고정)
     toggleLoading(true, '간편 뷰어를 준비 중...');
     g.withSuccessHandler(res => {
       toggleLoading(false);

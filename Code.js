@@ -673,7 +673,7 @@ function getMonthlyCombinedData(year, month) {
 const DEPT_ORDER_ = [
   "교무기획부", "교육과정부", "교육연구부", "학생안전부", "방과후활동부",
   "융합과학정보부", "체육인성부", "진로상담부", "보건실",
-  "1학년부", "2학년부", "3학년부", "행정실"
+  "1학년부", "2학년부", "3학년부", "행정실", "급식실"
 ];
 function deptOrderIndex_(name) {
   const idx = DEPT_ORDER_.indexOf(name);
@@ -682,13 +682,20 @@ function deptOrderIndex_(name) {
 
 function getDeptList() {
   const s = SS.getSheetByName("Index");
-  if (!s) return [];
-  const lastRow = s.getLastRow();
-  if (lastRow < 1) return [];
   // Index 시트는 헤더 없이 1행부터 바로 부서명이 들어있습니다.
-  // 부서 선택 화면 등에 노출되는 순서는 시트 순서가 아니라 지정된 고정 순서(DEPT_ORDER_)를 따릅니다.
-  const names = s.getRange(1, 1, lastRow, 1).getValues().flat().filter(String);
-  return names.sort((a, b) => deptOrderIndex_(a) - deptOrderIndex_(b));
+  const names = (s && s.getLastRow() >= 1)
+    ? s.getRange(1, 1, s.getLastRow(), 1).getValues().flat().filter(String)
+    : [];
+  // 고정 순서(DEPT_ORDER_)에 있는 부서는 Index 시트에 아직 없어도 항상 선택지에 포함합니다
+  // (예: 새로 추가한 '급식실'을 시트 편집 없이 바로 쓸 수 있게). 중복은 제거합니다.
+  const seen = {};
+  const merged = [];
+  names.concat(DEPT_ORDER_).forEach(n => {
+    const name = String(n).trim();
+    if (name && !seen[name]) { seen[name] = true; merged.push(name); }
+  });
+  // 노출 순서는 시트 순서가 아니라 지정된 고정 순서(DEPT_ORDER_)를 따릅니다.
+  return merged.sort((a, b) => deptOrderIndex_(a) - deptOrderIndex_(b));
 }
 
 // weeks(반복 주차 수)가 2 이상이면 7일 간격으로 동일한 내용을 여러 번 등록합니다 (최대 20주, 매주 반복 등록용).
