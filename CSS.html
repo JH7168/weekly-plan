@@ -234,7 +234,13 @@
   }
   .meal-inline-left { align-items: flex-start; text-align: left; }
   /* 날짜 라벨은 흰 칸 밖 위쪽에 표시 */
-  .meal-inline-label { font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 6px; white-space: nowrap; padding-left: 14px; }
+  /* 라벨+박스를 함께 감싸(박스 폭에 맞춤) 날짜를 박스 위 가운데에 오게 합니다. */
+  .meal-inline-wrap { display: inline-block; max-width: 100%; }
+  .meal-inline-label { font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 6px; white-space: nowrap; display: flex; justify-content: center; align-items: center; gap: 2px; }
+  /* 급식 이전/다음 끼니 화살표 (PC). 모바일에서는 숨기고 스와이프로 넘깁니다. */
+  .meal-nav-arrow { cursor: pointer; color: var(--primary); font-weight: bold; padding: 0 7px; user-select: none; font-size: 13px; line-height: 1; }
+  .meal-nav-arrow.disabled { color: #cbd5e1; cursor: default; pointer-events: none; }
+  @media (max-width: 768px) { .meal-nav-arrow { display: none; } }
   /* 연한 파스텔 녹색 카드(흰 듯 녹색인 느낌): 메뉴 내용에 맞게 세로로 넉넉하게 (읽기 편하도록). */
   .meal-card-box {
     background: #f2fbf6; border: 1px solid #d8f0e3; border-radius: 12px;

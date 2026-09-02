@@ -208,7 +208,7 @@
       <textarea id="singleEditText" rows="5"></textarea>
     </div>
     <div class="field" id="singleEditNoticeField">
-      <label>전달사항 <span class="field-hint">(선택)</span></label>
+      <label>전달사항</label>
       <textarea id="singleEditNotice" rows="3"></textarea>
     </div>
     <div class="field schedule-attachment-field" id="singleEditAttachmentField">
@@ -615,13 +615,13 @@
     const title = document.getElementById('wzTitle').value.trim();
     if (!title) { showAlert("제목을 입력해주세요."); return; }
 
+    // 상세 내용(내용)은 비어도 됩니다. 제목만 있으면 등록할 수 있고, 전달사항/첨부/링크만 추가해도 됩니다.
     const detail = document.getElementById('wizardSingleInput').value.trim();
-    if (!detail) { showAlert("상세 내용을 입력해주세요."); return; }
     const notice = document.getElementById('wizardNoticeInput').value.trim();
 
     // 제목은 화면에 [ ] 안에 담아 저장합니다(기존 데이터·표시 로직과 형식을 맞추기 위함).
     // 전달사항이 있으면 "【전달사항】" 구분 헤더 뒤에 붙여, 상세 보기에서 별도 박스로 분리 표시합니다.
-    let finalContent = `[${title}]\n${detail}`;
+    let finalContent = detail ? `[${title}]\n${detail}` : `[${title}]`;
     if (notice) finalContent += `\n\n【전달사항】\n${notice}`;
 
     // 대상 학년을 하나도 선택하지 않아도 등록할 수 있습니다. 이 경우 학년별(1/2/3학년) 필터에는
@@ -975,11 +975,16 @@
       const title = document.getElementById('singleEditTitle').value.trim();
       const detail = document.getElementById('singleEditText').value.trim();
       const notice = document.getElementById('singleEditNotice').value.trim();
-      // 연간행사 세부는 상세가 비어도(첨부/링크만) 허용합니다. 부서 업무는 상세 필수.
-      if (!start || !end || (currentEditType !== 'annual' && !detail)) { showAlert("날짜와 내용을 모두 입력하세요."); return; }
-      // 일정명/내용/전달사항을 다시 저장 형식으로 결합합니다.
+      // 내용(상세)이 비어도 됩니다. 일정명·내용·전달사항·첨부·링크 중 하나만 있으면 저장할 수 있습니다.
+      const hasAny = title || detail || notice
+        || (currentEditAttachments && currentEditAttachments.length)
+        || (currentEditNewFiles && currentEditNewFiles.length)
+        || (currentEditLinks && currentEditLinks.length);
+      if (!start || !end) { showAlert("날짜를 입력하세요."); return; }
+      if (currentEditType !== 'annual' && !hasAny) { showAlert("일정명·내용·전달사항 중 하나 이상 입력해주세요."); return; }
+      // 일정명/내용/전달사항을 다시 저장 형식으로 결합합니다. (내용이 없으면 앞쪽 빈 줄 없이 전달사항만)
       text = title ? `[${title}]\n${detail}` : detail;
-      if (notice) text += `\n\n【전달사항】\n${notice}`;
+      if (notice) text += (text ? `\n\n` : '') + `【전달사항】\n${notice}`;
     }
     // 대상 학년 미선택도 허용합니다(교직원용 등). 학년 정보 없이 저장되어 '전체' 필터에서만 표시됩니다.
 

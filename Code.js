@@ -272,6 +272,46 @@ function getMealCards() {
   });
 }
 
+// 현재 끼니부터 '앞으로' count개의 끼니(점심→저녁→다음 등교일 점심…)를 반환합니다.
+// 시작점이 항상 '지금 보여줄 한 끼'라서, 지난 날짜/지난 끼니(예: 저녁 시간대의 오늘 점심)는 자연히 빠집니다.
+function getUpcomingMealCards(count) {
+  count = Math.max(1, Math.min(30, Number(count) || 14));
+  const now = new Date();
+  let hm = Number(Utilities.formatDate(now, TZ, 'HHmm'));
+  if (isWeekend_(now)) hm = 0;
+
+  const date0 = schoolDayOnOrAfter_(now);
+  const date1 = nextSchoolDay_(date0);
+  let d, meal;
+  if (hm < 1300) { d = date0; meal = '중식'; }
+  else if (hm < 1815) { d = date0; meal = '석식'; }
+  else { d = date1; meal = '중식'; }
+
+  const slots = [];
+  let cur = new Date(d);
+  for (let i = 0; i < count; i++) {
+    slots.push({ date: new Date(cur), meal: meal });
+    if (meal === '중식') { meal = '석식'; }
+    else { meal = '중식'; cur = nextSchoolDay_(cur); }
+  }
+
+  const ymds = slots.map(s => Utilities.formatDate(s.date, TZ, 'yyyyMMdd'));
+  const from = ymds[0], to = ymds[ymds.length - 1];
+  const meals = fetchMeals_(from, to);
+  const holidays = fetchHolidays_(from, to);
+
+  return slots.map((s, i) => {
+    const ymd = ymds[i];
+    const items = (meals[ymd] && meals[ymd][s.meal]) ? meals[ymd][s.meal] : [];
+    let status = 'ok', holidayName = '';
+    if (items.length === 0) {
+      if (holidays[ymd]) { status = 'holiday'; holidayName = holidays[ymd]; }
+      else { status = 'none'; }
+    }
+    return { label: mealLabel_(s.date, s.meal), items: items, status: status, holidayName: holidayName };
+  });
+}
+
 // slotKey에 해당하는 파일을 Drive에 저장하고, 기존 파일이 있으면 휴지통으로 보냅니다.
 function uploadMaterial(slotKey, base64Data, fileName, mimeType) {
   try {
