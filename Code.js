@@ -92,6 +92,95 @@ function verifyAdminPassword(pw) {
   return pw === ADMIN_PASSWORD;
 }
 
+const STUDENT_COUNT_PROPERTY = 'student_count_status';
+const STUDENT_COUNT_HISTORY_PROPERTY = 'student_count_history';
+
+function normalizeStudentCountEntry_(data) {
+  data = data || {};
+  const grade1 = Math.max(0, parseInt(data.grade1 != null ? data.grade1 : (data.g1 != null ? data.g1 : data.grade1Count), 10) || 0);
+  const grade2 = Math.max(0, parseInt(data.grade2 != null ? data.grade2 : (data.g2 != null ? data.g2 : data.grade2Count), 10) || 0);
+  const grade3 = Math.max(0, parseInt(data.grade3 != null ? data.grade3 : (data.g3 != null ? data.g3 : data.grade3Count), 10) || 0);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(data.date || '')) ? String(data.date) : '';
+  return {
+    date: date,
+    dateLabel: date ? date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1. $2. $3.') : '',
+    grade1: grade1,
+    grade2: grade2,
+    grade3: grade3,
+    total: grade1 + grade2 + grade3,
+    savedAt: String(data.savedAt || ''),
+    id: String(data.id || data.savedAt || [date, grade1, grade2, grade3].join('_'))
+  };
+}
+
+function getStudentCountHistory_() {
+  const props = PropertiesService.getScriptProperties();
+  let history = [];
+  try {
+    const stored = JSON.parse(props.getProperty(STUDENT_COUNT_HISTORY_PROPERTY) || '[]');
+    if (Array.isArray(stored)) history = stored.map(normalizeStudentCountEntry_).filter(item => item.date);
+  } catch (e) {}
+  // 첫 버전의 단일 현황도 항상 병합하여 이력 저장 방식 전환 중 누락되지 않게 합니다.
+  try {
+    const legacy = normalizeStudentCountEntry_(JSON.parse(props.getProperty(STUDENT_COUNT_PROPERTY) || '{}'));
+    const alreadyIncluded = history.some(item =>
+      item.date === legacy.date && item.grade1 === legacy.grade1 && item.grade2 === legacy.grade2 && item.grade3 === legacy.grade3
+    );
+    if (legacy.date && !alreadyIncluded) history.push(legacy);
+  } catch (e) {}
+  return history;
+}
+
+function getStudentCountStatus() {
+  const history = getStudentCountHistory_();
+  // 최신 항목을 복사한 뒤 이력을 붙여 순환 참조로 최신 행이 누락되지 않게 합니다.
+  const latest = history.length ? Object.assign({}, history[history.length - 1]) : normalizeStudentCountEntry_({});
+  latest.history = history.slice().reverse();
+  return latest;
+}
+
+function saveStudentCountStatus(pw, payload) {
+  if (!verifyAdminPassword(String(pw || ''))) return { success: false, message: '관리자 비밀번호가 올바르지 않습니다.' };
+  payload = payload || {};
+  const date = String(payload.date || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { success: false, message: '기준일을 정확히 입력해주세요.' };
+  const values = [payload.grade1, payload.grade2, payload.grade3].map(value => Number(value));
+  if (values.some(value => !Number.isInteger(value) || value < 0)) {
+    return { success: false, message: '학년별 인원은 0명 이상의 정수로 입력해주세요.' };
+  }
+  const entryId = String(payload.entryId || '').trim();
+  const entry = {
+    id: entryId || Utilities.getUuid(), date: date,
+    grade1: values[0], grade2: values[1], grade3: values[2], savedAt: new Date().toISOString()
+  };
+  const history = getStudentCountHistory_();
+  if (entryId) {
+    const editIndex = history.findIndex(item => item.id === entryId);
+    if (editIndex < 0) return { success: false, message: '수정할 이력을 찾지 못했습니다. 화면을 다시 열어주세요.' };
+    entry.savedAt = history[editIndex].savedAt || entry.savedAt;
+    history[editIndex] = entry;
+  } else {
+    history.push(entry);
+  }
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty(STUDENT_COUNT_HISTORY_PROPERTY, JSON.stringify(history.slice(-100)));
+  props.setProperty(STUDENT_COUNT_PROPERTY, JSON.stringify(history[history.length - 1]));
+  return { success: true, data: getStudentCountStatus() };
+}
+
+function deleteStudentCountStatus(pw, entryId) {
+  if (!verifyAdminPassword(String(pw || ''))) return { success: false, message: '관리자 비밀번호가 올바르지 않습니다.' };
+  entryId = String(entryId || '').trim();
+  const history = getStudentCountHistory_();
+  const next = history.filter(item => item.id !== entryId);
+  if (next.length === history.length) return { success: false, message: '삭제할 이력을 찾지 못했습니다.' };
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty(STUDENT_COUNT_HISTORY_PROPERTY, JSON.stringify(next));
+  if (next.length) props.setProperty(STUDENT_COUNT_PROPERTY, JSON.stringify(next[next.length - 1]));
+  else props.deleteProperty(STUDENT_COUNT_PROPERTY);
+  return { success: true, data: getStudentCountStatus() };
+}
+
 // 교사별 시간표 조회(개인용 조회 도구)를 가볍게 잠그는 비밀번호. 실제 관리자 권한과는 무관합니다.
 const LOOKUP_PASSWORD = 'PY4312';
 
@@ -268,7 +357,10 @@ function getMealCards() {
       if (holidays[ymd]) { status = 'holiday'; holidayName = holidays[ymd]; }
       else { status = 'none'; }
     }
-    return { label: mealLabel_(s.date, s.meal), items: items, status: status, holidayName: holidayName };
+    return {
+      label: mealLabel_(s.date, s.meal), dateKey: ymd, meal: s.meal,
+      items: items, status: status, holidayName: holidayName
+    };
   });
 }
 
@@ -308,7 +400,10 @@ function getUpcomingMealCards(count) {
       if (holidays[ymd]) { status = 'holiday'; holidayName = holidays[ymd]; }
       else { status = 'none'; }
     }
-    return { label: mealLabel_(s.date, s.meal), items: items, status: status, holidayName: holidayName };
+    return {
+      label: mealLabel_(s.date, s.meal), dateKey: ymd, meal: s.meal,
+      items: items, status: status, holidayName: holidayName
+    };
   });
 }
 

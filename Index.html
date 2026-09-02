@@ -118,21 +118,23 @@
         <button class="schedule-register-btn top-register-btn" onclick="switchTo('workMod')" style="justify-self: center; align-self: end; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 11px 24px; border-radius: 9px; font-size: 15.5px; white-space: nowrap; box-shadow: 0 4px 10px rgba(124,58,237,0.24);"><i class="fas fa-edit"></i> 부서별 일정 등록</button>
 
         <!-- 오른쪽: 바로가기 버튼(2열×3행 격자, 흰 박스 안에).
-             1행: 전체 시간표 | 시청각실 예약   2행: 학교생활기록부 | 방과후 신청   3행: (빈칸) | 서식 -->
+             1행: 전체 시간표 | 시청각실 예약   2행: 학교생활기록부 | 방과후 신청   3행: 학생수 현황 | 서식 -->
         <div class="shortcut-cluster" style="justify-self: end; align-self: end;">
-          <button class="shortcut-link" style="--accent:#e11d48;" onclick="openTimetableModal()">
+          <button id="scTimetableBtn" class="shortcut-link" style="--accent:#e11d48;" onclick="openTimetableModal()">
             <i class="fas fa-table"></i>전체 시간표
           </button>
-          <button class="shortcut-link" style="--accent:#9c27b0;" onclick="openAudiWeekly()">
+          <button id="scAudiBtn" class="shortcut-link" style="--accent:#9c27b0;" onclick="openAudiWeekly()">
             <i class="fas fa-video"></i>시청각실 예약
           </button>
           <button id="scRecordBtn" class="shortcut-link" style="--accent:#6366f1;" onclick="openRecordMod()">
             <i class="fas fa-book"></i>학교생활기록부
           </button>
-          <button class="shortcut-link" style="--accent:#f97316;" onclick="window.open('https://script.google.com/macros/s/AKfycbw3g841N66dD-v82Rsufi7o3c91oeNpyu8_WBlv-OqnY9FysMMHclA-uj-Jht_P0xT3jg/exec', '_blank', 'noopener,noreferrer')">
+          <button id="scAfterSchoolBtn" class="shortcut-link" style="--accent:#f97316;" onclick="window.open('https://script.google.com/macros/s/AKfycbw3g841N66dD-v82Rsufi7o3c91oeNpyu8_WBlv-OqnY9FysMMHclA-uj-Jht_P0xT3jg/exec', '_blank', 'noopener,noreferrer')">
             <i class="fas fa-chalkboard-teacher"></i>방과후 신청
           </button>
-          <span class="shortcut-empty" aria-hidden="true"></span>
+          <button id="studentCountBtn" class="shortcut-link" style="--accent:#059669;" onclick="openStudentCountMod()">
+            <i class="fas fa-users"></i>학생수 현황
+          </button>
           <button id="scFormsBtn" class="shortcut-link" style="--accent:#0ea5e9;" onclick="openFormsMod()">
             <i class="fas fa-file-alt"></i>서식
           </button>

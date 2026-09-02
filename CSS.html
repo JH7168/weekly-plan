@@ -124,6 +124,61 @@
   }
   .shortcut-link:hover { background: var(--accent); color: #ffffff; }
 
+  /* 학생수 현황판: 학교 행정 대시보드처럼 기준일과 합계를 가장 먼저 읽히게 구성합니다. */
+  #studentCountMod .student-count-panel { position: relative; width: min(560px, 94vw); max-width: 560px; padding: 28px 22px 20px; overflow: hidden; background: #ffffff; border: 1px solid #d7e5df; box-shadow: 0 18px 44px rgba(15,45,36,0.18); }
+  #studentCountMod .student-count-panel::before { display: none; }
+  .student-count-close { position: absolute; top: 6px; right: 9px; z-index: 2; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; }
+  .student-count-close:hover { background: #f1f5f9; color: #334155; }
+  #studentCountMod.student-count-opening { animation: studentCountBackdropIn 0.28s ease-out both; }
+  #studentCountMod.student-count-opening .student-count-panel { transform-origin: var(--student-origin-x) var(--student-origin-y); animation: studentCountGrowFromButton 0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  @keyframes studentCountGrowFromButton { from { opacity: 0; transform: scale(0.08); } 55% { opacity: 1; } to { opacity: 1; transform: scale(1); } }
+  @keyframes studentCountBackdropIn { from { background-color: rgba(15,23,42,0); } to { background-color: rgba(15,23,42,0.42); } }
+  .student-count-kicker { color: #047857; font-size: 10px; font-weight: 900; letter-spacing: 1.8px; text-align: center; }
+  .student-count-panel h3 { margin: 5px 0 7px; color: #13372c; font-size: 23px; text-align: center; letter-spacing: -0.7px; }
+  .student-count-date { color: #64748b; font-size: 13px; font-weight: 700; text-align: center; }
+  .student-count-total { display: flex; align-items: baseline; justify-content: center; gap: 5px; margin: 22px 0 16px; padding: 20px; border-radius: 16px; background: #064e3b; color: #ffffff; box-shadow: 0 12px 28px rgba(6,78,59,0.18); }
+  .student-count-total span { margin-right: 13px; color: #a7f3d0; font-size: 13px; font-weight: 800; }
+  .student-count-total strong { font-size: 42px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .student-count-total small { color: #d1fae5; font-size: 15px; font-weight: 800; }
+  .student-count-grades { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .student-count-grade { position: relative; display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 4px; padding: 17px 14px; border: 1px solid #dbe7e2; border-radius: 13px; background: rgba(255,255,255,0.9); }
+  .student-count-grade::before { content: ''; position: absolute; top: 0; left: 13px; right: 13px; height: 3px; border-radius: 0 0 4px 4px; background: var(--grade-color); }
+  .student-count-grade span { color: #475569; font-size: 13px; font-weight: 800; }
+  .student-count-grade strong { color: #172b24; font-size: 25px; font-variant-numeric: tabular-nums; }
+  .student-count-grade small { color: #64748b; font-size: 12px; font-weight: 700; }
+  .grade-one { --grade-color:#2563eb; } .grade-two { --grade-color:#7c3aed; } .grade-three { --grade-color:#ea580c; }
+  .student-count-empty { margin-top: 12px; color: #94a3b8; font-size: 12.5px; text-align: center; }
+  .student-count-history-wrap { margin-top: 0; }
+  .student-count-history-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; color: #24483d; font-size: 13px; font-weight: 900; }
+  .student-count-history-title small { color: #94a3b8; font-size: 10.5px; font-weight: 700; }
+  .student-count-history-scroll { max-height: 210px; overflow-x: hidden; overflow-y: auto; border: 1px solid #dbe7e2; border-radius: 10px; background: #ffffff; }
+  .student-count-history-table { width: 100%; min-width: 0; margin: 0; table-layout: fixed; border-collapse: collapse; border-radius: 0; box-shadow: none; font-size: 11.5px; text-align: center; font-variant-numeric: tabular-nums; }
+  .student-count-history-table th { position: sticky; top: 0; z-index: 1; padding: 8px 3px; background: #eff8f4; color: #426258; font-weight: 800; white-space: nowrap; }
+  .student-count-history-table th:first-child { width: 32%; }
+  .student-count-history-table td { padding: 9px 3px; border-top: 1px solid #edf2f0; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .student-count-history-table td:first-child { text-align: center; }
+  .student-count-history-table td em { display: inline-block; margin-left: 5px; padding: 2px 5px; border-radius: 999px; background: #059669; color: #ffffff; font-size: 9px; font-style: normal; font-weight: 900; }
+  .student-count-history-table tr.is-latest td { background: #f3fbf7; color: #174c3c; }
+  .student-count-history-table td strong { color: #064e3b; }
+  .student-count-edit-btn { display: block; margin: 14px auto 0; padding: 7px 13px; border: 1px solid #b9d8cc; border-radius: 8px; background: #ffffff; color: #047857; font-size: 12px; font-weight: 800; cursor: pointer; }
+  .student-count-form { display: grid; gap: 14px; }
+  .student-count-form label { display: grid; gap: 6px; color: #334155; font-size: 13px; font-weight: 800; }
+  .student-count-form input { width: 100%; box-sizing: border-box; padding: 10px 11px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; }
+  .student-count-form-grades { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .student-count-edit-history { max-height: 180px; overflow-y: auto; border: 1px solid #dbe7e2; border-radius: 9px; }
+  .student-count-edit-row { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 7px; padding: 8px 9px; border-bottom: 1px solid #edf2f0; font-size: 12px; }
+  .student-count-edit-row:last-child { border-bottom: 0; }
+  .student-count-edit-row span { color: #475569; }
+  .student-count-edit-row strong { color: #064e3b; }
+  .student-count-edit-row button { padding: 5px 7px; border-radius: 6px; background: #ffffff; font-size: 11px; font-weight: 800; cursor: pointer; }
+  .student-count-edit-row button.edit { border: 1px solid #86bfa9; color: #047857; }
+  .student-count-edit-row button.delete { border: 1px solid #fca5a5; color: #dc2626; }
+  .student-count-edit-empty { padding: 15px; color: #94a3b8; font-size: 12px; text-align: center; }
+  .student-count-form-heading { display: flex; align-items: center; justify-content: space-between; padding-top: 4px; }
+  .student-count-form-heading strong { color: #1f473a; font-size: 13px; }
+  .student-count-form-heading button { border: 0; background: transparent; color: #059669; font-size: 11px; font-weight: 800; cursor: pointer; }
+  @media (max-width: 520px) { #studentCountMod .student-count-panel { width: 94vw; padding: 28px 12px 18px; } .student-count-total { margin-top: 18px; } .student-count-total strong { font-size: 36px; } .student-count-grades { gap: 6px; } .student-count-grade { grid-template-columns: 1fr; justify-items: center; padding: 14px 7px; } .student-count-history-table { font-size: 10px; } .student-count-history-table th, .student-count-history-table td { padding-left: 2px; padding-right: 2px; } .student-count-history-table td em { display: block; width: max-content; margin: 3px auto 0; } .student-count-form-grades { grid-template-columns: 1fr; } }
+
   /* 하단 교육기관 배너: 데스크톱 한 줄에 4개가 들어가는 공식 포털형 규격 */
   .institution-links { margin: 34px 0 14px; padding-top: 20px; border-top: 1px solid #dbe3ee; }
   .institution-links-heading { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
@@ -758,6 +813,10 @@
     .meal-inline-left { flex: 1 1 100%; min-width: 0; padding: 0; }
     .shortcut-cluster { display: flex; flex-wrap: nowrap; flex: 1 1 100%; justify-content: center; gap: 6px; }
     #scRecordBtn, #scFormsBtn, .shortcut-empty { display: none; }
+    #scTimetableBtn { order: 1; }
+    #studentCountBtn { order: 2; }
+    #scAudiBtn { order: 3; }
+    #scAfterSchoolBtn { order: 4; }
     .shortcut-link { padding: 6px 8px; font-size: 11px; gap: 4px; }
     .shortcut-link i { font-size: 12px; }
     .institution-links { margin-top: 26px; }
@@ -783,9 +842,7 @@
     .search-center { order: 1; flex: 0 0 auto; flex-wrap: nowrap; justify-content: center; gap: 5px; }
     .search-box .grade-filter { order: 2; flex: 0 0 auto; flex-wrap: nowrap; justify-content: center; }
     .search-spacer { display: none; }
-    #ySel, #mSel { display: inline-block; }
-    #wSel { display: inline-block; }
-    #searchBtn { display: inline-block; }
+    #ySel, #mSel, #wSel, #searchBtn { display: none; }
     #gradeFilter { display: flex; }
     .cal-heading-row { display: none; }
 
@@ -825,10 +882,14 @@
        절반 지점부터 시작하도록 합니다. 이때 ul이 박스 전체 폭을 차지해야 하므로 width:100%를 줍니다.
        (박스가 flex라서 ul을 펴주지 않으면 내용 폭만큼만 차지해 1fr 1fr이 무의미해집니다.)
        왼쪽 열(첫째 줄)은 그대로 왼쪽 정렬로 보입니다. */
-    .meal-inline-menu { width: 100%; grid-template-columns: 1fr 1fr; column-gap: 0; }
+    .meal-inline-left { align-items: stretch; }
+    .meal-inline-wrap { display: block; width: 100%; max-width: none; }
+    .meal-inline-label { justify-content: flex-start; padding-left: 14px; }
+    .meal-inline-menu { width: 100%; grid-template-columns: 1fr 1fr; column-gap: 0; justify-content: stretch; }
+    .meal-inline-menu li:nth-child(even) { padding-left: 0; }
     /* 이제 급식 카드가 한 줄 전체를 혼자 차지하므로(옆에 버튼이 없음), 높이를 특정 버튼 묶음에
        맞출 필요 없이 내용에 맞게 자연스럽게 늘어나도록 최소 높이만 둡니다. */
-    .meal-card-box { display: flex; width: 100%; box-sizing: border-box; align-items: center; min-height: 90px; }
+    .meal-card-box { display: flex; width: 100%; box-sizing: border-box; align-items: center; min-height: 90px; touch-action: pan-y; }
 
     /* 6) 전체 시간표 조회 모달: 표 복사하기/인쇄하기는 조회 전용 화면에서는 숨기고,
        나머지 줄들의 정렬을 정리합니다 (학년탭: 가운데+한줄 / 학년·반 검색: 가운데 / 축소·확대: 오른쪽). */

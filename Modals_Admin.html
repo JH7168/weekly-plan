@@ -78,6 +78,49 @@
   </div>
 </div>
 
+<!-- 학생수 현황: 기준일과 학년별 재학생 수를 한눈에 확인합니다. -->
+<div id="studentCountMod" class="modal">
+  <div class="modal-content student-count-panel">
+    <button type="button" class="student-count-close" onclick="closeMod('studentCountMod')" aria-label="닫기">&times;</button>
+    <div id="studentCountEmpty" class="student-count-empty" style="display:none;">등록된 학생수 현황이 없습니다.</div>
+    <div id="studentCountHistoryWrap" class="student-count-history-wrap" style="display:none;">
+      <div class="student-count-history-scroll">
+        <table class="student-count-history-table">
+          <thead><tr><th>기준일</th><th>1학년</th><th>2학년</th><th>3학년</th><th>전체</th></tr></thead>
+          <tbody id="studentCountHistoryBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <button type="button" class="student-count-edit-btn" onclick="openStudentCountEdit()"><i class="fas fa-pen"></i> 현황 수정</button>
+  </div>
+</div>
+
+<!-- 학생수 현황 관리자 수정 -->
+<div id="studentCountEditMod" class="modal" style="z-index:10005;">
+  <div class="modal-content" style="max-width:430px; position:relative;">
+    <button type="button" class="student-count-close" onclick="closeMod('studentCountEditMod')" aria-label="닫기">&times;</button>
+    <h3 style="text-align:center; margin-top:0;">학생수 이력 관리</h3>
+    <div class="student-count-form">
+      <label>관리자 비밀번호<input id="studentCountAdminPw" type="password" autocomplete="current-password" placeholder="관리자 비밀번호"></label>
+      <div id="studentCountEditHistory" class="student-count-edit-history"></div>
+      <div class="student-count-form-heading">
+        <strong id="studentCountFormTitle">새 기준일 등록</strong>
+        <button type="button" onclick="resetStudentCountEditForm()">새로 입력</button>
+      </div>
+      <label>기준일<input id="studentCountDate" type="date"></label>
+      <div class="student-count-form-grades">
+        <label>1학년<input id="studentCountInput1" type="number" min="0" step="1" inputmode="numeric"></label>
+        <label>2학년<input id="studentCountInput2" type="number" min="0" step="1" inputmode="numeric"></label>
+        <label>3학년<input id="studentCountInput3" type="number" min="0" step="1" inputmode="numeric"></label>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn-cancel" style="flex:1; margin:0;" onclick="closeMod('studentCountEditMod')">취소</button>
+      <button id="studentCountSaveBtn" class="btn-search" style="flex:1; margin:0; background:#059669;" onclick="saveStudentCountStatus()">등록</button>
+    </div>
+  </div>
+</div>
+
 <!-- 건의함(사용자 제출): 제목 + 내용 -->
 <div id="suggestBoxMod" class="modal">
   <div class="modal-content" style="max-width:460px; position:relative;">
@@ -159,6 +202,174 @@
     { key: 'record_example', label: '과세특 작성 예시' },
     { key: 'record_excel_check', label: '엑셀 점검 자료' }
   ];
+
+  let studentCountCache = null;
+  let editingStudentCountId = '';
+
+  function openStudentCountMod() {
+    // 창은 즉시 열고, 서버 데이터는 뒤에서 조용히 갱신합니다.
+    if (studentCountCache) renderStudentCountStatus(studentCountCache);
+    openMod('studentCountMod');
+    animateStudentCountPanelFromButton();
+    g.withSuccessHandler(data => {
+      studentCountCache = data || null;
+      renderStudentCountStatus(studentCountCache);
+    }).withFailureHandler(err => {
+      if (!studentCountCache) {
+        document.getElementById('studentCountEmpty').textContent = '학생수 현황을 불러오지 못했습니다.';
+        document.getElementById('studentCountEmpty').style.display = 'block';
+      }
+    }).getStudentCountStatus();
+  }
+
+  function preloadStudentCountStatus() {
+    g.withSuccessHandler(data => {
+      studentCountCache = data || null;
+      renderStudentCountStatus(studentCountCache);
+    }).getStudentCountStatus();
+  }
+  window.addEventListener('load', () => setTimeout(preloadStudentCountStatus, 300));
+
+  function animateStudentCountPanelFromButton() {
+    const modal = document.getElementById('studentCountMod');
+    const panel = modal && modal.querySelector('.student-count-panel');
+    const button = document.getElementById('studentCountBtn');
+    if (!modal || !panel || !button) return;
+    requestAnimationFrame(() => {
+      const buttonRect = button.getBoundingClientRect();
+      const panelRect = panel.getBoundingClientRect();
+      panel.style.setProperty('--student-origin-x', `${buttonRect.left + buttonRect.width / 2 - panelRect.left}px`);
+      panel.style.setProperty('--student-origin-y', `${buttonRect.top + buttonRect.height / 2 - panelRect.top}px`);
+      modal.classList.remove('student-count-opening');
+      void modal.offsetWidth;
+      modal.classList.add('student-count-opening');
+      setTimeout(() => modal.classList.remove('student-count-opening'), 430);
+    });
+  }
+
+  function renderStudentCountStatus(data) {
+    const hasData = data && data.date;
+    document.getElementById('studentCountEmpty').style.display = hasData ? 'none' : 'block';
+    const history = hasData && Array.isArray(data.history)
+      ? data.history.filter(item => item && (item.dateLabel || item.date))
+      : [];
+    document.getElementById('studentCountHistoryWrap').style.display = history.length ? 'block' : 'none';
+    const safeCount = value => {
+      const number = Number(value);
+      return Number.isFinite(number) && number >= 0 ? number : 0;
+    };
+    const historyValue = (item, grade) => safeCount(
+      item && item['grade' + grade] != null ? item['grade' + grade]
+        : (item && item['g' + grade] != null ? item['g' + grade] : item && item['grade' + grade + 'Count'])
+    );
+    document.getElementById('studentCountHistoryBody').innerHTML = history.map((item, index) => {
+      item = item || {};
+      const grade1 = historyValue(item, 1);
+      const grade2 = historyValue(item, 2);
+      const grade3 = historyValue(item, 3);
+      const total = grade1 + grade2 + grade3;
+      const dateLabel = item.dateLabel || String(item.date || '').replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1. $2. $3.');
+      const latestBadge = index === 0 ? '<em>현재</em>' : '';
+      return '<tr class="' + (index === 0 ? 'is-latest' : '') + '">'
+        + '<td><span>' + (dateLabel || '-') + '</span>' + latestBadge + '</td>'
+        + '<td>' + grade1.toLocaleString('ko-KR') + '명</td>'
+        + '<td>' + grade2.toLocaleString('ko-KR') + '명</td>'
+        + '<td>' + grade3.toLocaleString('ko-KR') + '명</td>'
+        + '<td><strong>' + total.toLocaleString('ko-KR') + '명</strong></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function openStudentCountEdit() {
+    document.getElementById('studentCountAdminPw').value = '';
+    resetStudentCountEditForm();
+    renderStudentCountEditHistory();
+    openMod('studentCountEditMod');
+    setTimeout(() => document.getElementById('studentCountAdminPw').focus(), 100);
+  }
+
+  function renderStudentCountEditHistory() {
+    const history = studentCountCache && Array.isArray(studentCountCache.history) ? studentCountCache.history : [];
+    const container = document.getElementById('studentCountEditHistory');
+    container.innerHTML = history.length ? history.map((item, index) =>
+      '<div class="student-count-edit-row">'
+        + '<span>' + item.dateLabel + '</span>'
+        + '<strong>' + Number(item.total).toLocaleString('ko-KR') + '명</strong>'
+        + '<button type="button" class="edit" onclick="editStudentCountEntry(' + index + ')">수정</button>'
+        + '<button type="button" class="delete" onclick="removeStudentCountEntry(' + index + ')">삭제</button>'
+        + '</div>'
+    ).join('') : '<div class="student-count-edit-empty">등록된 이력이 없습니다.</div>';
+  }
+
+  function resetStudentCountEditForm() {
+    editingStudentCountId = '';
+    document.getElementById('studentCountFormTitle').textContent = '새 기준일 등록';
+    document.getElementById('studentCountSaveBtn').textContent = '등록';
+    document.getElementById('studentCountDate').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('studentCountInput1').value = '';
+    document.getElementById('studentCountInput2').value = '';
+    document.getElementById('studentCountInput3').value = '';
+  }
+
+  function editStudentCountEntry(index) {
+    const item = studentCountCache && studentCountCache.history && studentCountCache.history[index];
+    if (!item) return;
+    editingStudentCountId = item.id;
+    document.getElementById('studentCountFormTitle').textContent = `${item.dateLabel} 이력 수정`;
+    document.getElementById('studentCountSaveBtn').textContent = '수정 저장';
+    document.getElementById('studentCountDate').value = item.date;
+    document.getElementById('studentCountInput1').value = item.grade1;
+    document.getElementById('studentCountInput2').value = item.grade2;
+    document.getElementById('studentCountInput3').value = item.grade3;
+  }
+
+  function removeStudentCountEntry(index) {
+    const item = studentCountCache && studentCountCache.history && studentCountCache.history[index];
+    const pw = document.getElementById('studentCountAdminPw').value;
+    if (!item) return;
+    if (!pw) { showAlert('먼저 관리자 비밀번호를 입력해주세요.'); return; }
+    showConfirm(`${item.dateLabel} 학생수 이력을 삭제하시겠습니까?`, () => {
+      toggleLoading(true, '학생수 이력을 삭제하는 중...');
+      g.withSuccessHandler(res => {
+        toggleLoading(false);
+        if (!res || !res.success) { showAlert((res && res.message) || '삭제하지 못했습니다.'); return; }
+        studentCountCache = res.data;
+        renderStudentCountStatus(studentCountCache);
+        renderStudentCountEditHistory();
+        resetStudentCountEditForm();
+      }).withFailureHandler(() => {
+        toggleLoading(false);
+        showAlert('학생수 이력을 삭제하지 못했습니다.');
+      }).deleteStudentCountStatus(pw, item.id);
+    });
+  }
+
+  function saveStudentCountStatus() {
+    const pw = document.getElementById('studentCountAdminPw').value;
+    const payload = {
+      entryId: editingStudentCountId,
+      date: document.getElementById('studentCountDate').value,
+      grade1: document.getElementById('studentCountInput1').value,
+      grade2: document.getElementById('studentCountInput2').value,
+      grade3: document.getElementById('studentCountInput3').value
+    };
+    if (!pw || !payload.date || [payload.grade1, payload.grade2, payload.grade3].some(v => v === '')) {
+      showAlert('관리자 비밀번호, 기준일, 학년별 인원을 모두 입력해주세요.');
+      return;
+    }
+    toggleLoading(true, '학생수 현황을 저장하는 중...');
+    g.withSuccessHandler(res => {
+      toggleLoading(false);
+      if (!res || !res.success) { showAlert((res && res.message) || '저장하지 못했습니다.'); return; }
+      studentCountCache = res.data;
+      renderStudentCountStatus(studentCountCache);
+      closeMod('studentCountEditMod');
+      showAlert('학생수 현황을 저장했습니다.');
+    }).withFailureHandler(err => {
+      toggleLoading(false);
+      showAlert('학생수 현황을 저장하지 못했습니다.');
+    }).saveStudentCountStatus(pw, payload);
+  }
 
   // 관리자 패널도 서식/학교생활기록부로 구분해서 보여줍니다.
   const ADMIN_SECTIONS = {
