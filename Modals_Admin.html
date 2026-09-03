@@ -78,7 +78,7 @@
   </div>
 </div>
 
-<!-- 학생수 현황: 기준일과 학년별 재학생 수를 한눈에 확인합니다. -->
+<!-- 학생수 현황: 수정 날짜과 학년별 재학생 수를 한눈에 확인합니다. -->
 <div id="studentCountMod" class="modal">
   <div class="modal-content student-count-panel">
     <button type="button" class="student-count-close" onclick="closeMod('studentCountMod')" aria-label="닫기">&times;</button>
@@ -86,7 +86,7 @@
     <div id="studentCountHistoryWrap" class="student-count-history-wrap" style="display:none;">
       <div class="student-count-history-scroll">
         <table class="student-count-history-table">
-          <thead><tr><th>기준일</th><th>1학년</th><th>2학년</th><th>3학년</th><th>전체</th></tr></thead>
+          <thead><tr><th>수정 날짜</th><th>1학년</th><th>2학년</th><th>3학년</th><th>전체</th></tr></thead>
           <tbody id="studentCountHistoryBody"></tbody>
         </table>
       </div>
@@ -104,10 +104,10 @@
       <label>관리자 비밀번호<input id="studentCountAdminPw" type="password" autocomplete="current-password" placeholder="관리자 비밀번호"></label>
       <div id="studentCountEditHistory" class="student-count-edit-history"></div>
       <div class="student-count-form-heading">
-        <strong id="studentCountFormTitle">새 기준일 등록</strong>
+        <strong id="studentCountFormTitle">새 수정 날짜 등록</strong>
         <button type="button" onclick="resetStudentCountEditForm()">새로 입력</button>
       </div>
-      <label>기준일<input id="studentCountDate" type="date"></label>
+      <label>수정 날짜<input id="studentCountDate" type="date"></label>
       <div class="student-count-form-grades">
         <label>1학년<input id="studentCountInput1" type="number" min="0" step="1" inputmode="numeric"></label>
         <label>2학년<input id="studentCountInput2" type="number" min="0" step="1" inputmode="numeric"></label>
@@ -303,7 +303,7 @@
 
   function resetStudentCountEditForm() {
     editingStudentCountId = '';
-    document.getElementById('studentCountFormTitle').textContent = '새 기준일 등록';
+    document.getElementById('studentCountFormTitle').textContent = '새 수정 날짜 등록';
     document.getElementById('studentCountSaveBtn').textContent = '등록';
     document.getElementById('studentCountDate').value = new Date().toISOString().slice(0, 10);
     document.getElementById('studentCountInput1').value = '';
@@ -354,7 +354,7 @@
       grade3: document.getElementById('studentCountInput3').value
     };
     if (!pw || !payload.date || [payload.grade1, payload.grade2, payload.grade3].some(v => v === '')) {
-      showAlert('관리자 비밀번호, 기준일, 학년별 인원을 모두 입력해주세요.');
+      showAlert('관리자 비밀번호, 수정 날짜, 학년별 인원을 모두 입력해주세요.');
       return;
     }
     toggleLoading(true, '학생수 현황을 저장하는 중...');

@@ -339,6 +339,32 @@
     el.w().innerHTML = html;
   }
 
+  // 모바일 주차 네비: 'N월 N주차' 라벨 갱신 + 좌우 화살표로 주차 이동(달 경계는 이전/다음 달로 넘어감).
+  function updateMobileWeekLabel() {
+    const lab = document.getElementById('mobileWeekLabel');
+    if (lab) lab.textContent = `${parseInt(el.m().value) || ''}월 ${parseInt(el.w().value) || 1}주차`;
+  }
+  function gotoMobileWeek(y, m, w) {
+    el.y().value = String(y);
+    el.m().value = String(m);
+    upWeeks();               // 그 달의 주차 옵션 다시 채우고
+    el.w().value = String(w); // 원하는 주차로 지정
+    loadAll();
+  }
+  function mobileWeekNext() {
+    let y = parseInt(el.y().value), m = parseInt(el.m().value), w = parseInt(el.w().value) || 1;
+    const weeksInMonth = getWeekMondaysForMonth(y, m).length;
+    if (w < weeksInMonth) { w += 1; }
+    else { m += 1; if (m > 12) { m = 1; y += 1; } w = 1; }
+    gotoMobileWeek(y, m, w);
+  }
+  function mobileWeekPrev() {
+    let y = parseInt(el.y().value), m = parseInt(el.m().value), w = parseInt(el.w().value) || 1;
+    if (w > 1) { w -= 1; }
+    else { m -= 1; if (m < 1) { m = 12; y -= 1; } w = getWeekMondaysForMonth(y, m).length; }
+    gotoMobileWeek(y, m, w);
+  }
+
   // 2. 데이터 조회 및 가로 막대(Gantt) 시간표 렌더링
   // PC는 이제 "그 달 전체"(주차들을 세로로 이어붙인 달력)를 보여주고, 모바일은 기존처럼 한 주만 보여줍니다.
   let currentWeekSchedule = []; // (모바일용) 현재 주차 날짜 데이터 보관
@@ -443,6 +469,7 @@
 
   function loadAll() {
     const y = el.y().value, m = el.m().value, w = el.w().value;
+    updateMobileWeekLabel(); // 모바일 주차 네비 라벨을 현재 주차로 맞춥니다.
     toggleLoading(true, "조회 중...");
 
     // 자동 새로고침(탭 복귀 등)일 때는 지금 보고 있던 주차 필터/요일을 그대로 유지합니다.
@@ -453,38 +480,21 @@
     _preserveViewOnLoad = false;
 
     if (isMobileLayout()) {
-      const firstTarget = getRelativeWeekSelection(0);
-      const secondTarget = getRelativeWeekSelection(1);
-      let firstWeek = null, secondWeek = null, failed = false;
-      const finishMobileLoad = () => {
-        if (failed || !firstWeek || !secondWeek) return;
+      // 모바일: 위 주차 네비(N월 N주차)로 고른 '한 주'만 조회해서 보여줍니다.
+      g.withSuccessHandler(res => {
         toggleLoading(false);
-        // 두 주 사이의 토·일 자리를 비워 두어 다음 주 월요일의 실제 날짜 계산이 어긋나지 않게 합니다.
-        currentWeekSchedule = (firstWeek.schedule || []).concat(
-          [{ date: '', content: '' }, { date: '', content: '' }],
-          secondWeek.schedule || []
-        );
-        currentWeekWorkList = mergeMobileWeekLists(firstWeek.list, secondWeek.list);
-        currentWeekAnnualDetails = mergeMobileAnnualDetails(firstWeek.annualDetails, secondWeek.annualDetails);
-        currentWeekSTime = firstWeek.sTime;
-
-        document.getElementById('printTitle').innerText = '이번 주·다음 주 계획서';
-        renderWeekRangeInfo(firstTarget.y);
-        updateMonthYearHeading(firstTarget.y, firstTarget.m);
+        currentWeekSchedule = res.schedule || [];
+        currentWeekWorkList = res.list || [];
+        currentWeekAnnualDetails = res.annualDetails || [];
+        currentWeekSTime = res.sTime;
+        document.getElementById('printTitle').innerText = `${y}년 ${m}월 ${w}주차 주간 계획서`;
+        renderWeekRangeInfo(y);
+        updateMonthYearHeading(y, m);
         renderFilteredWeek(activeFilterIndices);
-      };
-      const failMobileLoad = err => {
-        if (failed) return;
-        failed = true;
+      }).withFailureHandler(err => {
         toggleLoading(false);
         showAlert('데이터를 불러오는 중 오류가 발생했습니다.\n' + (err && err.message ? err.message : err));
-      };
-      g.withSuccessHandler(res => { firstWeek = res; finishMobileLoad(); })
-        .withFailureHandler(failMobileLoad)
-        .getCombinedData(firstTarget.y, firstTarget.m, firstTarget.w);
-      g.withSuccessHandler(res => { secondWeek = res; finishMobileLoad(); })
-        .withFailureHandler(failMobileLoad)
-        .getCombinedData(secondTarget.y, secondTarget.m, secondTarget.w);
+      }).getCombinedData(y, m, w);
     } else {
       g.withSuccessHandler(res => {
         toggleLoading(false);

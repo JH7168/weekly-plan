@@ -125,7 +125,7 @@
   .shortcut-link:hover { background: var(--accent); color: #ffffff; }
 
   /* 학생수 현황판: 학교 행정 대시보드처럼 기준일과 합계를 가장 먼저 읽히게 구성합니다. */
-  #studentCountMod .student-count-panel { position: relative; width: min(560px, 94vw); max-width: 560px; padding: 28px 22px 20px; overflow: hidden; background: #ffffff; border: 1px solid #d7e5df; box-shadow: 0 18px 44px rgba(15,45,36,0.18); }
+  #studentCountMod .student-count-panel { position: relative; width: min(560px, 94vw); max-width: 560px; padding: 46px 22px 20px; overflow: hidden; background: #ffffff; border: 1px solid #d7e5df; box-shadow: 0 18px 44px rgba(15,45,36,0.18); }
   #studentCountMod .student-count-panel::before { display: none; }
   .student-count-close { position: absolute; top: 6px; right: 9px; z-index: 2; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; }
   .student-count-close:hover { background: #f1f5f9; color: #334155; }
@@ -328,6 +328,8 @@
   #searchBtn { display: none; }
   /* 년/월 드롭다운도 PC에서는 위 큰 제목의 ◀▶ 화살표로 옮기므로 필요 없어 숨기고, 모바일에서만 보여줍니다. */
   #ySel, #mSel { display: none; }
+  /* 모바일 전용 주차 네비는 PC에서는 숨깁니다(PC는 월간 달력 사용). */
+  .mobile-week-nav { display: none; }
   /* 학년 필터(검색창 안쪽 사본)는 PC에서는 큰 제목 옆의 사본을 대신 쓰므로 숨기고, 모바일에서만 보여줍니다. */
   #gradeFilter { display: none; }
 
@@ -845,6 +847,11 @@
     #ySel, #mSel, #wSel, #searchBtn { display: none; }
     #gradeFilter { display: flex; }
     .cal-heading-row { display: none; }
+    /* 모바일 전용: 'N월 N주차' + 좌우 화살표 주차 네비 */
+    .mobile-week-nav { display: inline-flex; align-items: center; gap: 10px; }
+    .mweek-arrow { border: 1px solid #cbd5e1; background: #fff; color: var(--primary); width: 34px; height: 34px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; line-height: 1; }
+    .mweek-arrow:active { background: #eff6ff; }
+    .mweek-label { font-size: 15px; font-weight: 800; color: #1e293b; min-width: 96px; text-align: center; white-space: nowrap; }
 
     .search-box select { padding: 6px 4px; font-size: 12.5px; }
     .search-box select#ySel { width: 78px; }

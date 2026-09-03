@@ -157,9 +157,15 @@
         <div class="search-center">
           <select id="ySel" onchange="onYearMonthChange()"></select>
           <select id="mSel" onchange="onYearMonthChange()"></select>
-          <!-- 주차 선택: PC는 한 달 전체를 보여주므로 숨기고, 모바일에서만(조회 전용 화면) 씁니다. -->
+          <!-- 주차 선택(상태 보관용, 숨김) + 조회 버튼: 모바일에선 아래 주차 네비로 대체합니다. -->
           <select id="wSel"></select>
           <button id="searchBtn" class="btn-search" onclick="loadAll()">조회</button>
+          <!-- 모바일 전용: 'N월 N주차' 라벨 + 좌우 화살표로 주차를 넘겨봅니다. -->
+          <div id="mobileWeekNav" class="mobile-week-nav">
+            <button type="button" class="mweek-arrow" onclick="mobileWeekPrev()" aria-label="이전 주차">◀</button>
+            <span id="mobileWeekLabel" class="mweek-label"></span>
+            <button type="button" class="mweek-arrow" onclick="mobileWeekNext()" aria-label="다음 주차">▶</button>
+          </div>
         </div>
         <!-- 학년 필터(모바일용): PC에서는 아래 큰 제목 옆의 사본을 대신 쓰므로 숨깁니다. -->
         <div class="grade-filter grade-filter-group" id="gradeFilter">
