@@ -90,6 +90,7 @@
           <tbody id="studentCountHistoryBody"></tbody>
         </table>
       </div>
+      <p class="student-count-note"><span style="color:#dc2626; font-weight:700;">9. 1.자 학생수 현황</span>은 <span style="text-decoration:underline;">8. 31.의 학생수 현황과 같습니다.</span></p>
     </div>
     <button type="button" class="student-count-edit-btn" onclick="openStudentCountEdit()"><i class="fas fa-pen"></i> 현황 수정</button>
   </div>
@@ -247,6 +248,21 @@
     });
   }
 
+  // 학생수 현황 날짜를 'M. D.(요일)' 형식으로 표시합니다. (예: 2026-09-02 → 9. 2.(수))
+  function fmtStudentDate_(item) {
+    let y, mo, d;
+    const raw = String((item && item.date) || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (raw) { y = +raw[1]; mo = +raw[2]; d = +raw[3]; }
+    else {
+      const lab = String((item && item.dateLabel) || '').match(/(\d{4})\s*\.\s*(\d{1,2})\s*\.\s*(\d{1,2})/);
+      if (!lab) return (item && item.dateLabel) || '-';
+      y = +lab[1]; mo = +lab[2]; d = +lab[3];
+    }
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    const dow = days[new Date(y, mo - 1, d).getDay()];
+    return y + '. ' + mo + '. ' + d + '.(' + dow + ')';
+  }
+
   function renderStudentCountStatus(data) {
     const hasData = data && data.date;
     document.getElementById('studentCountEmpty').style.display = hasData ? 'none' : 'block';
@@ -268,7 +284,7 @@
       const grade2 = historyValue(item, 2);
       const grade3 = historyValue(item, 3);
       const total = grade1 + grade2 + grade3;
-      const dateLabel = item.dateLabel || String(item.date || '').replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1. $2. $3.');
+      const dateLabel = fmtStudentDate_(item);
       const latestBadge = index === 0 ? '<em>현재</em>' : '';
       return '<tr class="' + (index === 0 ? 'is-latest' : '') + '">'
         + '<td><span>' + (dateLabel || '-') + '</span>' + latestBadge + '</td>'

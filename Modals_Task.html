@@ -113,6 +113,21 @@
   </div>
 </div>
 
+<!-- 부서명 직접 입력('+' 버튼) -->
+<div id="customDeptMod" class="modal" style="z-index:10001;">
+  <div class="modal-content" style="max-width:360px;">
+    <h3 style="text-align:center; margin-top:0;">부서명 직접 입력</h3>
+    <p style="text-align:center; color:#64748b; font-size:13px; margin:0 0 14px;">목록에 없는 부서명을 입력하세요.</p>
+    <input type="text" id="customDeptInput" maxlength="20" placeholder="예: 도서관, 위(Wee)클래스"
+      style="width:100%; padding:11px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box; outline:none;"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();confirmCustomDept();}">
+    <div style="display:flex; gap:10px; margin-top:18px;">
+      <button class="btn-cancel" style="flex:1; margin:0;" onclick="closeMod('customDeptMod')">취소</button>
+      <button class="btn-search" style="flex:1; margin:0;" onclick="confirmCustomDept()">확인</button>
+    </div>
+  </div>
+</div>
+
 <div id="notMod" class="modal">
   <div class="modal-content">
     <h3 style="color:var(--notice); text-align:center">전달사항 등록</h3>
@@ -469,7 +484,8 @@
   function switchTo(t) {
     closeMod('choiceMod');
     if (t === 'workMod') {
-      document.getElementById('wzDeptGrid').innerHTML = serverData.deptList.map(d => `<button class="dept-btn" onclick="selectWzDept('${d}')">${d}</button>`).join('');
+      document.getElementById('wzDeptGrid').innerHTML = serverData.deptList.map(d => `<button class="dept-btn" onclick="selectWzDept('${d}')">${d}</button>`).join('')
+        + `<button class="dept-btn dept-add-btn" onclick="openCustomDeptInput()" title="부서명 직접 입력">+</button>`;
       document.getElementById('wzDept').value = '';
       document.getElementById('wzTitle').value = '';
       document.getElementById('wizardSingleInput').value = ''; // 통합 텍스트 에어리어 초기화
@@ -527,6 +543,19 @@
   function selectWzDept(dept) {
     document.getElementById('wzDept').value = dept;
     nextWzStep(2);
+  }
+
+  // '+' 버튼: 목록에 없는 부서명을 직접 입력합니다. (입력한 부서는 일정에서 남색으로 표시됩니다)
+  function openCustomDeptInput() {
+    document.getElementById('customDeptInput').value = '';
+    openMod('customDeptMod');
+    setTimeout(() => document.getElementById('customDeptInput').focus(), 100);
+  }
+  function confirmCustomDept() {
+    const name = (document.getElementById('customDeptInput').value || '').trim();
+    if (!name) { showAlert('부서명을 입력해주세요.'); return; }
+    closeMod('customDeptMod');
+    selectWzDept(name);
   }
 
   function nextWzStep(stepNum) {

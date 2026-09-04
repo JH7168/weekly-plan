@@ -688,7 +688,7 @@
     '체육인성부': '#22c55e', '진로상담부': '#d97706', '보건실': '#ec4899',
     '1학년부': '#0ea5e9', '2학년부': '#a855f7', '3학년부': '#64748b', '행정실': '#f5b026', '급식실': '#16a34a'
   };
-  function deptHeaderColor(name) { return DEPT_COLORS[name] || '#64748b'; }
+  function deptHeaderColor(name) { return DEPT_COLORS[name] || '#1e3a8a'; } // 목록에 없는(직접 입력) 부서는 남색
 
   // 부서 업무 항목에서 '제목'만 뽑습니다: 선생님들이 보통 첫 줄에 제목을 쓰므로 첫 줄만 쓰고,
   // '[', ']' 기호만 지웁니다(안의 글자는 그대로 둡니다).
@@ -793,6 +793,7 @@
             + (isEventRow ? ' cal-event-bar' : '')
             + (!isEventRow && popupLabel === '행정실' ? ' dept-haengjeong' : '')
             + (!isEventRow && popupLabel === '급식실' ? ' dept-gupsik' : '')
+            + (!isEventRow && popupLabel && !DEPT_COLORS[popupLabel] ? ' dept-custom' : '')
             + (startsHere ? '' : ' bar-open-start')
             + (endsHere ? ' bar-cap-end' : '');
           // 이 항목이 실제로 속한 주(연/월/주차, 수요일 기준)를 함께 저장해, 월경계 주(예: 8/31~9/4=9월1주차)의
