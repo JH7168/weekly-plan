@@ -3,11 +3,10 @@
   <div class="modal-content" style="text-align:center; max-width:340px; width:100%;">
     <div style="font-size:34px; line-height:1; margin-bottom:12px;">📢</div>
     <h3 style="margin-top:0; margin-bottom:12px;">안내</h3>
-    <p style="margin:0 0 8px; font-weight:bold; color:#333;">이 프로그램은 나이스(NEIS)와 연동되어 있지 않습니다.</p>
+    <p style="margin:0 0 8px; font-weight:bold; color:#333;">나이스(NEIS)와 연동되지 않음.</p>
     <p style="margin:0 0 20px; font-size:13.5px; color:#64748b; line-height:1.6;">
-      여기서 작성한 결보강 계획서는 나이스에 자동으로 반영되지 않으며,<br>
-      수업 교체·복무 사용 여부도 확인되지 않습니다.<br>
-      결강·보강 및 복무 신청은 반드시 나이스에서 직접 확인·진행해 주세요.
+      1. 복무 상황은 나이스(NEIS)에서 확인.<br>
+      2. 사전 수업 교체 내용은 파악할 수 없음.
     </p>
     <button class="btn-search" style="width:100%;" onclick="closeMod('resubNeisNoticeMod')">확인했습니다</button>
   </div>
@@ -28,7 +27,7 @@
       <div class="rs-step-title" style="margin-bottom:18px;">기본 정보</div>
       <div class="field" style="position:relative;">
         <label>신청 교사명</label>
-        <input type="text" id="rsTeacherInput" placeholder="예: 박정환" autocomplete="off">
+        <input type="text" id="rsTeacherInput" placeholder="예: 홍길동" autocomplete="off">
         <div id="rsTeacherSuggest" style="display:none; position:absolute; left:0; right:0; top:100%; background:#fff; border:1px solid #cbd5e1; border-radius:8px; margin-top:4px; max-height:180px; overflow-y:auto; z-index:20; box-shadow:0 6px 16px rgba(0,0,0,0.12);"></div>
       </div>
       <div class="field">
@@ -434,7 +433,13 @@
     const q = this.value.trim();
     const box = document.getElementById('rsTeacherSuggest');
     if (!q) { box.style.display = 'none'; return; }
-    const matches = rsGetAllTeacherNames().filter(t => t.startsWith(q)).slice(0, 8);
+    const teacherNames = rsGetAllTeacherNames();
+    if (teacherNames.includes(q)) {
+      box.innerHTML = '';
+      box.style.display = 'none';
+      return;
+    }
+    const matches = teacherNames.filter(t => t.startsWith(q)).slice(0, 8);
     if (matches.length === 0) { box.style.display = 'none'; return; }
     box.innerHTML = matches.map(t =>
       `<div class="rs-teacher-suggest-item" onclick="rsPickTeacherSuggest('${t}')">${t}</div>`

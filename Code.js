@@ -78,7 +78,6 @@ function refreshCaches() {
 }
 
 // --- 관리자 자료실 (서식/학교생활기록부 자료 업로드·다운로드) ---
-const ADMIN_PASSWORD = 'HY4312';
 const MATERIALS_FOLDER_NAME = '주간계획서_자료실';
 const SCHEDULE_ATTACHMENTS_FOLDER_NAME = '주간계획서_일정첨부';
 const SCHEDULE_ATTACHMENT_MAX_BYTES = 30 * 1024 * 1024;
@@ -89,7 +88,8 @@ const SCHEDULE_ATTACHMENT_EXTENSIONS = [
 ];
 
 function verifyAdminPassword(pw) {
-  return pw === ADMIN_PASSWORD;
+  const savedPassword = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
+  return !!savedPassword && pw === savedPassword;
 }
 
 const STUDENT_COUNT_PROPERTY = 'student_count_status';
@@ -182,10 +182,9 @@ function deleteStudentCountStatus(pw, entryId) {
 }
 
 // 교사별 시간표 조회(개인용 조회 도구)를 가볍게 잠그는 비밀번호. 실제 관리자 권한과는 무관합니다.
-const LOOKUP_PASSWORD = 'PY4312';
-
 function verifyLookupPassword(pw) {
-  return pw === LOOKUP_PASSWORD;
+  const savedPassword = PropertiesService.getScriptProperties().getProperty('LOOKUP_PASSWORD');
+  return !!savedPassword && pw === savedPassword;
 }
 
 function getMaterialsFolder_() {

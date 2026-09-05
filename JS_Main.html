@@ -319,6 +319,56 @@
     return mondays;
   }
 
+  // 등록을 마치면 등록한 날짜가 속한 주차로 이동합니다.
+  // 기간 일정이 여러 주에 걸치면 PC에서는 해당 주차를 모두 선택해 함께 보여줍니다.
+  function focusSavedScheduleRange(startIso, endIso, repeatWeeks) {
+    const parseIso = value => {
+      const parts = String(value || '').split('-').map(Number);
+      return parts.length === 3 && parts.every(Number.isFinite)
+        ? new Date(parts[0], parts[1] - 1, parts[2]) : null;
+    };
+    const mondayOf = date => {
+      const day = date.getDay();
+      const offset = day === 0 ? -6 : 1 - day;
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate() + offset);
+    };
+    const weekContext = date => {
+      const monday = mondayOf(date);
+      const wed = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 2);
+      const y = wed.getFullYear(), m = wed.getMonth() + 1;
+      const mondays = getWeekMondaysForMonth(y, m);
+      const time = monday.getTime();
+      return { y, m, w: Math.max(1, mondays.findIndex(d => d.getTime() === time) + 1), monday };
+    };
+
+    const start = parseIso(startIso);
+    const end = parseIso(endIso || startIso);
+    if (!start || !end) { loadAll(); return; }
+    if (end < start) end.setTime(start.getTime());
+    const repeats = Math.max(1, Number(repeatWeeks) || 1);
+    if (repeats > 1) end.setDate(end.getDate() + (repeats - 1) * 7);
+
+    const startCtx = weekContext(start);
+    const endMonday = mondayOf(end);
+    el.y().value = String(startCtx.y);
+    el.m().value = String(startCtx.m);
+    upWeeks();
+    el.w().value = String(startCtx.w);
+
+    if (!isMobileLayout()) {
+      const selectedWeeks = [];
+      const cursor = new Date(startCtx.monday.getTime());
+      while (cursor <= endMonday) {
+        selectedWeeks.push(cursor.getTime());
+        cursor.setDate(cursor.getDate() + 7);
+      }
+      activeWeekFilter = selectedWeeks;
+      hasAutoJumpedToThisWeek = true;
+      _preserveViewOnLoad = true;
+    }
+    loadAll();
+  }
+
   function upWeeks() {
     const d = effectiveToday();
     const y = parseInt(el.y().value), m = parseInt(el.m().value);

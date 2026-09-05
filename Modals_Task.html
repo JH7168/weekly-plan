@@ -670,7 +670,8 @@
 
     toggleLoading(true, attachmentPayloads.length ? "파일과 일정을 저장 중..." : "저장 중...");
     g.withSuccessHandler(() => {
-      toggleLoading(false); closeMod('workMod'); loadAll();
+      toggleLoading(false); closeMod('workMod');
+      focusSavedScheduleRange(wzStartD, wzEndD || wzStartD, weeks);
       showAlert(isRepeat ? `${weeks}주간 반복 등록이 완료되었습니다.` : "등록이 완료되었습니다.");
     }).withFailureHandler(err => {
       toggleLoading(false);
@@ -698,7 +699,8 @@
 
     toggleLoading(true, "저장 중...");
     g.withSuccessHandler(() => {
-      toggleLoading(false); closeMod('notMod'); loadAll();
+      toggleLoading(false); closeMod('notMod');
+      focusSavedScheduleRange(sDVal, isRange ? eDVal : sDVal, weeks);
       showAlert(isRepeat ? `${weeks}주간 반복 등록되었습니다.` : "저장됨");
     }).withFailureHandler(err => {
       toggleLoading(false);

@@ -149,7 +149,7 @@
   .grade-one { --grade-color:#2563eb; } .grade-two { --grade-color:#7c3aed; } .grade-three { --grade-color:#ea580c; }
   .student-count-empty { margin-top: 12px; color: #94a3b8; font-size: 12.5px; text-align: center; }
   .student-count-history-wrap { margin-top: 0; }
-  .student-count-note { margin: 6px 4px 0; font-size: 11.5px; color: #475569; line-height: 1.6; text-align: left; text-indent: 1em; }
+  .student-count-note { margin: 6px 4px 0; font-size: 11.5px; color: #475569; line-height: 1.6; text-align: left; text-indent: 0; }
   .student-count-history-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; color: #24483d; font-size: 13px; font-weight: 900; }
   .student-count-history-title small { color: #94a3b8; font-size: 10.5px; font-weight: 700; }
   .student-count-history-scroll { max-height: 210px; overflow-x: hidden; overflow-y: auto; border: 1px solid #dbe7e2; border-radius: 10px; background: #ffffff; }
@@ -1005,6 +1005,12 @@
   .rs-type-btn-row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
   .rs-teacher-suggest-item { padding:8px 12px; font-size:14px; cursor:pointer; }
   .rs-teacher-suggest-item:hover { background:#f0fdf4; color:#03C75A; }
+  .tl-search-autocomplete { position:relative; flex:0 0 auto; }
+  .tl-search-suggest { position:absolute; top:calc(100% + 5px); left:0; width:210px; max-height:240px; overflow-y:auto; background:#fff; border:1px solid #cbd5e1; border-radius:9px; box-shadow:0 10px 24px rgba(15,23,42,.16); z-index:40; }
+  .tl-search-suggest-item { width:100%; padding:8px 10px; border:0; border-bottom:1px solid #eef2f7; background:#fff; display:flex; align-items:center; justify-content:space-between; gap:10px; color:#1e293b; font-size:13px; text-align:left; cursor:pointer; }
+  .tl-search-suggest-item:last-child { border-bottom:0; }
+  .tl-search-suggest-item:hover, .tl-search-suggest-item:focus { background:#eff6ff; color:#2563eb; outline:none; }
+  .tl-search-suggest-type { flex:0 0 auto; padding:2px 6px; border-radius:999px; background:#e2e8f0; color:#64748b; font-size:10.5px; font-weight:700; }
   .rs-entry-del-btn { opacity:0.35; transition:opacity 0.15s; }
   .rs-entry-card:hover .rs-entry-del-btn { opacity:1; }
 

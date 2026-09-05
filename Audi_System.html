@@ -1,51 +1,88 @@
 <!-- 시청각실 주간 현황 모달 -->
+<style>
+  #audiWeeklyMod { --audi-navy:#17324d; --audi-blue:#2563a6; --audi-teal:#0f8b8d; --audi-line:#d9e4ec; --audi-soft:#f4f8fb; --audi-red:#c2414f; }
+  #audiWeeklyMod .audi-dashboard { display:flex; flex-direction:column; width:min(960px, 94vw); max-width:960px; max-height:90vh; padding:0; overflow:hidden; border:1px solid #d7e2ea; border-radius:18px; background:#fff; box-shadow:0 24px 70px rgba(22,50,77,.22); }
+  .audi-head { position:relative; display:flex; align-items:center; gap:14px; padding:22px 60px 20px 24px; background:linear-gradient(120deg,#17324d,#245578); color:#fff; }
+  .audi-head-icon { display:grid; place-items:center; width:44px; height:44px; flex:0 0 44px; border:1px solid rgba(255,255,255,.25); border-radius:13px; background:rgba(255,255,255,.1); font-size:21px; }
+  .audi-head h3 { margin:0 0 4px; color:#fff; font-size:21px; letter-spacing:-.5px; }
+  .audi-head p { margin:0; color:#d8e8f2; font-size:12.5px; }
+  .audi-close { position:absolute; top:16px; right:18px; width:34px; height:34px; border:0; border-radius:50%; background:rgba(255,255,255,.1); color:#fff; font-size:24px; line-height:1; cursor:pointer; }
+  .audi-close:hover { background:rgba(255,255,255,.2); }
+  .audi-body { display:flex; flex:1; flex-direction:column; min-height:0; padding:20px 22px 24px; }
+  .audi-toolbar { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:14px; padding:13px 14px; border:1px solid var(--audi-line); border-radius:12px; background:var(--audi-soft); }
+  .audi-period-nav,.audi-actions,.audi-legend { display:flex; align-items:center; gap:7px; }
+  .audi-period-nav select { min-height:38px; padding:7px 30px 7px 10px; border:1px solid #c7d6e1; border-radius:8px; background:#fff; color:#253d52; font-weight:700; }
+  .audi-refresh,.audi-action { min-height:38px; padding:8px 13px; border:0; border-radius:8px; color:#fff; font-weight:800; cursor:pointer; }
+  .audi-refresh { background:var(--audi-blue); }
+  .audi-action.reserve { background:var(--audi-teal); }
+  .audi-action.cancel { background:var(--audi-red); }
+  .audi-guide { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:0 2px 12px; color:#607487; font-size:12px; }
+  .audi-legend span { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+  .audi-legend i { width:10px; height:10px; border-radius:3px; }
+  .audi-legend .free { background:#e8f7f2; border:1px solid #79c8b0; }
+  .audi-legend .booked { background:#fff0f1; border:1px solid #e7a4aa; }
+  #audiTableContainer { flex:1; min-height:0; overflow:auto; border:1px solid var(--audi-line); border-radius:12px; }
+  .audi-table { width:100%; min-width:720px; border-collapse:separate; border-spacing:0; text-align:center; }
+  .audi-table th,.audi-table td { padding:12px 9px; border-right:1px solid var(--audi-line); border-bottom:1px solid var(--audi-line); }
+  .audi-table tr:last-child td { border-bottom:0; } .audi-table th:last-child,.audi-table td:last-child { border-right:0; }
+  .audi-table th { background:#eef4f8; color:#29465e; font-size:13px; }
+  .audi-table .audi-corner { width:112px; background:var(--audi-navy); color:#fff; }
+  .audi-period { background:#f7fafc; color:#334e63; font-size:13px; font-weight:800; }
+  .audi-slot { min-width:105px; height:50px; cursor:pointer; transition:background .16s ease, box-shadow .16s ease; }
+  .audi-slot-free { background:#f4fbf8; color:#08785f; font-size:12.5px; font-weight:800; }
+  .audi-slot-free:hover { background:#def5eb; box-shadow:inset 0 0 0 2px #67bfa4; }
+  .audi-slot-booked { background:#fff4f4; }
+  .audi-slot-booked strong { display:block; color:#b83246; font-size:13px; line-height:1.35; }
+  .audi-slot-booked span { color:#64748b; font-size:11.5px; }
+  .audi-slot.is-selected { background:#d9f3e8 !important; box-shadow:inset 0 0 0 2px #10916f; }
+  .audi-slot-booked.is-selected { background:#ffd9dd !important; box-shadow:inset 0 0 0 2px #d53c50; }
+  #audiApplyMod .audi-apply-card { max-width:430px; padding:0; overflow:hidden; border-radius:16px; }
+  .audi-apply-head { padding:20px 22px; background:#17324d; color:#fff; } .audi-apply-head h3 { margin:0; color:#fff; font-size:19px; }
+  .audi-apply-body { padding:20px 22px 22px; } #audiApplyInfo { margin-bottom:17px; padding:11px; border:1px solid #b9ddd2; border-radius:9px; background:#edf9f5; color:#176b57; font-weight:800; text-align:center; }
+  .audi-field { margin-bottom:15px; } .audi-field label { display:block; margin-bottom:6px; color:#334e63; font-size:13px; font-weight:800; }
+  .audi-field input { width:100%; box-sizing:border-box; padding:11px; border:1px solid #cbd8e2; border-radius:8px; font:inherit; }
+  .audi-field input:focus { outline:3px solid rgba(37,99,166,.15); border-color:#2563a6; }
+  @media(max-width:768px){ #audiWeeklyMod .audi-dashboard{width:96vw;border-radius:14px}.audi-head{padding:18px 50px 17px 17px}.audi-head p{font-size:11.5px}.audi-body{padding:14px 12px 18px}.audi-toolbar{align-items:stretch;flex-direction:column}.audi-period-nav{display:grid;grid-template-columns:repeat(3,1fr)}.audi-period-nav select{width:100%;min-width:0}.audi-refresh{grid-column:1/-1}.audi-actions{display:grid;grid-template-columns:1fr 1fr}.audi-guide{align-items:flex-start;flex-direction:column}.audi-table th,.audi-table td{padding:10px 7px}}
+</style>
 <div id="audiWeeklyMod" class="modal" style="z-index: 9999;">
-  <div class="modal-content" style="max-width: 900px; padding: 25px; position:relative;">
-    <span onclick="closeMod('audiWeeklyMod')" style="position:absolute; top:18px; right:20px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
-    <h3 style="text-align:center; color:#9c27b0; margin-bottom: 15px;">🎬 시청각실 주간 현황 및 예약</h3>
-
-    <!-- 다중 등록 및 삭제 버튼 (제목 아래 줄에 배치하여 겹치지 않음) -->
-    <div style="display:flex; justify-content:center; gap:10px; margin-bottom: 20px;">
-      <button onclick="openMultiAudiApplyForm()" style="padding:8px 16px; background:#3b82f6; color:#fff; border:none; border-radius:5px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1);">예약</button>
-      <button onclick="promptMultiAudiDelete()" style="padding:8px 16px; background:#e11d48; color:#fff; border:none; border-radius:5px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1);">예약취소</button>
+  <div class="modal-content audi-dashboard">
+    <div class="audi-head"><div class="audi-head-icon">▣</div><div><h3>시청각실 예약 현황</h3><p>빈 시간을 선택한 뒤 예약하거나, 예약된 시간을 선택해 취소할 수 있습니다.</p></div><button class="audi-close" onclick="closeMod('audiWeeklyMod')" aria-label="닫기">&times;</button></div>
+    <div class="audi-body">
+      <div class="audi-toolbar">
+        <div class="audi-period-nav">
+          <select id="audiYearSel" aria-label="연도" onchange="loadAudiWeekly()"></select>
+          <select id="audiMonthSel" aria-label="월" onchange="updateAudiWeeksAndLoad()"></select>
+          <select id="audiWeekSel" aria-label="주차" onchange="loadAudiWeekly()"></select>
+          <button class="audi-refresh" onclick="loadAudiWeekly()">새로고침</button>
+        </div>
+        <div class="audi-actions"><button class="audi-action reserve" onclick="openMultiAudiApplyForm()">선택 시간 예약</button><button class="audi-action cancel" onclick="promptMultiAudiDelete()">선택 예약 취소</button></div>
+      </div>
+      <div class="audi-guide"><span>여러 시간을 한 번에 선택할 수 있습니다.</span><div class="audi-legend"><span><i class="free"></i>예약 가능</span><span><i class="booked"></i>예약 완료</span></div></div>
+      <div id="audiTableContainer"></div>
     </div>
-
-    <!-- 주차 선택 컨트롤 -->
-    <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; align-items:center;">
-      <select id="audiYearSel" onchange="loadAudiWeekly()" style="padding:6px; border-radius:5px; border:1px solid #ccc;"></select>
-      <select id="audiMonthSel" onchange="updateAudiWeeksAndLoad()" style="padding:6px; border-radius:5px; border:1px solid #ccc;"></select>
-      <select id="audiWeekSel" onchange="loadAudiWeekly()" style="padding:6px; border-radius:5px; border:1px solid #ccc;"></select>
-      <button class="btn-search" style="margin:0; padding:8px 15px; background:#9c27b0; border:none; border-radius:5px; color:#fff; cursor:pointer;" onclick="loadAudiWeekly()">조회</button>
-    </div>
-
-    <!-- 시간표 그리드 출력 영역 -->
-    <div id="audiTableContainer" style="overflow-x:auto;"></div>
-
   </div>
 </div>
 
 <!-- 개별 예약 입력 모달 -->
 <div id="audiApplyMod" class="modal" style="z-index: 10010;">
-  <div class="modal-content" style="max-width: 400px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-    <h3 style="color:#9c27b0; text-align:center; margin-top:0;">📝 시청각실 예약 신청</h3>
-    <div id="audiApplyInfo" style="text-align:center; background:#f3e8ff; color:#7e22ce; font-weight:bold; padding:10px; border-radius:8px; margin-bottom:15px;"></div>
+  <div class="modal-content audi-apply-card">
+    <div class="audi-apply-head"><h3>시청각실 예약 신청</h3></div><div class="audi-apply-body">
+    <div id="audiApplyInfo"></div>
     
     <input type="hidden" id="audiApplyDate">
     <input type="hidden" id="audiApplyPeriod">
 
-    <div class="field" style="margin-bottom:15px;">
-      <label style="font-weight:bold; display:block; margin-bottom:5px;">사용 용도</label>
-      <input type="text" id="audiApplyPurpose" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:5px;" placeholder="예) 학부모 연수, 교직원 회의 등">
+    <div class="audi-field">
+      <label>사용 용도</label><input type="text" id="audiApplyPurpose" placeholder="예) 학부모 연수, 교직원 회의 등">
     </div>
-    <div class="field" style="margin-bottom:15px;">
-      <label style="font-weight:bold; display:block; margin-bottom:5px;">담당 부서 또는 교사명</label>
-      <input type="text" id="audiApplyManager" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:5px;" placeholder="예) 교무기획부 박정환">
+    <div class="audi-field">
+      <label>담당 부서 또는 교사명</label><input type="text" id="audiApplyManager" placeholder="예) 교무기획부 박정환">
     </div>
 
     <div style="display:flex; gap:10px; margin-top:25px;">
-      <button class="btn-search" style="flex:2; background:#9c27b0; margin:0;" onclick="submitAudiApply()">✅ 신청하기</button>
+      <button class="btn-search" style="flex:2; background:#0f8b8d; margin:0;" onclick="submitAudiApply()">예약 완료</button>
       <button class="btn-cancel" style="flex:1; margin:0;" onclick="closeMod('audiApplyMod')">취소</button>
-    </div>
+    </div></div>
   </div>
 </div>
 
@@ -131,17 +168,17 @@
     const periods = ['1교시', '2교시', '3교시', '4교시', '점심시간<br><span style="font-size:11px;">(12:40~14:00)</span>', '5교시', '6교시', '7교시'];
     const pKeys = ['1교시', '2교시', '3교시', '4교시', '점심시간', '5교시', '6교시', '7교시'];
 
-    let html = `<table style="width:100%; border-collapse:collapse; text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.05); min-width:700px;">`;
+    let html = `<table class="audi-table">`;
     
-    html += `<tr><th style="background:#f3e8ff; color:#7e22ce; padding:12px; border:1px solid #e2e8f0; width:120px;">교시 / 날짜</th>`;
+    html += `<tr><th class="audi-corner">교시 / 날짜</th>`;
     dates.forEach(d => {
-      html += `<th style="background:#f8fafc; padding:12px; border:1px solid #e2e8f0;">${d.short} (${d.day})</th>`;
+      html += `<th>${d.short} (${d.day})</th>`;
     });
     html += `</tr>`;
 
     periods.forEach((periodLabel, pIdx) => {
       let pKey = pKeys[pIdx];
-      html += `<tr><td style="background:#f8fafc; font-weight:bold; border:1px solid #e2e8f0; padding:12px;">${periodLabel}</td>`;
+      html += `<tr><td class="audi-period">${periodLabel}</td>`;
       
       dates.forEach(d => {
         let b = bookings.find(x => x.date === d.full && x.period === pKey);
@@ -149,16 +186,15 @@
         
         if (b) {
           // 이미 예약된 항목: 클릭 시 삭제 대상 다중 선택 토글로 변경
-          html += `<td id="del_cell_${slotId}" style="background:#fee2e2; border:1px solid #e2e8f0; padding:12px; line-height:1.4; cursor:pointer; transition:0.2s;" 
+          html += `<td id="del_cell_${slotId}" class="audi-slot audi-slot-booked"
                        onclick="toggleAudiDeleteSlot('${d.full}', '${pKey}', '${d.day}', '${b.purpose}', '${b.manager}')" title="클릭하여 삭제할 대상 선택">
-                     <strong style="color:#e11d48; font-size:14px;">${b.purpose}</strong><br>
-                     <span style="color:#475569; font-size:13px;">${b.manager}</span>
+                     <strong>${b.purpose}</strong><span>${b.manager}</span>
                    </td>`;
         } else {
           // 빈 칸: 클릭 시 등록 대상 선택 토글
-          html += `<td id="cell_${slotId}" style="background:#ffffff; border:1px solid #e2e8f0; padding:12px; cursor:pointer; color:#10b981; font-weight:bold; font-size:13px; transition:0.2s;" 
+          html += `<td id="cell_${slotId}" class="audi-slot audi-slot-free"
                        onclick="toggleAudiSlot('${d.full}', '${pKey}', '${d.day}')">
-                     + 선택
+                     + 시간 선택
                    </td>`;
         }
       });
@@ -181,12 +217,12 @@
     
     if (idx > -1) {
       selectedAudiSlots.splice(idx, 1);
-      cell.style.background = '#ffffff';
-      cell.innerText = '+ 선택';
+      cell.classList.remove('is-selected');
+      cell.innerText = '+ 시간 선택';
     } else {
       selectedAudiSlots.push({ id: slotId, date: dateFull, period: periodKey, day: dayName });
-      cell.style.background = '#d1fae5';
-      cell.innerText = '✔️ 선택됨';
+      cell.classList.add('is-selected');
+      cell.innerText = '✓ 선택됨';
     }
   }
 
@@ -204,13 +240,11 @@
     if (idx > -1) {
       // 선택 해제
       selectedAudiDeletes.splice(idx, 1);
-      cell.style.background = '#fee2e2'; // 원래 연한 빨강으로 복구
-      cell.style.border = '1px solid #e2e8f0';
+      cell.classList.remove('is-selected');
     } else {
       // 선택 추가
       selectedAudiDeletes.push({ id: slotId, date: dateFull, period: periodKey, purpose: purpose, manager: manager, day: dayName });
-      cell.style.background = '#fca5a5'; // 선택되었을 때 진한 빨강으로 시각적 표시
-      cell.style.border = '2px solid #ef4444';
+      cell.classList.add('is-selected');
     }
   }
 

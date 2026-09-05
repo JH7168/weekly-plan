@@ -31,8 +31,11 @@
 
     <div style="background:#f5f7fa; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-shrink:0; border-bottom:1px solid #e2e8f0; flex-wrap:nowrap;">
       <div style="display:flex; gap:6px; align-items:center; min-width:0;">
-        <input type="text" id="tlTeacherInput" placeholder="교사명/과목명" onkeydown="if(event.key==='Enter') tlSearchTeacher()"
-          style="padding:7px 9px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; width:120px;">
+        <div class="tl-search-autocomplete">
+          <input type="text" id="tlTeacherInput" placeholder="교사명/과목명" autocomplete="off" onkeydown="if(event.key==='Enter') tlSearchTeacher()"
+            style="padding:7px 9px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; width:120px;">
+          <div id="tlSearchSuggest" class="tl-search-suggest" style="display:none;"></div>
+        </div>
         <button class="btn-search" style="padding:7px 12px; font-size:13px; margin:0;" onclick="tlSearchTeacher()">검색</button>
 
         <button class="btn-search" style="padding:7px 12px; background:#0ea5e9; font-size:13px; margin:0; width:auto; white-space:nowrap;" onclick="tlTogglePe()">
@@ -101,6 +104,7 @@
       return;
     }
     document.getElementById('tlTeacherInput').value = '';
+    document.getElementById('tlSearchSuggest').style.display = 'none';
     document.getElementById('tlSearchResult').innerHTML = '';
     document.getElementById('tlSearchResultCard').style.display = 'none';
     document.getElementById('tlPeSection').style.display = 'none';
@@ -122,6 +126,70 @@
       document.getElementById('tlValidTo').value = range.to;
     });
   }
+
+  function tlGetAllSubjectNames() {
+    const names = new Set();
+    const parsed = rsParseGrid();
+    Object.keys(parsed.rowInfo || {}).forEach(rKey => {
+      const row = (fullTimetableData || [])[Number(rKey)] || [];
+      Object.keys(parsed.colInfo || {}).forEach(cKey => {
+        const raw = String(row[Number(cKey)] || '').trim();
+        if (!raw) return;
+        const subject = rsParseSubjectTeacher(raw).subject;
+        if (subject) names.add(subject);
+      });
+    });
+    return Array.from(names).sort((a, b) => a.localeCompare(b, 'ko'));
+  }
+
+  function tlHideSearchSuggest() {
+    const box = document.getElementById('tlSearchSuggest');
+    if (box) { box.innerHTML = ''; box.style.display = 'none'; }
+  }
+
+  function tlUpdateSearchSuggest() {
+    const input = document.getElementById('tlTeacherInput');
+    const box = document.getElementById('tlSearchSuggest');
+    const query = input.value.trim();
+    if (!query) { tlHideSearchSuggest(); return; }
+
+    const teachers = rsGetAllTeacherNames();
+    const subjects = tlGetAllSubjectNames();
+    if (teachers.includes(query) || subjects.includes(query)) {
+      tlHideSearchSuggest();
+      return;
+    }
+
+    const matches = teachers.filter(name => name.startsWith(query)).map(name => ({ name, type: '교사' }))
+      .concat(subjects.filter(name => name.startsWith(query)).map(name => ({ name, type: '과목' })))
+      .slice(0, 10);
+    if (!matches.length) { tlHideSearchSuggest(); return; }
+
+    box.innerHTML = '';
+    matches.forEach(item => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'tl-search-suggest-item';
+      const name = document.createElement('span');
+      name.textContent = item.name;
+      const type = document.createElement('span');
+      type.className = 'tl-search-suggest-type';
+      type.textContent = item.type;
+      option.append(name, type);
+      option.addEventListener('click', () => {
+        input.value = item.name;
+        tlHideSearchSuggest();
+        input.focus();
+      });
+      box.appendChild(option);
+    });
+    box.style.display = 'block';
+  }
+
+  document.getElementById('tlTeacherInput').addEventListener('input', tlUpdateSearchSuggest);
+  document.addEventListener('click', event => {
+    if (!event.target.closest('.tl-search-autocomplete')) tlHideSearchSuggest();
+  });
 
   function tlSaveValidRange() {
     const from = document.getElementById('tlValidFrom').value;
