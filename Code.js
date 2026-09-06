@@ -803,7 +803,8 @@ function getMonthlyCombinedData(year, month) {
   return { year, month, weeks };
 }
 
-// 부서별 업무 표시 순서: 지정된 부서는 이 순서대로, 목록에 없는 부서는 맨 뒤에 등록 시간순으로 표시합니다.
+// 부서별 업무 표시 순서: 목록에 없는 직접 입력 부서는 3학년부와 행정실 사이에 표시합니다.
+// 행정실과 급식실은 어떤 부서가 추가되어도 항상 마지막 두 부서로 유지합니다.
 const DEPT_ORDER_ = [
   "교무기획부", "교육과정부", "교육연구부", "학생안전부", "방과후활동부",
   "융합과학정보부", "체육인성부", "진로상담부", "보건실",
@@ -811,7 +812,8 @@ const DEPT_ORDER_ = [
 ];
 function deptOrderIndex_(name) {
   const idx = DEPT_ORDER_.indexOf(name);
-  return idx === -1 ? DEPT_ORDER_.length : idx;
+  if (idx !== -1) return idx;
+  return DEPT_ORDER_.indexOf("행정실") - 0.5;
 }
 
 function getDeptList() {

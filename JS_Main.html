@@ -931,9 +931,7 @@
     fitEventBarText(); // 칸 폭에 비해 일정명이 길어 잘리면, 잘리지 않을 때까지 글자를 조금씩 줄입니다.
 
     // 모바일 전용 목록형 렌더링(PC에서는 CSS로 숨김).
-    // 지난 날짜(오늘 이전에 이미 끝난) 일정은 모바일에서 숨깁니다.
-    const _todayM = new Date(); _todayM.setHours(0, 0, 0, 0);
-    const todayTimeM = _todayM.getTime();
+    // 선택한 주차는 날짜가 지났더라도 월~금 전체 일정을 그대로 보여줍니다.
 
     // 위: 연간 행사 — 같은 행사가 연속된 날짜를 하나로 묶어 '일정별'로 나열하고, 누르면 세부(있으면)를 팝업으로 봅니다.
     const dateMobileEl = document.getElementById('dateMobileList');
@@ -962,9 +960,8 @@
           runStart = cur; prev = cur;
         }
       });
-      // (2) 지난 일정 제외 + 각 이벤트를 클릭 가능한 줄로(세부는 명칭·날짜로 매칭).
+      // (2) 선택한 주차의 모든 이벤트를 클릭 가능한 줄로 표시합니다(세부는 명칭·날짜로 매칭).
       const annualRowsHtml = annualEvents
-        .filter(evt => evt.et >= todayTimeM)
         .map(evt => {
           const matched = (currentWeekAnnualDetails || []).find(a => a.name === evt.text && a.st <= evt.et && a.et >= evt.st);
           const annual = { name: evt.text, startIso: toIsoDate_(evt.st), endIso: toIsoDate_(evt.et), rawText: matched ? (matched.rawText || '') : '' };
@@ -984,11 +981,9 @@
     // 팝업으로 작성된 내용 전체를 볼 수 있습니다.
     const workMobileEl = document.getElementById('workMobileList');
     if (workMobileEl) {
-      // 지난 날짜(오늘 이전에 끝난) 업무는 숨기고, 남은 항목이 없는 부서는 헤더도 표시하지 않습니다.
+      // 선택한 주차의 지난 날짜를 포함해 부서 업무를 모두 표시합니다.
       const deptBlocks = (visibleDepts || []).map(dept => {
-        const futureItems = dept.items.filter(item => (Number(item.et) || Number(item.st) || 0) >= todayTimeM);
-        if (!futureItems.length) return '';
-        const rows = futureItems.map(item => {
+        const rows = dept.items.map(item => {
           const detailIdx = registerDetail(dept.name, item.date || '', item.text, null, item.attachments || [], item.rowNum || null, item.links || []);
           return `<div class="mobile-list-row cal-clickable" role="button" tabindex="0" onclick="showItemDetail(${detailIdx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showItemDetail(${detailIdx});}">
             <div class="mobile-list-date">${item.date}</div>
@@ -998,7 +993,7 @@
         return `<div class="mobile-list-dept-header" style="background:${deptHeaderColor(dept.name)};">${dept.name}</div>${rows}`;
       }).filter(Boolean).join('');
       workMobileEl.innerHTML = deptBlocks
-        || `<div class="mobile-list-row"><div class="mobile-list-content mobile-list-empty">남은 일정이 없습니다.</div></div>`;
+        || `<div class="mobile-list-row"><div class="mobile-list-content mobile-list-empty">일정이 없습니다.</div></div>`;
     }
   }
 
