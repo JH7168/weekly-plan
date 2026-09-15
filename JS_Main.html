@@ -1576,6 +1576,53 @@
   
   function openMod(id) { document.getElementById(id).style.display = 'flex'; }
   function closeMod(id) { document.getElementById(id).style.display = 'none'; }
+
+  // 책 오른쪽 포스트잇 탭: 기존 화면과 도구로만 연결하며 서버 호출을 새로 만들지 않습니다.
+  function setPlannerTabActive(tabName) {
+    document.querySelectorAll('[data-planner-tab]').forEach(tab => {
+      const active = tab.dataset.plannerTab === tabName;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-current', active ? 'page' : 'false');
+    });
+  }
+  function plannerGoHome() {
+    setPlannerTabActive('week');
+    const home = document.getElementById('plannerHome');
+    if (home) home.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function plannerOpenConvenience() {
+    setPlannerTabActive('tools');
+    openConvenienceMod();
+  }
+  function plannerOpenTimetable() {
+    setPlannerTabActive('timetable');
+    openTimetableModal();
+  }
+  function plannerOpenRecord() {
+    setPlannerTabActive('record');
+    openRecordMod();
+  }
+  function plannerOpenReservation() {
+    setPlannerTabActive('reservation');
+    openAudiWeekly();
+  }
+  function plannerOpenStatus() {
+    setPlannerTabActive('status');
+    openStudentCountMod();
+  }
+  function plannerOpenAfterSchool() {
+    setPlannerTabActive('after-school');
+    window.open('https://script.google.com/macros/s/AKfycbw3g841N66dD-v82Rsufi7o3c91oeNpyu8_WBlv-OqnY9FysMMHclA-uj-Jht_P0xT3jg/exec', '_blank', 'noopener,noreferrer');
+  }
+  function plannerOpenForms() {
+    setPlannerTabActive('forms');
+    openFormsMod();
+  }
+  function plannerOpenQr() {
+    setPlannerTabActive('qr');
+    openConvenienceMod();
+    openConvenienceTool('qr');
+  }
   
   function showAlert(msg) {
     const alertMod = document.getElementById('customAlertMod');

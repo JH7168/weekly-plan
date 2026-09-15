@@ -46,26 +46,36 @@
   </div>
 </div>
 
-<!-- 서식 -->
+<!-- 서식: 위에 스프링이 있는 노트 한 장 감성. 6개 서식의 기능/순서/링크/onclick은 그대로 두고
+     렌더링되는 HTML 구조와 클래스만 renderFormsCategoryList()에서 새 카드 모양으로 바꿉니다. -->
 <div id="formsMod" class="modal">
-  <div class="modal-content" style="max-width: 480px; position:relative;">
-    <span onclick="closeMod('formsMod')" style="position:absolute; top:14px; right:16px; color:#94a3b8; font-size:26px; line-height:1; cursor:pointer;">&times;</span>
-    <h3 style="text-align:center; margin-top:0;">📄 서식</h3>
+  <div class="modal-content forms-notebook">
+    <div class="forms-spring" aria-hidden="true"></div>
+    <button type="button" class="forms-close" onclick="closeMod('formsMod')" aria-label="닫기">&times;</button>
 
-    <!-- 1단계: 카테고리 버튼 목록 -->
-    <div id="formsStep1">
-      <div id="formsCategoryGrid" class="dept-grid" style="max-height: 60vh;"></div>
-    </div>
-
-    <!-- 2단계: 선택한 카테고리 안의 파일 버튼들 -->
-    <div id="formsStep2" style="display:none;">
-      <div style="position:relative; display:flex; justify-content:center; align-items:center; min-height:36px; margin-bottom:20px;">
-        <button class="btn-cancel" style="position:absolute; left:0; width:auto; margin:0; padding:8px 14px; font-size:13px;" onclick="backToFormsList()">⬅ 뒤로</button>
-        <h4 id="formsStep2Title" style="margin:0; font-size:16px; font-weight:bold; color:#333;"></h4>
+    <div class="forms-paper">
+      <div class="forms-title-row">
+        <div class="forms-title-text">
+          <h3 class="forms-title"><i class="fas fa-clipboard-list" aria-hidden="true"></i> 서식</h3>
+          <p class="forms-subtitle">필요한 서식을 선택해 주세요! :)</p>
+        </div>
+        <p class="forms-side-note" aria-hidden="true">작은 서류 하나도<br>오늘의 일을 가볍게.</p>
       </div>
-      <div id="formsStep2Buttons" class="material-btn-row" style="justify-content:center;"></div>
-    </div>
 
+      <!-- 1단계: 카테고리 버튼 목록 -->
+      <div id="formsStep1">
+        <div id="formsCategoryGrid" class="forms-card-grid"></div>
+      </div>
+
+      <!-- 2단계: 선택한 카테고리 안의 파일 버튼들 -->
+      <div id="formsStep2" style="display:none;">
+        <div class="forms-step2-head">
+          <button type="button" class="forms-back-btn" onclick="backToFormsList()">⬅ 뒤로</button>
+          <h4 id="formsStep2Title" class="forms-step2-title"></h4>
+        </div>
+        <div id="formsStep2Buttons" class="material-btn-row" style="justify-content:center;"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -78,21 +88,25 @@
   </div>
 </div>
 
-<!-- 학생수 현황: 수정 날짜과 학년별 재학생 수를 한눈에 확인합니다. -->
+<!-- 학생수 현황: 교실 칠판 감성 — 나무 액자(student-count-panel) 안에 칠판면(student-count-board)을 두고
+     수정 날짜과 학년별 재학생 수를 한눈에 확인합니다. 데이터/버튼 동작은 기존과 동일합니다. -->
 <div id="studentCountMod" class="modal">
   <div class="modal-content student-count-panel">
-    <button type="button" class="student-count-close" onclick="closeMod('studentCountMod')" aria-label="닫기">&times;</button>
-    <div id="studentCountEmpty" class="student-count-empty" style="display:none;">등록된 학생수 현황이 없습니다.</div>
-    <div id="studentCountHistoryWrap" class="student-count-history-wrap" style="display:none;">
-      <div class="student-count-history-scroll">
-        <table class="student-count-history-table">
-          <thead><tr><th>수정 날짜</th><th>1학년</th><th>2학년</th><th>3학년</th><th>전체</th></tr></thead>
-          <tbody id="studentCountHistoryBody"></tbody>
-        </table>
+    <div class="student-count-board">
+      <button type="button" class="student-count-close" onclick="closeMod('studentCountMod')" aria-label="닫기">&times;</button>
+      <div class="student-count-title"><h3>학생수 현황</h3></div>
+      <div id="studentCountEmpty" class="student-count-empty" style="display:none;">등록된 학생수 현황이 없습니다.</div>
+      <div id="studentCountHistoryWrap" class="student-count-history-wrap" style="display:none;">
+        <div class="student-count-history-scroll">
+          <table class="student-count-history-table">
+            <thead><tr><th>수정 날짜</th><th>1학년</th><th>2학년</th><th>3학년</th><th>전체</th></tr></thead>
+            <tbody id="studentCountHistoryBody"></tbody>
+          </table>
+        </div>
+        <p class="student-count-note"><i class="fas fa-thumbtack" aria-hidden="true"></i> <strong>9. 1.자 학생수 현황</strong>은 <span class="student-count-note-em">8. 31.의 학생수 현황과 같습니다.</span></p>
       </div>
-      <p class="student-count-note"><span style="color:#dc2626; font-weight:700;">9. 1.자 학생수 현황</span>은 <span style="text-decoration:underline;">8. 31.의 학생수 현황과 같습니다.</span></p>
+      <button type="button" class="student-count-edit-btn" onclick="openStudentCountEdit()"><i class="fas fa-pen"></i> 현황 수정</button>
     </div>
-    <button type="button" class="student-count-edit-btn" onclick="openStudentCountEdit()"><i class="fas fa-pen"></i> 현황 수정</button>
   </div>
 </div>
 
@@ -434,11 +448,27 @@
       : `<button class="material-dl-btn disabled" disabled>${item.label} (미등록)</button>`;
   }
 
+  // 서식 카드에 쓸 파스텔 아이콘/색 톤 (클릭 동작과는 무관한 순수 디자인 정보입니다)
+  const FORMS_ICONS = {
+    '가정통신문 양식': { icon: 'fa-file-lines', tone: 'blue' },
+    '결보강 계획서': { icon: 'fa-calendar-days', tone: 'mint' },
+    '교과협의회 양식': { icon: 'fa-user-group', tone: 'peach' },
+    '급식 변경 신청서': { icon: 'fa-pen-to-square', tone: 'lavender' },
+    '여비정산 신청서': { icon: 'fa-receipt', tone: 'sage' },
+    '인쇄요구서': { icon: 'fa-print', tone: 'pink' }
+  };
+
   // 1단계: 카테고리 개수만큼만 버튼이 보이므로, 안에 파일이 아무리 늘어나도 목록이 깔끔하게 유지됩니다.
+  // (기존과 동일하게 openFormsCategory(idx)만 호출 — 이번 변경은 겉모양 마크업/클래스만 새 카드 형태로 바꾼 것입니다.)
   function renderFormsCategoryList() {
-    document.getElementById('formsCategoryGrid').innerHTML = FORM_SLOTS.map((group, idx) =>
-      `<button class="dept-btn" onclick="openFormsCategory(${idx})">${group.group}</button>`
-    ).join('');
+    document.getElementById('formsCategoryGrid').innerHTML = FORM_SLOTS.map((group, idx) => {
+      const meta = FORMS_ICONS[group.group] || { icon: 'fa-file', tone: 'blue' };
+      return `<button type="button" class="forms-card forms-card-${meta.tone}" onclick="openFormsCategory(${idx})">`
+        + `<span class="forms-card-icon"><i class="fas ${meta.icon}" aria-hidden="true"></i></span>`
+        + `<span class="forms-card-label">${group.group}</span>`
+        + `<span class="forms-card-chevron" aria-hidden="true">&rsaquo;</span>`
+        + `</button>`;
+    }).join('');
   }
 
   // 카테고리 버튼 클릭 시: 파일이 1개뿐이면 바로 다운로드 확인창, 여러 개면 2단계 화면으로 이동합니다.

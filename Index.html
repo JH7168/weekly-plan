@@ -63,6 +63,10 @@
     <? } ?>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- 서식 노트 등 손글씨 느낌이 필요한 곳에만 쓰는 가벼운 한글 손글씨 웹폰트 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap">
     <!-- QR 코드 생성(브라우저 안에서 직접 그림 — 주소가 외부로 나가지 않습니다) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- 한글(HWP) 브라우저 뷰어(hwp.js). 로드되면 window.__HwpViewer로 사용. 실패해도 앱은 정상 동작하며 HWP는 드라이브 미리보기로 대체됩니다. -->
@@ -95,6 +99,8 @@
       </div>
     </div>
 
+    <main id="plannerHome" class="planner-book-shell">
+      <div class="planner-paper">
     <div class="header-area">
       <a class="school-home-btn" href="https://hanyeong.jge.hs.kr/hanyeong_hs/main.do?sysId=hanyeong_hs" target="_blank" rel="noopener noreferrer" aria-label="한영고등학교 홈페이지 새 창에서 열기">
         <i class="fas fa-school" aria-hidden="true"></i> 학교 홈페이지
@@ -106,41 +112,11 @@
         <button class="suggest-btn" onclick="openSuggestBox()"><i class="fas fa-lightbulb"></i> 건의함</button>
         <button class="admin-btn" onclick="openAdminLogin()"><i class="fas fa-lock"></i> 관리자</button>
       </div>
-      <h2>주간 계획서</h2>
-
-      <!-- 급식 · 부서별 일정 등록 · 바로가기 버튼을 한 줄에: 왼쪽=오늘 급식, 가운데=부서별 일정 등록(아래줄 기준 하단 정렬), 오른쪽=바로가기 버튼(2열×3행 격자). -->
-      <div class="btn-group" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 20px; width: 100%;">
-
-        <!-- 왼쪽: 지금 보여줄 한 끼 (시간에 따라 점심 또는 저녁) -->
-        <div class="meal-inline meal-inline-left" id="mealNow" style="justify-self: start; align-self: start;"></div>
-
-        <!-- 가운데: 부서별 일정 등록 (세로로는 이 줄의 제일 아래를 기준으로 붙습니다) -->
-        <button class="schedule-register-btn top-register-btn" onclick="switchTo('workMod')" style="justify-self: center; align-self: end; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 11px 24px; border-radius: 9px; font-size: 15.5px; white-space: nowrap; box-shadow: 0 4px 10px rgba(124,58,237,0.24);"><i class="fas fa-edit"></i> 부서별 일정 등록</button>
-
-        <!-- 오른쪽: 바로가기 버튼(2열×3행 격자, 흰 박스 안에).
-             1행: 전체 시간표 | 시청각실 예약   2행: 학교생활기록부 | 방과후 신청   3행: 학생수 현황 | 서식 -->
-        <div class="shortcut-cluster" style="justify-self: end; align-self: end;">
-          <button id="scTimetableBtn" class="shortcut-link" style="--accent:#e11d48;" onclick="openTimetableModal()">
-            <i class="fas fa-table"></i>전체 시간표
-          </button>
-          <button id="scAudiBtn" class="shortcut-link" style="--accent:#9c27b0;" onclick="openAudiWeekly()">
-            <i class="fas fa-video"></i>시청각실 예약
-          </button>
-          <button id="scRecordBtn" class="shortcut-link" style="--accent:#6366f1;" onclick="openRecordMod()">
-            <i class="fas fa-book"></i>학교생활기록부
-          </button>
-          <button id="scAfterSchoolBtn" class="shortcut-link" style="--accent:#f97316;" onclick="window.open('https://script.google.com/macros/s/AKfycbw3g841N66dD-v82Rsufi7o3c91oeNpyu8_WBlv-OqnY9FysMMHclA-uj-Jht_P0xT3jg/exec', '_blank', 'noopener,noreferrer')">
-            <i class="fas fa-chalkboard-teacher"></i>방과후 신청
-          </button>
-          <button id="studentCountBtn" class="shortcut-link" style="--accent:#059669;" onclick="openStudentCountMod()">
-            <i class="fas fa-users"></i>학생수 현황
-          </button>
-          <button id="scFormsBtn" class="shortcut-link" style="--accent:#0ea5e9;" onclick="openFormsMod()">
-            <i class="fas fa-file-alt"></i>서식
-          </button>
-        </div>
-
+      <div class="planner-heading-row">
+        <h2><i class="fas fa-book-open" aria-hidden="true"></i><span>주간 계획서</span></h2>
+        <p class="planner-note">오늘도,<br>아이들의 빛나는 하루를 위해<br>조금 더 좋은 선생님이 됩니다.</p>
       </div>
+
     </div>
 
     <!-- 시청각실 주간 시간표 및 예약 시스템 모듈 연결 -->
@@ -178,6 +154,17 @@
     </div>
 
     <div id="printTitle" class="print-only-title"></div>
+
+    <!-- 식단표와 일정 등록은 주차·월 선택 줄 바로 위에 배치합니다. -->
+    <div class="planner-calendar-controls">
+      <div class="meal-inline meal-inline-left" id="mealNow"></div>
+      <div class="calendar-register-row">
+        <button class="schedule-register-btn top-register-btn" onclick="switchTo('workMod')">
+          <i class="fas fa-edit"></i>부서별 일정 등록
+        </button>
+      </div>
+      <div aria-hidden="true"></div>
+    </div>
 
     <!-- PC는 이제 "그 달 전체"를 달력처럼 보여주므로(주차 개념 없이), 표 바로 위에 지금 몇 년 몇 월인지
          크게 보여주고 좌우 화살표로 달을 옮길 수 있게 합니다. 학년 필터도 이 줄 맨 오른쪽에 둡니다.
@@ -283,6 +270,19 @@
       </div>
       </div>
     </section>
+
+      </div>
+      <nav class="planner-side-tabs" aria-label="플래너 빠른 기능">
+        <button type="button" class="planner-tab tab-week active" data-planner-tab="week" onclick="plannerGoHome()"><i class="fas fa-home" aria-hidden="true"></i><span>주간계획서</span></button>
+        <button type="button" class="planner-tab tab-timetable" data-planner-tab="timetable" onclick="plannerOpenTimetable()"><i class="fas fa-calendar-days" aria-hidden="true"></i><span>시간표</span></button>
+        <button type="button" class="planner-tab tab-record" data-planner-tab="record" onclick="plannerOpenRecord()"><i class="fas fa-book" aria-hidden="true"></i><span>학교생활<br>기록부</span></button>
+        <button type="button" class="planner-tab tab-reservation" data-planner-tab="reservation" onclick="plannerOpenReservation()"><i class="fas fa-video" aria-hidden="true"></i><span>예약</span></button>
+        <button type="button" class="planner-tab tab-status" data-planner-tab="status" onclick="plannerOpenStatus()"><i class="fas fa-users" aria-hidden="true"></i><span>현황판</span></button>
+        <button type="button" class="planner-tab tab-after-school" data-planner-tab="after-school" onclick="plannerOpenAfterSchool()"><i class="fas fa-chalkboard-teacher" aria-hidden="true"></i><span>방과후신청</span></button>
+        <button type="button" class="planner-tab tab-tools" data-planner-tab="tools" onclick="plannerOpenConvenience()"><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i><span>편의기능</span></button>
+        <button type="button" class="planner-tab tab-forms" data-planner-tab="forms" onclick="plannerOpenForms()"><i class="fas fa-file-alt" aria-hidden="true"></i><span>서식</span></button>
+      </nav>
+    </main>
 
     <!-- 한글(HWP) 브라우저 뷰어 팝업 -->
     <div id="hwpViewerMod" class="modal" style="z-index:10003;">
@@ -417,6 +417,7 @@
     <?!= include('Modals_Admin'); ?>
     <?!= include('Modals_Resub'); ?>
     <?!= include('Modals_TeacherLookup'); ?>
+    <?!= include('Modals_Convenience'); ?>
 
     <script>
       const serverData = <?!= JSON.stringify(initialData) ?>;
