@@ -383,56 +383,79 @@
      ================================================================ */
   #convenienceMod .convenience-device {
     position: relative; width: min(920px, 92vw); max-width: 920px; box-sizing: border-box;
-    aspect-ratio: 8 / 5; padding: 16px 16px 14px;
-    border-radius: 32px; border: 1px solid #333a4d;
+    aspect-ratio: 8 / 5; padding: 14px 14px 12px;
+    border-radius: 26px; border: 1px solid #333a4d;
     background: linear-gradient(160deg, #1d2434, #121623 60%, #1a1f2c);
-    box-shadow: 0 22px 46px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+    box-shadow: 0 22px 46px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.07);
     display: flex; flex-direction: column;
-  }
-  /* 갤럭시 탭 느낌의 상단 베젤: 전면 카메라 + 얇은 스피커 그릴 (가운데) */
-  #convenienceMod .convenience-notch {
-    position: absolute; top: 13px; left: 50%; transform: translateX(-50%); z-index: 2;
-    display: flex; align-items: center; gap: 8px;
-  }
-  #convenienceMod .convenience-notch-speaker {
-    width: 46px; height: 4px; border-radius: 3px; background: #14161f;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
-  }
-  #convenienceMod .convenience-notch-cam {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #5c6478, #14161f 70%);
-    box-shadow: inset 0 0 1px rgba(255,255,255,.18);
   }
   /* 모바일 전용 상단 다이나믹 아일랜드 알약(세로 화면에서만 보임) — 데스크톱에서는 숨깁니다. */
   #convenienceMod .convenience-mobile-notch { display: none; }
 
   #convenienceMod .convenience-body { flex: 1 1 auto; display: flex; gap: 8px; min-height: 0; }
+
+  /* 가로로 눕힌 갤럭시 탭 왼쪽 베젤: 전면 카메라 + 세로형 스피커 슬롯.
+     오른쪽 내비게이션 레일과 좌우로 짝을 이뤄 "화면을 사이에 둔 기기 테두리" 느낌을 만듭니다. */
+  #convenienceMod .convenience-leftbezel {
+    flex: 0 0 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  }
+  #convenienceMod .convenience-leftbezel-cam {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #6a7286, #14161f 70%);
+    box-shadow: inset 0 0 1px rgba(255,255,255,.22);
+  }
+  #convenienceMod .convenience-leftbezel-speaker {
+    width: 4px; height: 40px; border-radius: 3px; background: #14161f;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  }
+
   #convenienceMod .convenience-screen {
     position: relative; flex: 1 1 auto; min-width: 0; overflow-y: auto;
-    padding: 12px 20px 14px; border-radius: 22px;
+    display: flex; flex-direction: column;
+    padding: 12px 20px 14px; border-radius: 18px;
     background: linear-gradient(180deg, #fffcf8 0%, #fbfaf7 100%);
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,.04), inset 0 2px 10px rgba(0,0,0,.05);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.07), inset 0 3px 12px rgba(0,0,0,.08);
   }
+  /* 화면 안 콘텐츠(상태바/제목은 자기 크기만, 그 아래 도구 화면은 남는 세로 공간을 채움) */
+  #convenienceMod .convenience-statusbar,
+  #convenienceMod .convenience-header { flex: 0 0 auto; }
+  #convenienceMod #convenienceStep1,
+  #convenienceMod #convenienceStepQr,
+  #convenienceMod #convenienceStepCalc,
+  #convenienceMod #convenienceStepTimer,
+  #convenienceMod #convenienceStepRoulette,
+  #convenienceMod #convenienceStepShuffle,
+  #convenienceMod #convenienceStepDice,
+  #convenienceMod #convenienceStepRps,
+  #convenienceMod #convenienceStepNumberPick,
+  #convenienceMod #convenienceStepBracket,
+  #convenienceMod #convenienceStepSeat,
+  #convenienceMod #convenienceStepLadder {
+    flex: 1 1 auto; min-height: 0;
+  }
+  /* 홈 화면(카드 10개)은 위아래 남는 공간 가운데로 카드 묶음을 정렬해, 화면 하단이 허전해 보이지 않게 합니다. */
+  #convenienceMod #convenienceStep1 { flex-direction: column; justify-content: center; }
+
   #convenienceMod .convenience-close {
     position: absolute; top: 10px; right: 12px; z-index: 3;
     width: 25px; height: 25px; display: flex; align-items: center; justify-content: center;
-    border: 0; border-radius: 50%; background: rgba(30,25,35,.06); color: #6b7280;
+    border: 0; border-radius: 50%; background: rgba(30,25,35,.07); color: #545a68;
     font-size: 16px; line-height: 1; cursor: pointer; transition: background .18s ease, color .18s ease;
   }
-  #convenienceMod .convenience-close:hover { background: rgba(30,25,35,.12); color: #374151; }
+  #convenienceMod .convenience-close:hover { background: rgba(30,25,35,.13); color: #374151; }
 
-  /* 갤럭시/안드로이드 내비게이션 바 느낌: 최근앱 · 홈 · 뒤로가기 (장식 — 클릭 동작 없음) */
+  /* 갤럭시/안드로이드 내비게이션 바 느낌: 뒤로가기 · 홈 · 최근앱 (장식 — 클릭 동작 없음) */
   #convenienceMod .convenience-navrail {
-    flex: 0 0 38px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    flex: 0 0 36px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
   }
-  #convenienceMod .convenience-nav-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: rgba(255,255,255,.65); font-size: 14px; }
-  #convenienceMod .nav-home { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,.65); }
+  #convenienceMod .convenience-nav-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: rgba(255,255,255,.8); font-size: 14px; }
+  #convenienceMod .nav-home { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,.8); }
 
   /* 기기 상태표시줄 느낌(장식용 — 실제 통신 상태가 아닙니다) */
   #convenienceMod .convenience-statusbar {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 8px; padding-right: 30px;
-    font-size: 11px; font-weight: 700; color: #a39cae; font-variant-numeric: tabular-nums;
+    font-size: 11px; font-weight: 700; color: #766e82; font-variant-numeric: tabular-nums;
   }
   #convenienceMod .convenience-statusbar-icons { display: flex; align-items: center; gap: 6px; font-size: 10px; }
 
@@ -700,10 +723,14 @@
       display: block; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2;
       width: 70px; height: 22px; border-radius: 14px; background: #0d0e10;
     }
-    #convenienceMod .convenience-notch { display: none; }
+    #convenienceMod .convenience-leftbezel { display: none; }
     #convenienceMod .convenience-body { display: block; }
     #convenienceMod .convenience-navrail { display: none; }
-    #convenienceMod .convenience-screen { margin: 28px 0 0; padding: 16px 16px 20px; border-radius: 18px; overflow-y: visible; }
+    #convenienceMod .convenience-screen {
+      display: block; margin: 28px 0 0; padding: 16px 16px 20px; border-radius: 18px; overflow-y: visible;
+    }
+    /* #convenienceStep1은 JS가 인라인으로 display:flex를 지정하지만, 모바일은 세로 공간이
+       내용에 따라 자연스럽게 늘어나 가운데 정렬로 인한 시각적 차이가 없습니다(안전 확인됨). */
     #convenienceMod .convenience-close { top: 10px; right: 10px; width: 28px; height: 28px; font-size: 18px; }
     #convenienceMod .convenience-statusbar { margin-bottom: 16px; padding-right: 30px; font-size: 12px; }
     #convenienceMod .convenience-statusbar-icons { font-size: 11px; }
@@ -831,6 +858,22 @@
   .institution-banner-star-logo .star-outline { fill: #ffffff; stroke: #164887; stroke-width: 3.2; stroke-linejoin: round; }
   .institution-banner-star-logo .star-person { fill: #10a5c8; }
   .institution-banner-star-logo .star-point { fill: #f5c400; stroke: #ffffff; stroke-width: 1.5; }
+  .institution-banner-stas {
+    --banner-start: #ffffff; --banner-end: #f4f8ff; --banner-accent: #1d63c9;
+    border-color: #ccdcf5; color: #23324a; box-shadow: 0 8px 20px rgba(24,71,135,0.12);
+  }
+  .institution-banner-stas::after { border-color: rgba(29,99,201,0.08); }
+  .institution-banner-stas .institution-banner-pattern {
+    opacity: 0.5; background-image: radial-gradient(circle, rgba(29,99,201,0.14) 1px, transparent 1.5px);
+    background-size: 14px 14px; mask-image: linear-gradient(90deg, transparent 28%, #000 100%);
+  }
+  .institution-banner-stas .institution-banner-copy strong { color: #23324a; font-size: 13.5px; }
+  .institution-banner-stas .institution-banner-label { color: #1d63c9; }
+  .institution-banner-stas .institution-banner-arrow { color: #2f5a91; }
+  .institution-banner-stas:hover { color: #23324a; box-shadow: 0 13px 26px rgba(24,71,135,0.2); }
+  .institution-banner-stas:hover .institution-banner-arrow { color: #0f4d8a; }
+  .institution-banner-stas-logo .stas-star-outline { fill: #2f6fe0; stroke: #164887; stroke-width: 2.6; stroke-linejoin: round; }
+  .institution-banner-stas-logo .stas-star-person { fill: #8bc34a; }
 
   /* 3. 조회 필터 박스 (무조건 한 줄 유지) */
   /* 상단 패널: (윗줄) 학년+조회 컨트롤 한 줄, (아랫줄) 오늘 급식 오른쪽 정렬 */

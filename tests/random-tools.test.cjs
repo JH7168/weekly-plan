@@ -177,8 +177,16 @@ test("protected QR/calculator/timer HTML+JS identical to HEAD", () => {
       })
       .replace(/\r/g, ""),
     now = fs.readFileSync("Modals_Convenience.html", "utf8").replace(/\r/g, "");
+  // 두 경계 모두 텍스트 마커가 아니라 실제 구조(요소 id, 유일한 </script> 위치)를 기준으로 잡습니다.
+  // 룰렛 등 8개 도구가 Random_Tools.html로 분리된 뒤로는 QR~타이머 뒤에 "룰렛 돌리기" 주석/코드가
+  // 더 이상 이 파일에 없어서, 그 문자열로 경계를 찾으면 old/now가 서로 다른 길이로 잘려 항상 실패했습니다.
+  for (const s of [old, now])
+    assert(
+      s.indexOf('<div id="convenienceStepRoulette"') > s.indexOf('<div id="convenienceStepQr"'),
+      "convenienceStepQr/Roulette 요소를 찾지 못했습니다.",
+    );
   const htmlStart = '      <div id="convenienceStepQr"',
-    htmlEnd = "      <!-- 2단계: 룰렛";
+    htmlEnd = '      <div id="convenienceStepRoulette"';
   assert.equal(
     now.slice(now.indexOf(htmlStart), now.indexOf(htmlEnd)),
     old.slice(old.indexOf(htmlStart), old.indexOf(htmlEnd)),
@@ -186,9 +194,7 @@ test("protected QR/calculator/timer HTML+JS identical to HEAD", () => {
   const jsStart = "  // ===== QR코드 만들기";
   assert.equal(
     now.slice(now.indexOf(jsStart), now.lastIndexOf("</script>")).trim(),
-    old
-      .slice(old.indexOf(jsStart), old.indexOf("  // ===== 룰렛 돌리기"))
-      .trim(),
+    old.slice(old.indexOf(jsStart), old.lastIndexOf("</script>")).trim(),
   );
 });
 test("no new external dependencies or API calls", () =>

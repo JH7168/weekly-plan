@@ -3,13 +3,13 @@
      브라우저 안에서만 동작하는 새 도구로 추가했습니다(google.script.run 없음). -->
 <div id="convenienceMod" class="modal">
   <div class="modal-content convenience-device">
-    <!-- 갤럭시 탭 느낌의 태블릿 상단 베젤: 전면 카메라 + 얇은 스피커 그릴 -->
-    <div class="convenience-notch" aria-hidden="true">
-      <span class="convenience-notch-speaker"></span>
-      <span class="convenience-notch-cam"></span>
-    </div>
     <span class="convenience-mobile-notch" aria-hidden="true"></span>
     <div class="convenience-body">
+    <!-- 가로로 눕힌 갤럭시 탭 왼쪽 베젤: 전면 카메라 + 세로형 스피커 슬롯 -->
+    <div class="convenience-leftbezel" aria-hidden="true">
+      <span class="convenience-leftbezel-cam"></span>
+      <span class="convenience-leftbezel-speaker"></span>
+    </div>
     <div class="convenience-screen">
       <button type="button" class="convenience-close" onclick="closeConvenienceMod()" aria-label="닫기">&times;</button>
 
@@ -199,11 +199,12 @@
 
     </div>
 
-    <!-- 갤럭시/안드로이드 내비게이션 바 느낌: 최근앱 · 홈 · 뒤로가기 (장식용 — 클릭 동작 없음) -->
+    <!-- 갤럭시/안드로이드 내비게이션 바 느낌: 뒤로가기 · 홈 · 최근앱 (장식용 — 클릭 동작 없음)
+         가로로 눕힌 기기 기준으로 위→아래 순서를 뒤로가기·홈·최근앱으로 재배치했습니다. -->
     <div class="convenience-navrail" aria-hidden="true">
-      <span class="convenience-nav-btn nav-recents"><i class="fas fa-bars" aria-hidden="true"></i></span>
+      <span class="convenience-nav-btn nav-back"><i class="fas fa-chevron-down" aria-hidden="true"></i></span>
       <span class="convenience-nav-btn nav-home"></span>
-      <span class="convenience-nav-btn nav-back"><i class="fas fa-chevron-left" aria-hidden="true"></i></span>
+      <span class="convenience-nav-btn nav-recents"><i class="fas fa-bars" aria-hidden="true"></i></span>
     </div>
     </div>
   </div>
@@ -251,7 +252,7 @@
   }
 
   function openConvenienceMod() {
-    document.getElementById('convenienceStep1').style.display = 'block';
+    document.getElementById('convenienceStep1').style.display = 'flex';
     document.getElementById('convenienceHeader').style.display = '';
     CONVENIENCE_TOOL_STEPS.forEach(id => { document.getElementById(id).style.display = 'none'; });
     updateConvenienceClock();
@@ -292,7 +293,7 @@
   function backToConvenienceList() {
     timerPause(); // 다른 도구로 이동할 때도 타이머는 안전하게 멈춰둡니다.
     CONVENIENCE_TOOL_STEPS.forEach(id => { document.getElementById(id).style.display = 'none'; });
-    document.getElementById('convenienceStep1').style.display = 'block';
+    document.getElementById('convenienceStep1').style.display = 'flex';
     document.getElementById('convenienceHeader').style.display = '';
   }
 

@@ -266,18 +266,107 @@
     padding: 4px;
   }
   #convenienceMod .rt-ball {
+    position: relative;
     display: grid;
     place-items: center;
-    min-width: 68px;
-    min-height: 68px;
-    padding: 12px;
+    width: 72px;
+    height: 72px;
+    aspect-ratio: 1 / 1;
+    padding: 6px;
     border-radius: 50%;
-    background: white;
-    border: 2px solid var(--rt-soft);
-    box-shadow: 0 4px 9px #30354412;
-    font-size: 26px;
-    font-weight: 800;
-    color: var(--rt-accent);
+    background: radial-gradient(circle at 34% 28%, #ffffff, var(--ball-bg, #eef3fb) 58%);
+    border: 1px solid var(--ball-border, #d7e2f2);
+    box-shadow:
+      0 5px 10px #30354420,
+      inset 0 -5px 7px rgba(20, 25, 40, 0.08),
+      inset 0 3px 4px rgba(255, 255, 255, 0.75);
+    font-size: 25px;
+    font-weight: 900;
+    color: var(--ball-fg, var(--rt-accent));
+    line-height: 1;
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  #convenienceMod .rt-ball.rt-ball-sm { font-size: 19px; }
+  #convenienceMod .rt-ball.rt-ball-xs { font-size: 15px; }
+  #convenienceMod .rt-ball:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 9px 16px #30354430,
+      inset 0 -5px 7px rgba(20, 25, 40, 0.08),
+      inset 0 3px 4px rgba(255, 255, 255, 0.8);
+  }
+  #convenienceMod .rt-ball.c0 { --ball-bg: #e3edfb; --ball-border: #c7dbf5; --ball-fg: #2b5aa0; }
+  #convenienceMod .rt-ball.c1 { --ball-bg: #e1f6ef; --ball-border: #c3ecdf; --ball-fg: #1f7a63; }
+  #convenienceMod .rt-ball.c2 { --ball-bg: #fbeecb; --ball-border: #f0dda0; --ball-fg: #7a590d; }
+  #convenienceMod .rt-ball.c3 { --ball-bg: #fbe6e6; --ball-border: #f5cccc; --ball-fg: #a3403d; }
+  #convenienceMod .rt-ball.c4 { --ball-bg: #efe6f7; --ball-border: #ddc8ef; --ball-fg: #6a4693; }
+  #convenienceMod .rt-ball-pop {
+    animation: rtBallPop 0.38s cubic-bezier(0.3, 1.2, 0.6, 1) both;
+  }
+  @keyframes rtBallPop {
+    0% { opacity: 0; transform: scale(0.35) translateY(8px); }
+    65% { opacity: 1; transform: scale(1.07) translateY(-1px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  #convenienceMod .rt-ball-resort {
+    animation: rtBallResort 0.2s ease-out both;
+  }
+  @keyframes rtBallResort {
+    0% { opacity: 0.35; transform: scale(0.94); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #convenienceMod .rt-ball-pop,
+    #convenienceMod .rt-ball-resort { animation: none; }
+  }
+  #convenienceMod .rt-ball-skeleton {
+    background: repeating-linear-gradient(135deg, #eef1f6, #eef1f6 6px, #e4e8f0 6px, #e4e8f0 12px);
+    border: 1px dashed #c7cede;
+    box-shadow: none;
+    opacity: 0.6;
+    animation: rtSkeletonPulse 1.1s ease-in-out infinite;
+  }
+  @keyframes rtSkeletonPulse {
+    50% { opacity: 0.3; }
+  }
+  #convenienceStepNumberPick .rt-lotto-summary {
+    text-align: center;
+    color: #626779;
+    font-size: 13.5px;
+    margin: 8px 0 0;
+  }
+  #convenienceStepNumberPick .rt-output {
+    display: flex;
+    flex-direction: column;
+  }
+  #convenienceStepNumberPick .rt-output > h4 {
+    flex: 0 0 auto;
+  }
+  #convenienceStepNumberPick #rt-numberpick-result {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  #convenienceStepNumberPick .rt-numberpick-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 4px;
+  }
+  #convenienceStepNumberPick .rt-empty {
+    position: relative;
+  }
+  #convenienceStepNumberPick .rt-empty::before {
+    content: "";
+    display: block;
+    width: 84px;
+    height: 84px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    border: 3px dashed #cfd8ea;
+    opacity: 0.55;
   }
   #convenienceMod .rt-wheel-wrap {
     position: relative;
@@ -896,7 +985,7 @@
       if (t === "dice")
         return `<label>도구<select id="${id(t, "mode")}"><option value="dice" selected>주사위</option><option value="coin">동전</option></select></label>${num(t, "count", "개수 (1~6개)", 1, 1, 6)}<p class="rt-small">최근 5회 기록은 이 화면을 나가도 유지돼요.</p>`;
       if (t === "numberpick")
-        return `<div class="rt-row">${num(t, "min", "시작 번호", 1, -1e9, 1e9)}${num(t, "max", "끝 번호", 30, -1e9, 1e9)}</div>${missingInput(t)}${num(t, "count", "뽑을 개수", 1, 1, 200)}${check(t, "dup", "중복 허용")}<label>결과 순서<select id="${id(t, "sort")}"><option value="draw" selected>뽑힌 순서</option><option value="asc">오름차순</option></select></label>`;
+        return `<div class="rt-numberpick-fields"><div class="rt-row">${num(t, "min", "시작 번호", 1, -1e9, 1e9)}${num(t, "max", "끝 번호", 30, -1e9, 1e9)}</div>${missingInput(t)}${num(t, "count", "뽑을 개수", 1, 1, 200)}${check(t, "dup", "중복 허용")}<label>결과 순서<select id="${id(t, "sort")}"><option value="draw" selected>뽑힌 순서</option><option value="asc">오름차순</option></select></label></div>`;
       let html = participantInput(t);
       if (t === "roulette")
         html +=
@@ -1323,23 +1412,45 @@
       );
     }
     function numbers() {
-      state("numberpick").values = ClassroomRandom.numbers(
-        integer("numberpick", "min"),
-        integer("numberpick", "max"),
-        integer("numberpick", "count"),
-        field("numberpick", "dup").checked,
-        field("numberpick", "missing").value,
+      const t = "numberpick";
+      const vals = ClassroomRandom.numbers(
+        integer(t, "min"),
+        integer(t, "max"),
+        integer(t, "count"),
+        field(t, "dup").checked,
+        field(t, "missing").value,
       );
-      renderNumbers();
-    }
-    function renderNumbers() {
-      const a = state("numberpick").values.slice();
-      if (field("numberpick", "sort").value === "asc") a.sort((a, b) => a - b);
+      state(t).values = vals;
       output(
-        "numberpick",
+        t,
         '<div class="rt-balls">' +
-          a.map((n) => `<span class="rt-ball">${n}</span>`).join("") +
-          "</div>",
+          Array.from({ length: vals.length }, () => '<span class="rt-ball rt-ball-skeleton"></span>').join("") +
+          '</div><div class="rt-summary">번호 추첨 중…</div>',
+      );
+      animate(t, 500, () => renderNumbers(true));
+    }
+    function renderNumbers(fresh) {
+      const t = "numberpick";
+      const a = state(t).values.slice();
+      if (field(t, "sort").value === "asc") a.sort((a, b) => a - b);
+      const n = a.length,
+        rm = reduced(),
+        stagger =
+          !fresh || rm || n <= 1
+            ? 0
+            : Math.min(200, Math.max(10, Math.round(2200 / (n - 1)))),
+        popClass = fresh ? "rt-ball-pop" : "rt-ball-resort";
+      output(
+        t,
+        '<div class="rt-balls">' +
+          a
+            .map((v, i) => {
+              const digits = String(v).length,
+                size = digits >= 4 ? " rt-ball-xs" : digits === 3 ? " rt-ball-sm" : "";
+              return `<span class="rt-ball ${popClass} c${i % 5}${size}" style="animation-delay:${i * stagger}ms">${v}</span>`;
+            })
+            .join("") +
+          `</div><p class="rt-lotto-summary">총 ${n}개 번호가 추첨되었습니다.</p>`,
         a.join(", "),
       );
     }

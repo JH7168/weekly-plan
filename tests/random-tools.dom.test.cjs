@@ -118,10 +118,10 @@ test("roulette real numbers with gaps, winner exclusion and chip removal",()=>{
  act("roulette","remove",{number:remainingNumber});assert($("rt-roulette-missing").value.includes(remainingNumber));reset("roulette");
 });
 test("number picker omissions apply with and without replacement",()=>{
- open("numberpick");input("numberpick","min",1);input("numberpick","max",6);input("numberpick","missing","2, 4-5");input("numberpick","count",3);act("numberpick","run");
+ open("numberpick");input("numberpick","min",1);input("numberpick","max",6);input("numberpick","missing","2, 4-5");input("numberpick","count",3);act("numberpick","run");finish();
  assert.deepEqual([...root("numberpick").querySelectorAll(".rt-ball")].map(e=>Number(e.textContent)).sort((a,b)=>a-b),[1,3,6]);
  input("numberpick","count",4);act("numberpick","run");assert(msg("numberpick").includes("중복"));
- $("rt-numberpick-dup").checked=true;input("numberpick","count",200);act("numberpick","run");
+ $("rt-numberpick-dup").checked=true;input("numberpick","count",200);act("numberpick","run");finish();
  assert([...root("numberpick").querySelectorAll(".rt-ball")].every(e=>[1,3,6].includes(Number(e.textContent))));
  reset("numberpick");
 });
