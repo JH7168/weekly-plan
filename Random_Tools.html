@@ -1,0 +1,1493 @@
+<!-- Classroom tools: client-only; generated lazily. QR/calculator/timer are isolated. -->
+<style>
+  @media (min-width: 641px) {
+    #convenienceMod .convenience-device:has(.rt[style*="display: block"]) {
+      height: min(700px, 90vh);
+      aspect-ratio: auto;
+    }
+  }
+  #convenienceMod .convenience-app-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+  #convenienceMod .convenience-app-card {
+    padding: 12px 8px;
+    min-height: 108px;
+  }
+  #convenienceMod .convenience-app-name {
+    font-size: 14px;
+  }
+  #convenienceMod .convenience-app-desc {
+    font-size: 12px;
+    color: #615c6b;
+  }
+  #convenienceMod .convenience-app-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 20px;
+  }
+  #convenienceMod .app-ladder {
+    background: #e6e2f5;
+  }
+  #convenienceMod .app-ladder .convenience-app-icon {
+    background: #d1e8e2;
+    color: #535282;
+  }
+  #convenienceMod .rt {
+    --rt-accent: #376f96;
+    --rt-soft: #e4f1fa;
+    --rt-border: #dedee6;
+    --rt-radius: 16px;
+    color: #303544;
+    font:
+      15px/1.5 "Malgun Gothic",
+      "Apple SD Gothic Neo",
+      sans-serif;
+    text-align: left;
+  }
+  #convenienceMod .rt * {
+    box-sizing: border-box;
+  }
+  #convenienceMod .rt-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-right: 12px;
+  }
+  #convenienceMod .rt h3 {
+    font-size: 21px;
+    margin: 0;
+    color: #303544;
+  }
+  #convenienceMod .rt h4 {
+    font-size: 16px;
+    margin: 0 0 12px;
+  }
+  #convenienceMod .rt-desc {
+    margin: 6px 0 12px;
+    color: #626779;
+    font-size: 14px;
+  }
+  #convenienceMod .rt-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+    gap: 16px;
+    align-items: start;
+  }
+  #convenienceMod .rt.rt-focus .rt-layout {
+    grid-template-columns: 1fr;
+  }
+  #convenienceMod .rt.rt-focus .rt-layout > .rt-card:first-child {
+    display: none;
+  }
+  #convenienceMod .rt-card {
+    padding: 16px;
+    border: 1px solid var(--rt-border);
+    border-radius: var(--rt-radius);
+    background: #fff;
+    box-shadow: 0 3px 12px #30354408;
+    min-width: 0;
+  }
+  #convenienceMod .rt-output {
+    background: linear-gradient(150deg, var(--rt-soft), #fff 85%);
+    min-height: 260px;
+    overflow: hidden;
+  }
+  #convenienceMod .rt label {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: #414858;
+  }
+  #convenienceMod .rt textarea,
+  #convenienceMod .rt input:not([type="checkbox"]),
+  #convenienceMod .rt select {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid #cbd0dc;
+    border-radius: 10px;
+    padding: 10px;
+    font: inherit;
+    color: #303544;
+    background: #fff;
+    margin: 6px 0 0;
+  }
+  #convenienceMod .rt textarea {
+    min-height: 106px;
+    resize: vertical;
+    line-height: 1.6;
+  }
+  #convenienceMod .rt .rt-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    font-weight: 400;
+  }
+  #convenienceMod .rt input[type="checkbox"] {
+    width: 19px;
+    height: 19px;
+    accent-color: var(--rt-accent);
+    flex: none;
+  }
+  #convenienceMod .rt-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  #convenienceMod .rt-row > label {
+    flex: 1;
+    min-width: 80px;
+  }
+  #convenienceMod .rt-class-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin:12px 0; }
+  #convenienceMod .rt-class-grid .rt-check { justify-content:center; min-height:44px; margin:0; background:var(--rt-soft); border-radius:8px; }
+  #convenienceMod .rt-mode-button[aria-pressed="true"] { background:var(--rt-soft); border-color:var(--rt-accent); color:var(--rt-accent); }
+  #convenienceMod .rt button {
+    min-height: 44px;
+    border: 1px solid var(--rt-border);
+    border-radius: 10px;
+    background: white;
+    color: #394253;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+    padding: 9px 13px;
+    cursor: pointer;
+    transition:
+      box-shadow 0.18s,
+      background 0.18s;
+    white-space: normal;
+  }
+  #convenienceMod .rt button:hover:not(:disabled) {
+    box-shadow: 0 3px 9px #30354418;
+    background: var(--rt-soft);
+  }
+  #convenienceMod .rt button:focus-visible,
+  #convenienceMod .rt input:focus-visible,
+  #convenienceMod .rt textarea:focus-visible,
+  #convenienceMod .rt select:focus-visible {
+    outline: 3px solid var(--rt-accent);
+    outline-offset: 2px;
+  }
+  #convenienceMod .rt button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  #convenienceMod .rt .rt-primary {
+    width: 100%;
+    background: var(--rt-accent);
+    color: #fff;
+    border-color: var(--rt-accent);
+    font-weight: 800;
+    margin-top: 8px;
+  }
+  #convenienceMod .rt .rt-primary:hover:not(:disabled) {
+    filter: brightness(0.94);
+    background: var(--rt-accent);
+  }
+  #convenienceMod .rt-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  #convenienceMod .rt-message {
+    min-height: 24px;
+    color: #9b3434;
+    font-size: 14px;
+    margin: 8px 0 0;
+    overflow-wrap: anywhere;
+  }
+  #convenienceMod .rt-message:empty {
+    display: none;
+  }
+  #convenienceMod .rt-empty {
+    padding: 38px 8px;
+    text-align: center;
+    color: #657083;
+  }
+  #convenienceMod .rt-summary {
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 800;
+    color: var(--rt-accent);
+    margin: 12px 0;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+  #convenienceMod .rt-small {
+    font-size: 13px;
+    color: #626779;
+    margin: 6px 0;
+  }
+  #convenienceMod .rt-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 320px;
+    overflow: auto;
+  }
+  #convenienceMod .rt-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px;
+    background: #fff;
+    border-radius: 10px;
+    margin: 5px 0;
+    overflow-wrap: anywhere;
+  }
+  #convenienceMod .rt-badge {
+    display: inline-grid;
+    place-items: center;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--rt-soft);
+    color: var(--rt-accent);
+    font-weight: 800;
+    flex: none;
+  }
+  #convenienceMod .rt-scroll {
+    max-width: 100%;
+    overflow: auto;
+    padding: 4px 2px 12px;
+  }
+  #convenienceMod .rt-balls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    max-height: 330px;
+    overflow: auto;
+    padding: 4px;
+  }
+  #convenienceMod .rt-ball {
+    display: grid;
+    place-items: center;
+    min-width: 68px;
+    min-height: 68px;
+    padding: 12px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--rt-soft);
+    box-shadow: 0 4px 9px #30354412;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--rt-accent);
+  }
+  #convenienceMod .rt-wheel-wrap {
+    position: relative;
+    width: min(100%, 260px);
+    margin: 14px auto 6px;
+  }
+  #convenienceMod .rt-wheel-wrap:before {
+    content: "▼";
+    position: absolute;
+    top: -21px;
+    left: calc(50% - 12px);
+    font-size: 30px;
+    color: #303544;
+    z-index: 1;
+  }
+  #convenienceMod .rt-wheel {
+    width: 100%;
+    display: block;
+    filter: drop-shadow(0 5px 5px #30354418);
+  }
+  #convenienceMod .rt-wheel text {
+    font: 700 12px sans-serif;
+    fill: #243649;
+  }
+  #convenienceMod .rt-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    max-height: 86px;
+    overflow: auto;
+    margin-top: 8px;
+  }
+  #convenienceMod .rt-chips button {
+    font-size: 12px;
+    padding: 5px 8px;
+    min-height: 36px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  #convenienceMod .rt-die {
+    width: 78px;
+    height: 78px;
+    border: 1px solid #d9c9a7;
+    border-radius: 15px;
+    background: #fff;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    padding: 12px;
+    gap: 5px;
+    box-shadow: 0 5px 0 #e7ddc5;
+  }
+  #convenienceMod .rt-pip {
+    border-radius: 50%;
+    background: #78582e;
+  }
+  #convenienceMod .rt-coin {
+    width: 86px;
+    height: 86px;
+    display: grid;
+    place-items: center;
+    background: #f6dfa2;
+    border: 5px double #a57b2c;
+    border-radius: 50%;
+    font-size: 24px;
+    font-weight: 800;
+    color: #75551c;
+  }
+  #convenienceMod .rt-coin.tail {
+    background: #e3e7ed;
+    border-color: #8491a4;
+    color: #455269;
+  }
+  #convenienceMod .rt-moving {
+    animation: rtShake 0.6s ease;
+  }
+  #convenienceMod .rt-flip {
+    animation: rtFlip 0.65s ease;
+  }
+  @keyframes rtShake {
+    25% {
+      transform: rotate(-8deg) translateY(-6px);
+    }
+    65% {
+      transform: rotate(8deg) translateY(-3px);
+    }
+  }
+  @keyframes rtFlip {
+    50% {
+      transform: rotateY(540deg) translateY(-8px);
+    }
+  }
+  #convenienceMod .rt-rps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    max-height: 350px;
+    overflow: auto;
+  }
+  #convenienceMod .rt-rps section {
+    background: #fff;
+    border: 1px solid var(--rt-border);
+    border-radius: 12px;
+    padding: 10px;
+    overflow-wrap: anywhere;
+  }
+  #convenienceMod .rt-rps .winner {
+    border: 2px solid var(--rt-accent);
+  }
+  #convenienceMod .rt-rps h4 {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  #convenienceMod .rt-rps h4 span {
+    display: block;
+    font-size: 34px;
+  }
+  #convenienceMod .rt-bracket {
+    display: flex;
+    gap: 28px;
+    width: max-content;
+    padding-right: 20px;
+  }
+  #convenienceMod .rt-round {
+    width: 150px;
+    flex: none;
+  }
+  #convenienceMod .rt-round h4 {
+    text-align: center;
+  }
+  #convenienceMod .rt-matches {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    height: var(--bracket-height);
+  }
+  #convenienceMod .rt-match {
+    position: relative;
+    border: 1px solid #c5c8de;
+    border-radius: 10px;
+    background: #fff;
+    padding: 3px;
+    display: grid;
+    gap: 3px;
+  }
+  #convenienceMod .rt-round:not(:last-child) .rt-match:after {
+    content: "";
+    position: absolute;
+    width: 15px;
+    right: -16px;
+    top: 50%;
+    border-top: 2px solid #a3abc4;
+  }
+  #convenienceMod .rt-round:not(:last-child) .rt-match:nth-child(odd):before {
+    content: "";
+    position: absolute;
+    right: -16px;
+    top: 50%;
+    width: 12px;
+    height: var(--connector-height);
+    border-right: 2px solid #a3abc4;
+    border-bottom: 2px solid #a3abc4;
+  }
+  #convenienceMod .rt-match button {
+    text-align: left;
+    padding: 7px;
+    font-size: 14px;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  #convenienceMod .rt-match button[aria-pressed="true"] {
+    background: var(--rt-soft);
+    color: var(--rt-accent);
+    font-weight: 900;
+  }
+  #convenienceMod .rt-podium {
+    background: var(--rt-soft);
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    margin: 0 auto 20px;
+    width: 140px;
+    font-weight: 800;
+  }
+  #convenienceMod .rt-seats {
+    display: grid;
+    grid-template-columns: repeat(var(--seat-cols), minmax(85px, 1fr));
+    gap: 10px;
+    min-width: calc(var(--seat-cols) * 95px);
+  }
+  #convenienceMod .rt .rt-seat {
+    min-height: 78px;
+    border-bottom: 5px solid #bdcfb8;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    overflow-wrap: anywhere;
+  }
+  #convenienceMod .rt-seat small {
+    font-size: 11px;
+    color: #586957;
+  }
+  #convenienceMod .rt-seat > span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    width: 100%;
+  }
+  #convenienceMod .rt-seat[aria-pressed="true"] {
+    background: #e1edda;
+    border: 2px solid #527546;
+    border-bottom-width: 5px;
+  }
+  #convenienceMod .rt-ladder-labels {
+    display: grid;
+    grid-template-columns: repeat(var(--ladder-n), 1fr);
+    gap: 0;
+    text-align: center;
+  }
+  #convenienceMod .rt-ladder-labels button { margin: 3px; }
+  #convenienceMod .rt-ladder-labels button,
+  #convenienceMod .rt-ladder-labels span {
+    overflow-wrap: anywhere;
+    padding: 7px 4px;
+    font-size: 13px;
+    min-width: 0;
+  }
+  #convenienceMod .rt-ladder-svg {
+    display: block;
+    width: 100%;
+    height: 330px;
+  }
+  #convenienceMod .rt-ladder-svg .path {
+    fill: none;
+    stroke-width: 5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  #convenienceMod .rt-reveal {
+    animation: rtPath 1.5s linear both;
+  }
+  @keyframes rtPath {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @media (max-width: 640px) {
+    #convenienceMod .convenience-app-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #convenienceMod .convenience-app-card {
+      display: flex;
+      flex-direction: column;
+      text-align: center;
+      gap: 5px;
+    }
+    #convenienceMod .rt-layout {
+      grid-template-columns: 1fr;
+    }
+    #convenienceMod .rt h3 {
+      font-size: 18px;
+    }
+    #convenienceMod .rt-card {
+      padding: 12px;
+    }
+    #convenienceMod .rt-head {
+      flex-wrap: wrap;
+    }
+    #convenienceMod .rt textarea {
+      min-height: 110px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #convenienceMod .rt *,
+    #convenienceMod .convenience-app-card {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+<script>
+  // Uniform rejection sampling avoids modulo bias. No server or persistence of student names.
+  const ClassroomRandom = (() => {
+    function int(n) {
+      if (!Number.isSafeInteger(n) || n < 1 || n > 4294967296)
+        throw Error("잘못된 추첨 범위입니다.");
+      if (!globalThis.crypto || !globalThis.crypto.getRandomValues)
+        throw Error("안전한 추첨을 지원하는 최신 브라우저에서 열어주세요.");
+      const limit = 4294967296 - (4294967296 % n),
+        data = new Uint32Array(1);
+      do {
+        crypto.getRandomValues(data);
+      } while (data[0] >= limit);
+      return data[0] % n;
+    }
+    function shuffle(items) {
+      const a = items.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = int(i + 1);
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function list(raw, min = 1, max = 200) {
+      const a = String(raw || "")
+        .split(/[\n,]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (a.length < min || a.length > max)
+        throw Error(
+          `${min}~${max}개를 줄바꿈 또는 쉼표로 구분해 입력해주세요.`,
+        );
+      if (a.some((s) => s.length > 60))
+        throw Error("이름·항목 하나는 60자 이내로 입력해주세요.");
+      return a;
+    }
+    function missing(raw, min, max) {
+      const excluded = new Set();
+      const tokens = String(raw || '').trim().split(/[\s,，]+/).filter(Boolean);
+      for (const token of tokens) {
+        const m = token.match(/^(-?\d+)(?:[-~](-?\d+))?$/);
+        if (!m) throw Error('궐번은 4, 8, 12-14처럼 번호 또는 범위로 입력해주세요.');
+        const from = Number(m[1]), to = Number(m[2] || m[1]);
+        if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to) || from > to || from < min || to > max)
+          throw Error('궐번은 설정한 시작 번호~끝 번호 안에서 입력해주세요.');
+        if (to - from > 9999) throw Error('궐번은 최대 10,000개까지 설정할 수 있습니다.');
+        for (let n = from; n <= to; n++) excluded.add(n);
+        if (excluded.size > 10000) throw Error('궐번은 최대 10,000개까지 설정할 수 있습니다.');
+      }
+      return [...excluded].sort((a,b)=>a-b);
+    }
+    function participants(start, end, raw, min=1, max=200) {
+      if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 1 || end > 10000 || start > end)
+        throw Error('시작·끝 번호는 1~10,000의 정수로, 시작 번호가 끝 번호보다 작거나 같아야 합니다.');
+      const skip = new Set(missing(raw, start, end));
+      const count = end-start+1-skip.size;
+      if (count < min || count > max) throw Error(`궐번을 제외한 인원은 ${count}명입니다. 이 도구는 ${min}~${max}명까지 사용할 수 있습니다.`);
+      return Array.from({length:end-start+1},(_,i)=>start+i).filter(n=>!skip.has(n)).map(n=>n+'번');
+    }
+    function numbers(min, max, count, dup, omitted = '') {
+      if (
+        ![min, max, count].every(Number.isSafeInteger) ||
+        min > max ||
+        Math.abs(min) > 1e9 ||
+        Math.abs(max) > 1e9
+      )
+        throw Error(
+          "최소·최대값은 -10억~10억의 정수이며 최소값 ≤ 최대값이어야 합니다.",
+        );
+      const excluded = missing(omitted, min, max);
+      const size = max - min + 1 - excluded.length;
+      if (size < 1) throw Error('궐번을 제외하면 뽑을 번호가 없습니다.');
+      if (count < 1 || count > 200) throw Error("뽑을 개수는 1~200개입니다.");
+      if (!dup && count > size)
+        throw Error(
+          `중복 금지에서는 범위 안의 ${size}개까지만 뽑을 수 있습니다.`,
+        );
+      // Partial virtual Fisher-Yates: O(count) memory, even for huge numeric ranges.
+      const map = new Map(),
+        out = [];
+      for (let i = 0; i < count; i++) {
+        const remaining = dup ? size : size - i,
+          j = int(remaining);
+        let value = min + (map.has(j) ? map.get(j) : j);
+        for (const excludedNumber of excluded) { if (excludedNumber <= value) value++; else break; }
+        out.push(value);
+        if (!dup)
+          map.set(
+            j,
+            map.has(remaining - 1) ? map.get(remaining - 1) : remaining - 1,
+          );
+      }
+      return out;
+    }
+    function bracket(names) {
+      let size = 2;
+      while (size < names.length) size *= 2;
+      const people = shuffle(names.map((name, id) => ({ name, id }))),
+        byes = new Set(
+          shuffle(Array.from({ length: size / 2 }, (_, i) => i)).slice(
+            0,
+            size - names.length,
+          ),
+        );
+      let cursor = 0;
+      const rounds = [
+        Array.from({ length: size / 2 }, (_, i) => ({
+          players: [people[cursor++], byes.has(i) ? null : people[cursor++]],
+          winner: null,
+        })),
+      ];
+      for (let n = size / 4; n >= 1; n /= 2)
+        rounds.push(
+          Array.from({ length: n }, () => ({
+            players: [null, null],
+            winner: null,
+          })),
+        );
+      const b = { size, rounds };
+      propagate(b);
+      return b;
+    }
+    function propagate(b) {
+      b.rounds.forEach((round, r) =>
+        round.forEach((match, m) => {
+          if (r) {
+            const p = [
+              b.rounds[r - 1][m * 2].winner,
+              b.rounds[r - 1][m * 2 + 1].winner,
+            ];
+            if (p.some((x, i) => x !== match.players[i])) match.winner = null;
+            match.players = p;
+          } else if (!match.players[1]) match.winner = match.players[0];
+        }),
+      );
+      return b;
+    }
+    function advance(b, r, m, side) {
+      const match = b.rounds[r][m];
+      if (!match.players[0] || !match.players[1]) return false;
+      match.winner = match.players[side];
+      propagate(b);
+      return true;
+    }
+    function seats(names, rows, cols, previous = [], pins = new Set()) {
+      if (
+        !Number.isInteger(rows) ||
+        !Number.isInteger(cols) ||
+        rows < 1 ||
+        cols < 1 ||
+        rows > 12 ||
+        cols > 12
+      )
+        throw Error("행과 열을 1~12 사이 정수로 입력해주세요.");
+      if (names.length > rows * cols)
+        throw Error(
+          `학생 ${names.length}명에 비해 좌석이 ${rows * cols}개로 부족합니다. 행·열을 늘려주세요.`,
+        );
+      const remaining = names.slice(),
+        out = Array(rows * cols).fill(null);
+      for (const i of pins) {
+        if (i >= out.length)
+          throw Error(
+            "고정 좌석이 있습니다. 고정을 해제한 뒤 크기를 바꿔주세요.",
+          );
+        const name = previous[i];
+        if (name != null) {
+          const at = remaining.indexOf(name);
+          if (at < 0)
+            throw Error(
+              "고정한 번호가 참가 목록에서 제외되었습니다. 먼저 고정을 해제해주세요.",
+            );
+          remaining.splice(at, 1);
+        }
+        out[i] = name;
+      }
+      if (remaining.length > out.length - pins.size)
+        throw Error(
+          "고정된 빈 좌석 때문에 자리가 부족합니다. 빈 좌석 고정을 해제해주세요.",
+        );
+      while (remaining.length < out.length - pins.size) remaining.push(null);
+      const pool = shuffle(remaining);
+      for (let i = 0; i < out.length; i++)
+        if (!pins.has(i)) out[i] = pool.pop();
+      return out;
+    }
+    function ladder(n) {
+      if (!Number.isInteger(n) || n < 2 || n > 12)
+        throw Error("사다리는 2~12명까지 사용할 수 있습니다.");
+      const rungs = [];
+      for (let row = 0; row < 18; row++) {
+        for (let col = 0; col < n - 1; col++) {
+          if (int(3) !== 0) {
+            rungs.push({ row, col, y: 18 + row * 17 });
+            col++;
+          }
+        }
+      }
+      return { n, rungs };
+    }
+    function trace(board, start) {
+      let col = start;
+      const points = [[col, 0]];
+      for (let row = 0; row < 18; row++) {
+        const rung = board.rungs.find(
+          (r) => r.row === row && (r.col === col || r.col + 1 === col),
+        );
+        if (rung) {
+          points.push([col, rung.y]);
+          col = col === rung.col ? col + 1 : col - 1;
+          points.push([col, rung.y]);
+        }
+      }
+      points.push([col, 330]);
+      return { end: col, points };
+    }
+    function rpsWinner(moves) {
+      const a = [...new Set(moves)];
+      return a.length !== 2
+        ? null
+        : { 가위: "보", 바위: "가위", 보: "바위" }[a[0]] === a[1]
+          ? a[0]
+          : a[1];
+    }
+    function wheelRotation(previous, index, count) {
+      const target = 360 - ((index + 0.5) * 360) / count;
+      return previous + 1800 + ((target - (previous % 360) + 360) % 360);
+    }
+    return {
+      missing,
+      participants,
+      int,
+      shuffle,
+      list,
+      numbers,
+      bracket,
+      propagate,
+      advance,
+      seats,
+      ladder,
+      trace,
+      rpsWinner,
+      wheelRotation,
+    };
+  })();
+
+  const ClassroomTools = (() => {
+    const configs = {
+      roulette: [
+        "룰렛 돌리기",
+        "◉",
+        "번호 범위와 궐번을 설정하고 돌려보세요. 모든 번호의 당첨 확률은 같습니다.",
+        "#346b92",
+        "#e3f0fb",
+        "룰렛 돌리기",
+      ],
+      shuffle: [
+        "랜덤 순서 정하기",
+        "↕",
+        "발표·활동 순서를 공정하게 섞어요.",
+        "#a04467",
+        "#f9e4ec",
+        "순서 섞기",
+      ],
+      dice: [
+        "주사위 · 동전",
+        "⚄",
+        "주사위는 합계까지, 동전은 앞뒤 횟수까지 확인해요.",
+        "#886318",
+        "#fbefce",
+        "던지기",
+      ],
+      rps: [
+        "가위바위보 추첨",
+        "✌",
+        "학생마다 패를 배정해요. 두 종류의 패가 나오면 승자를 알려드려요.",
+        "#a54b40",
+        "#fce7e1",
+        "패 배정하기",
+      ],
+      numberpick: [
+        "숫자 추첨기",
+        "#",
+        "번호를 뽑고, 원하는 순서로 결과를 확인해요.",
+        "#216f80",
+        "#def1f5",
+        "숫자 뽑기",
+      ],
+      bracket: [
+        "토너먼트 대진표",
+        "⚑",
+        "승자를 누르면 다음 라운드로 진출합니다. 부전승은 자동 처리해요.",
+        "#5455a1",
+        "#e8e9fa",
+        "대진 생성",
+      ],
+      seat: [
+        "자리뽑기",
+        "▦",
+        "자리를 누르면 고정됩니다. 빈 좌석도 고정할 수 있어요.",
+        "#4c7246",
+        "#e8f1e2",
+        "자리 배치",
+      ],
+      ladder: [
+        "사다리타기",
+        "⇅",
+        "번호 범위로 사다리를 만들고, 번호를 눌러 경로를 따라가 보세요.",
+        "#6c5295",
+        "#eee7f7",
+        "사다리 만들기",
+      ],
+    };
+    const states = {};
+    const $ = (id) => document.getElementById(id),
+      esc = (s) => escapeHtml(s),
+      id = (t, s) => "rt-" + t + "-" + s;
+    const field = (t, s) => $(id(t, s));
+    const state = (t) => states[t];
+    const missingInput = (t) => `<label>궐번 (선택)<input id="${id(t, 'missing')}" type="text" maxlength="2000" placeholder="예: 4, 8, 12-14"></label><p class="rt-small">없는 번호를 쉼표·공백으로 구분하세요. 연속 번호는 12-14로 입력해요.</p>`;
+    const participantInput = (t) => `<div class="rt-row">${num(t,'start','시작 번호',1,1,10000)}${num(t,'end','끝 번호',t==='ladder'?5:t==='seat'?24:30,1,10000)}</div>${missingInput(t)}<p class="rt-small" id="${id(t,'preview')}" aria-live="polite"></p>`;
+    const num = (t, key, label, value, min, max) =>
+      `<label>${label}<input id="${id(t, key)}" type="number" value="${value}" min="${min}" max="${max}" step="1"></label>`;
+    const check = (t, key, label, checked = false) =>
+      `<label class="rt-check"><input id="${id(t, key)}" type="checkbox" ${checked ? "checked" : ""}>${label}</label>`;
+    const button = (action, label, extra = "") =>
+      `<button type="button" data-action="${action}" ${extra}>${label}</button>`;
+    function settings(t) {
+      if (t === 'bracket') return `<div class="rt-row" role="group" aria-label="대진 방식">${button('bracket-classes','반별 대진','class="rt-mode-button" aria-pressed="true"')}${button('bracket-teams','팀별 대진','class="rt-mode-button" aria-pressed="false"')}</div><div id="${id(t,'classes')}"><div class="rt-actions">${button('bracket-fill','1반~8반 채우기')}</div><div class="rt-class-grid">${Array.from({length:8},(_,i)=>check(t,'class-'+(i+1),(i+1)+'반',true)).join('')}</div><p class="rt-small">참가하지 않는 반은 체크를 해제해주세요.</p></div><div id="${id(t,'teams-panel')}" style="display:none"><label>참가 팀명<textarea id="${id(t,'teams')}" maxlength="2500" placeholder="청팀, 백팀&#10;도전팀&#10;희망팀"></textarea></label><p class="rt-small">한 줄에 한 팀 또는 쉼표로 구분 · 2~32팀</p></div><p class="rt-small" id="${id(t,'preview')}" aria-live="polite"></p><p class="rt-small">설정 변경은 ‘대진 생성’을 누르면 반영됩니다.</p>`;
+      if (t === "dice")
+        return `<label>도구<select id="${id(t, "mode")}"><option value="dice" selected>주사위</option><option value="coin">동전</option></select></label>${num(t, "count", "개수 (1~6개)", 1, 1, 6)}<p class="rt-small">최근 5회 기록은 이 화면을 나가도 유지돼요.</p>`;
+      if (t === "numberpick")
+        return `<div class="rt-row">${num(t, "min", "시작 번호", 1, -1e9, 1e9)}${num(t, "max", "끝 번호", 30, -1e9, 1e9)}</div>${missingInput(t)}${num(t, "count", "뽑을 개수", 1, 1, 200)}${check(t, "dup", "중복 허용")}<label>결과 순서<select id="${id(t, "sort")}"><option value="draw" selected>뽑힌 순서</option><option value="asc">오름차순</option></select></label>`;
+      let html = participantInput(t);
+      if (t === "roulette")
+        html +=
+          check(t, "exclude", "당첨 번호는 다음 돌리기에서 제외") +
+          '<p class="rt-small">번호 옆 ×를 누르면 궐번에 추가돼요.</p><div class="rt-chips" id="' +
+          id(t, "chips") +
+          '"></div>';
+      if (t === "seat")
+        html +=
+          `<div class="rt-row">${num(t, "rows", "행", 4, 1, 12)}${num(t, "cols", "열", 6, 1, 12)}</div>` +
+          button("unpin", "모든 고정 해제");
+      if (t === "ladder")
+        html += `<label>결과 (참가자와 같은 개수)<textarea id="${id(t, "ends")}" maxlength="1000" placeholder="발표, 기록&#10;정리"></textarea></label><p class="rt-small">결과의 위치도 함께 섞이며, 만든 뒤에는 고정돼요.</p>`;
+      return html;
+    }
+    function init(t) {
+      if (states[t]) return;
+      const c = configs[t];
+      if (!c) return;
+      states[t] = {
+        busy: false,
+        rotation: 0,
+        pins: new Set(),
+        history: [],
+        heads: 0,
+        tails: 0,
+        bracketMode: 'classes',
+      };
+      const root = $(CONVENIENCE_TOOL_ELEMENT_ID[t]);
+      root.className = "rt";
+      root.style.setProperty("--rt-accent", c[3]);
+      root.style.setProperty("--rt-soft", c[4]);
+      root.innerHTML = `<header class="rt-head">${button("back", "← 편의 기능")}<h3><span aria-hidden="true">${c[1]}</span> ${c[0]}</h3></header><p class="rt-desc">${c[2]}</p><div class="rt-layout"><section class="rt-card"><h4>입력 · 설정</h4>${settings(t)}<button type="button" data-action="run" class="rt-primary">${c[5]}</button><p class="rt-message" id="${id(t, "message")}" role="status" aria-live="polite"></p><div class="rt-actions">${button("reset", "초기화")}</div></section><section class="rt-card rt-output"><h4>결과</h4><div id="${id(t, "result")}" aria-live="polite"><div class="rt-empty">설정 후 ‘${c[5]}’를 눌러주세요.</div></div><div class="rt-actions" id="${id(t, "aux")}"></div></section></div>`;
+      root.onclick = (e) => {
+        const b = e.target.closest("button[data-action]");
+        if (b && !b.disabled) act(t, b.dataset.action, b);
+      };
+      root.onchange = (e) => {
+        if (
+          t === "numberpick" &&
+          e.target === field(t, "sort") &&
+          state(t).values
+        )
+          renderNumbers();
+      };
+      root.oninput = () => updateParticipantPreview(t);
+      updateParticipantPreview(t);
+    }
+    function message(t, text) {
+      field(t, "message").textContent = text;
+      if (text && state(t).focus) {
+        state(t).focus = false;
+        $(CONVENIENCE_TOOL_ELEMENT_ID[t]).classList.remove("rt-focus");
+        const btn = field(t, "aux").querySelector('[data-action="focus"]');
+        if (btn) btn.textContent = "결과 크게 보기";
+      }
+    }
+    function integer(t, key) {
+      const raw = field(t, key).value;
+      if (raw.trim() === "" || !Number.isSafeInteger(Number(raw)))
+        throw Error("빈칸 없이 정수를 입력해주세요.");
+      return Number(raw);
+    }
+    function names(t, min = 1, max = 200) {
+      if(t==='bracket') {
+        let a;
+        if(state(t).bracketMode==='teams') {
+          a=ClassroomRandom.list(field(t,'teams').value,min,max);
+          if(new Set(a).size!==a.length) throw Error('같은 팀명이 있습니다. 구분할 수 있도록 다른 팀명을 입력해주세요.');
+        } else {
+          a=Array.from({length:8},(_,i)=>i+1).filter(n=>field(t,'class-'+n).checked).map(n=>n+'반');
+          if(a.length<min) throw Error(`참가 반을 ${min}개 이상 선택해주세요.`);
+        }
+        return a;
+      }
+      return ClassroomRandom.participants(integer(t,'start'),integer(t,'end'),field(t,'missing').value,min,max);
+    }
+    function updateParticipantPreview(t) {
+      const el = field(t,'preview'); if (!el) return;
+      try { const a=names(t,1,t==='ladder'?12:t==='bracket'?32:200); el.textContent=`참가 ${a.length}${t==='bracket'?(state(t).bracketMode==='teams'?'팀':'개 반'):'명'} · ${a.slice(0,10).join(', ')}${a.length>10?' …':''}`; }
+      catch(e) { el.textContent=e.message; }
+    }
+    function bracketMode(mode) {
+      state('bracket').bracketMode=mode;
+      field('bracket','classes').style.display=mode==='classes'?'block':'none';
+      field('bracket','teams-panel').style.display=mode==='teams'?'block':'none';
+      const root=$(CONVENIENCE_TOOL_ELEMENT_ID.bracket);
+      root.querySelector('[data-action="bracket-classes"]').setAttribute('aria-pressed',String(mode==='classes'));
+      root.querySelector('[data-action="bracket-teams"]').setAttribute('aria-pressed',String(mode==='teams'));
+      updateParticipantPreview('bracket');
+    }
+    function reduced() {
+      return (
+        window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      );
+    }
+    function animate(t, ms, finish) {
+      const s = state(t);
+      s.busy = true;
+      const root = $(CONVENIENCE_TOOL_ELEMENT_ID[t]);
+      root.setAttribute("aria-busy", "true");
+      const controls = [
+        ...root.querySelectorAll("input,textarea,select,button"),
+      ].filter((b) => b.dataset.action !== "back" && !b.disabled);
+      controls.forEach((b) => (b.disabled = true));
+      setTimeout(
+        () => {
+          try {
+            finish();
+          } finally {
+            s.busy = false;
+            root.removeAttribute("aria-busy");
+            controls.forEach((b) => (b.disabled = false));
+          }
+        },
+        reduced() ? 0 : ms,
+      );
+    }
+    function focusButton(t) {
+      return button(
+        "focus",
+        state(t).focus ? "설정 함께 보기" : "결과 크게 보기",
+      );
+    }
+    function output(t, html, text) {
+      field(t, "result").innerHTML = html;
+      state(t).text = text || "";
+      field(t, "aux").innerHTML =
+        button("run", "다시하기") +
+        focusButton(t) +
+        (text
+          ? button("copy", "결과 복사") + button("select", "전체 선택")
+          : "");
+    }
+    function ask(t, text, callback) {
+      message(t, text);
+      state(t).confirm = callback;
+      field(t, "message").innerHTML =
+        esc(text) +
+        '<div class="rt-actions">' +
+        button("confirm", "확인") +
+        button("cancel", "취소") +
+        "</div>";
+    }
+    function reset(t) {
+      ask(t, "입력과 결과를 모두 지울까요?", () => {
+        delete states[t];
+        init(t);
+      });
+    }
+    function act(t, action, b) {
+      if (action === "back") {
+        backToConvenienceList();
+        return;
+      }
+      if (state(t).busy) return;
+      message(t, "");
+      try {
+        if (action === "confirm") {
+          const callback = state(t).confirm;
+          delete state(t).confirm;
+          if (callback) callback();
+          return;
+        }
+        if (action === "cancel") {
+          delete state(t).confirm;
+          return;
+        }
+        if (action === "focus") {
+          state(t).focus = !state(t).focus;
+          $(CONVENIENCE_TOOL_ELEMENT_ID[t]).classList.toggle(
+            "rt-focus",
+            state(t).focus,
+          );
+          b.textContent = state(t).focus ? "설정 함께 보기" : "결과 크게 보기";
+          return;
+        }
+        if (action === "reset") return reset(t);
+        if (t==='bracket' && action==='bracket-classes') { bracketMode('classes'); return; }
+        if (t==='bracket' && action==='bracket-teams') { bracketMode('teams'); return; }
+        if (t==='bracket' && action==='bracket-fill') {
+          for(let n=1;n<=8;n++) field(t,'class-'+n).checked=true;
+          bracketMode('classes'); return;
+        }
+        if (action === "copy") return copy(t);
+        if (action === "select") {
+          const range = document.createRange();
+          range.selectNodeContents(field(t, "result"));
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          message(t, "결과가 선택되었습니다. 복사할 수 있어요.");
+          return;
+        }
+        if (action === "unpin") {
+          state(t).pins.clear();
+          if (state(t).seats) renderSeats();
+          return;
+        }
+        if (action === "pin") {
+          const i = Number(b.dataset.index),
+            s = state(t);
+          s.pins.has(i) ? s.pins.delete(i) : s.pins.add(i);
+          renderSeats();
+          return;
+        }
+        if (action === "winner") {
+          const s = state(t);
+          ClassroomRandom.advance(
+            s.bracket,
+            Number(b.dataset.round),
+            Number(b.dataset.match),
+            Number(b.dataset.side),
+          );
+          renderBracket();
+          return;
+        }
+        if (action === "path") return revealLadder(Number(b.dataset.index));
+        if (action === "all") return revealLadder(null);
+        if (action === "remove") {
+          const raw=field(t,'missing').value.trim();
+          field(t,'missing').value=(raw?raw+', ':'')+b.dataset.number;
+          updateParticipantPreview(t);
+          field(t, "chips").innerHTML = "";
+          message(t, "궐번에 추가했습니다. 다음 돌리기에 반영됩니다.");
+          return;
+        }
+        if (action === "run")
+          ({
+            roulette: roulette,
+            shuffle: shuffle,
+            dice: dice,
+            rps: rps,
+            numberpick: numbers,
+            bracket: bracket,
+            seat: seat,
+            ladder: ladder,
+          })[t]();
+      } catch (e) {
+        message(t, e.message || "입력값을 확인해주세요.");
+      }
+    }
+    async function copy(t) {
+      try {
+        await navigator.clipboard.writeText(state(t).text);
+        message(t, "결과를 복사했습니다.");
+      } catch (e) {
+        act(t, "select");
+        message(
+          t,
+          "자동 복사가 제한되어 결과를 선택했습니다. Ctrl+C 또는 길게 눌러 복사해주세요.",
+        );
+      }
+    }
+    function roulette() {
+      const t = "roulette",
+        s = state(t);
+      let a = names(t, 1);
+      const signature=a.join(',');
+      if(s.snapshot!==signature){s.snapshot=signature;s.drawn=new Set();}
+      if(field(t,'exclude').checked) a=a.filter(n=>!s.drawn.has(n));
+      if (a.length < 2)
+        throw Error(
+          "돌리려면 번호가 2개 이상 필요합니다. 범위를 늘리거나 당첨 제외를 해제해주세요.",
+        );
+      const chosen = ClassroomRandom.int(a.length),
+        rotation = ClassroomRandom.wheelRotation(s.rotation, chosen, a.length),
+        colors = [
+          "#bcdff3",
+          "#f7d3d9",
+          "#d1e9d2",
+          "#f8e5ac",
+          "#ded2f0",
+          "#c5e7e6",
+        ];
+      let svg = "";
+      a.forEach((name, i) => {
+        const a1 = (i * 2 * Math.PI) / a.length,
+          a2 = ((i + 1) * 2 * Math.PI) / a.length,
+          mid = (a1 + a2) / 2;
+        const x = (v) => 150 + 142 * Math.sin(v),
+          y = (v) => 150 - 142 * Math.cos(v);
+        svg += `<path d="M150 150 L${x(a1)} ${y(a1)} A142 142 0 ${a.length === 2 ? 1 : 0} 1 ${x(a2)} ${y(a2)} Z" fill="${colors[i % colors.length]}" stroke="#fff" stroke-width="1"/><text x="${150 + 98 * Math.sin(mid)}" y="${154 - 98 * Math.cos(mid)}" text-anchor="middle">${esc(name.replace(/번$/, ""))}</text>`;
+      });
+      output(
+        t,
+        `<div class="rt-wheel-wrap"><svg id="${id(t, "wheel")}" class="rt-wheel" viewBox="0 0 300 300" role="img" aria-label="${a.length}개 항목의 룰렛">${svg}<circle cx="150" cy="150" r="13" fill="white"/></svg></div><div class="rt-summary" id="${id(t, "win")}">돌아가는 중…</div>`,
+      );
+      field(t, "chips").innerHTML = a
+        .map((name, i) =>
+          button(
+            "remove",
+            `${esc(name)} ×`,
+            `data-number="${parseInt(name,10)}" aria-label="${esc(name)} 궐번으로 제외"`,
+          ),
+        )
+        .join("");
+      const wheel = field(t, "wheel");
+      wheel.style.transform = `rotate(${s.rotation}deg)`;
+      wheel.getBoundingClientRect();
+      wheel.style.transition = reduced()
+        ? "none"
+        : "transform 2.8s cubic-bezier(.15,.65,.15,1)";
+      wheel.style.transform = `rotate(${rotation}deg)`;
+      s.rotation = rotation;
+      animate(t, 2850, () => {
+        field(t, "win").textContent = "당첨 · " + a[chosen];
+        s.drawn.add(a[chosen]);
+        s.text = "당첨: " + a[chosen];
+        field(t, "aux").innerHTML =
+          button("run", "다시 돌리기") +
+          focusButton(t) +
+          button("copy", "결과 복사");
+      });
+    }
+    function shuffle() {
+      const a = ClassroomRandom.shuffle(names("shuffle"));
+      output(
+        "shuffle",
+        '<ol class="rt-list">' +
+          a
+            .map(
+              (n, i) =>
+                `<li><span class="rt-badge">${i + 1}</span><span>${esc(n)}</span></li>`,
+            )
+            .join("") +
+          "</ol>",
+        a.map((n, i) => `${i + 1}. ${n}`).join("\n"),
+      );
+    }
+    function dice() {
+      const t = "dice",
+        s = state(t),
+        n = integer(t, "count"),
+        mode = field(t, "mode").value;
+      if (n < 1 || n > 6) throw Error("개수는 1~6개로 입력해주세요.");
+      const vals = Array.from(
+        { length: n },
+        () =>
+          ClassroomRandom.int(mode === "dice" ? 6 : 2) +
+          (mode === "dice" ? 1 : 0),
+      );
+      output(
+        t,
+        `<div class="rt-balls">${vals.map(() => (mode === "dice" ? '<div class="rt-die rt-moving" aria-label="굴러가는 주사위">' + Array.from({ length: 9 }, (_, i) => `<span class="${[0, 2, 4, 6, 8].includes(i) ? "rt-pip" : ""}"></span>`).join("") + "</div>" : '<div class="rt-coin rt-flip" aria-label="뒤집는 동전">?</div>')).join("")}</div><div class="rt-summary">던지는 중…</div>`,
+      );
+      animate(t, 650, () => {
+        let html = "",
+          summary = "";
+        if (mode === "dice") {
+          const pips = {
+            1: [4],
+            2: [0, 8],
+            3: [0, 4, 8],
+            4: [0, 2, 6, 8],
+            5: [0, 2, 4, 6, 8],
+            6: [0, 2, 3, 5, 6, 8],
+          };
+          html = vals
+            .map(
+              (v) =>
+                `<div class="rt-die" role="img" aria-label="주사위 ${v}">${Array.from({ length: 9 }, (_, i) => `<span class="${pips[v].includes(i) ? "rt-pip" : ""}"></span>`).join("")}</div>`,
+            )
+            .join("");
+          summary = "합계 " + vals.reduce((a, b) => a + b, 0);
+          s.history.unshift(
+            "주사위 " +
+              vals.join(" + ") +
+              " = " +
+              vals.reduce((a, b) => a + b, 0),
+          );
+        } else {
+          const heads = vals.filter((v) => v === 0).length;
+          s.heads += heads;
+          s.tails += n - heads;
+          html = vals
+            .map(
+              (v) =>
+                `<div class="rt-coin ${v ? "tail" : ""}">${v ? "뒤" : "앞"}</div>`,
+            )
+            .join("");
+          summary = `앞 ${heads} · 뒤 ${n - heads}`;
+          s.history.unshift(
+            "동전 " + vals.map((v) => (v ? "뒤" : "앞")).join(", "),
+          );
+        }
+        s.history = s.history.slice(0, 5);
+        output(
+          t,
+          `<div class="rt-balls">${html}</div><div class="rt-summary">${summary}</div>${mode === "coin" ? `<p class="rt-small">누적 · 앞 ${s.heads}회 / 뒤 ${s.tails}회</p>` : ""}<h4>최근 5회</h4><ol class="rt-list">${s.history.map((x) => "<li>" + esc(x) + "</li>").join("")}</ol>`,
+          s.history[0],
+        );
+      });
+    }
+    function rps() {
+      const a = names("rps", 2),
+        moves = ["가위", "바위", "보"],
+        icons = ["✌", "✊", "✋"],
+        picks = a.map((name) => ({
+          name,
+          move: moves[ClassroomRandom.int(3)],
+        })),
+        winner = ClassroomRandom.rpsWinner(picks.map((p) => p.move));
+      output("rps", '<div class="rt-summary">패를 배정하는 중…</div>');
+      animate("rps", 350, () =>
+        output(
+          "rps",
+          `<div class="rt-summary">${winner ? winner + " 승리" : "무승부"}</div><div class="rt-rps">${moves
+            .map(
+              (m, i) =>
+                `<section class="${winner === m ? "winner" : ""}"><h4><span>${icons[i]}</span>${m}${winner === m ? " · 승자" : ""}</h4>${
+                  picks
+                    .filter((p) => p.move === m)
+                    .map((p) => "<p>" + esc(p.name) + "</p>")
+                    .join("") || "<p>없음</p>"
+                }</section>`,
+            )
+            .join("")}</div>`,
+          (winner ? winner + " 승리" : "무승부") +
+            "\n" +
+            picks.map((p) => p.name + ": " + p.move).join("\n"),
+        ),
+      );
+    }
+    function numbers() {
+      state("numberpick").values = ClassroomRandom.numbers(
+        integer("numberpick", "min"),
+        integer("numberpick", "max"),
+        integer("numberpick", "count"),
+        field("numberpick", "dup").checked,
+        field("numberpick", "missing").value,
+      );
+      renderNumbers();
+    }
+    function renderNumbers() {
+      const a = state("numberpick").values.slice();
+      if (field("numberpick", "sort").value === "asc") a.sort((a, b) => a - b);
+      output(
+        "numberpick",
+        '<div class="rt-balls">' +
+          a.map((n) => `<span class="rt-ball">${n}</span>`).join("") +
+          "</div>",
+        a.join(", "),
+      );
+    }
+    function bracket(confirmed = false) {
+      const a = names("bracket", 2, 32),
+        s = state("bracket");
+      if (s.bracket && !confirmed) {
+        ask("bracket", "현재 대진과 경기 결과를 지우고 다시 생성할까요?", () =>
+          bracket(true),
+        );
+        return;
+      }
+      s.bracket = ClassroomRandom.bracket(a);
+      renderBracket();
+    }
+    function renderBracket() {
+      const b = state("bracket").bracket,
+        champ = b.rounds[b.rounds.length - 1][0].winner;
+      const h = (b.size / 2) * 114;
+      output(
+        "bracket",
+        `${champ ? `<div class="rt-summary">🏆 ${esc(champ.name)}</div>` : ""}<div class="rt-scroll"><div class="rt-bracket" style="--bracket-height:${h}px">${b.rounds.map((round, r) => `<section class="rt-round"><h4>${round.length === 1 ? "결승" : round.length === 2 ? "4강" : round.length === 4 ? "8강" : r + 1 + "라운드"}</h4><div class="rt-matches" style="--connector-height:${h / round.length}px">${round.map((m, i) => `<div class="rt-match">${m.players.map((p, side) => button("winner", (m.winner === p && p ? "✓ " : "") + esc(p ? p.name : r ? "진출 대기" : "부전승"), `data-round="${r}" data-match="${i}" data-side="${side}" aria-pressed="${!!p && m.winner === p}" ${!m.players[0] || !m.players[1] ? "disabled" : ""}`)).join("")}</div>`).join("")}</div></section>`).join("")}</div></div>`,
+        b.rounds
+          .map(
+            (round, r) =>
+              `${r + 1}라운드\n` +
+              round
+                .map(
+                  (m) =>
+                    m.players
+                      .map((p) => (p ? p.name : "대기/부전승"))
+                      .join(" vs ") +
+                    " → " +
+                    (m.winner ? m.winner.name : "미정"),
+                )
+                .join("\n"),
+          )
+          .join("\n\n"),
+      );
+    }
+    function seat() {
+      const t = "seat",
+        s = state(t),
+        rows = integer(t, "rows"),
+        cols = integer(t, "cols");
+      if (s.pins.size && (s.rows !== rows || s.cols !== cols))
+        throw Error("좌석 크기를 바꾸려면 먼저 모든 고정을 해제해주세요.");
+      const seats = ClassroomRandom.seats(
+        names(t),
+        rows,
+        cols,
+        s.seats,
+        s.pins,
+      );
+      s.seats = seats;
+      s.rows = rows;
+      s.cols = cols;
+      renderSeats();
+    }
+    function renderSeats() {
+      const s = state("seat");
+      output(
+        "seat",
+        `<div class="rt-scroll"><div class="rt-podium">교탁 / 칠판</div><div class="rt-seats" style="--seat-cols:${s.cols}">${s.seats.map((n, i) => button("pin", `<small>${Math.floor(i / s.cols) + 1}행 ${(i % s.cols) + 1}열${s.pins.has(i) ? " · 🔒 고정" : ""}</small><span>${esc(n == null ? "빈 좌석" : n)}</span>`, `class="rt-seat" data-index="${i}" aria-pressed="${s.pins.has(i)}" title="${esc(n == null ? "빈 좌석" : n)}"`)).join("")}</div></div>`,
+        Array.from({ length: s.rows }, (_, r) =>
+          s.seats
+            .slice(r * s.cols, (r + 1) * s.cols)
+            .map((n) => (n == null ? "(빈 좌석)" : n))
+            .join("\t"),
+        ).join("\n"),
+      );
+    }
+    function ladder(confirmed = false) {
+      const t = "ladder",
+        a = names(t, 2, 12),
+        ends = ClassroomRandom.list(field(t, "ends").value, 2, 12);
+      if (a.length !== ends.length)
+        throw Error(
+          `참가자 ${a.length}명과 결과 ${ends.length}개의 개수를 맞춰주세요.`,
+        );
+      const s = state(t);
+      if (s.board && !confirmed) {
+        ask(t, "현재 사다리와 결과를 지우고 다시 만들까요?", () =>
+          ladder(true),
+        );
+        return;
+      }
+      s.names = a;
+      s.ends = ClassroomRandom.shuffle(ends);
+      s.board = ClassroomRandom.ladder(a.length);
+      s.paths = a.map((_, i) => ClassroomRandom.trace(s.board, i));
+      s.revealed = new Set();
+      renderLadder();
+    }
+    function renderLadder(animated = -1) {
+      const t = "ladder",
+        s = state(t),
+        n = s.names.length,
+        w = n * 84,
+        colors = [
+          "#437caa",
+          "#b25577",
+          "#4b8970",
+          "#927029",
+          "#8057a6",
+          "#377c87",
+          "#a46242",
+          "#6065a9",
+          "#aa4f52",
+          "#457449",
+          "#9c6591",
+          "#42687e",
+        ];
+      const x = (i) => 42 + i * 84;
+      output(
+        t,
+        `<div class="rt-scroll"><div style="min-width:${w}px;--ladder-n:${n}"><div class="rt-ladder-labels">${s.names.map((name, i) => button("path", esc(name) + (s.revealed.has(i) ? " ✓" : ""), `data-index="${i}"`)).join("")}</div><svg class="rt-ladder-svg" preserveAspectRatio="none" viewBox="0 0 ${w} 330" role="img" aria-label="참가자와 결과를 잇는 사다리"><g stroke="#c8c5d8" stroke-width="3">${s.names.map((_, i) => `<path d="M${x(i)} 0 V330"/>`).join("")}${s.board.rungs.map((r) => `<path d="M${x(r.col)} ${r.y} H${x(r.col + 1)}"/>`).join("")}</g>${[...s.revealed].map((i) => `<path class="path ${i === animated ? "rt-reveal" : ""}" pathLength="1" ${i === animated ? 'stroke-dasharray="1"' : ""} stroke="${colors[i]}" d="${s.paths[i].points.map((p, j) => (j ? "L" : "M") + x(p[0]) + " " + p[1]).join(" ")}"/>`).join("")}</svg><div class="rt-ladder-labels">${s.ends.map((e) => "<span>" + esc(e) + "</span>").join("")}</div></div></div><ol class="rt-list">${[
+          ...s.revealed,
+        ]
+          .filter((i) => i !== animated)
+          .map(
+            (i) =>
+              `<li><span class="rt-badge">${i + 1}</span>${esc(s.names[i])} → ${esc(s.ends[s.paths[i].end])}</li>`,
+          )
+          .join("")}</ol>`,
+        [...s.revealed]
+          .filter((i) => i !== animated)
+          .map((i) => s.names[i] + " → " + s.ends[s.paths[i].end])
+          .join("\n"),
+      );
+      field(t, "aux").innerHTML =
+        button("all", "전체 결과 보기") +
+        button("run", "다시 만들기") +
+        focusButton(t) +
+        (s.text ? button("copy", "결과 복사") : "");
+    }
+    function revealLadder(i) {
+      const s = state("ladder");
+      if (i == null) {
+        s.names.forEach((_, i) => s.revealed.add(i));
+        renderLadder();
+        return;
+      }
+      s.revealed.add(i);
+      renderLadder(i);
+      animate("ladder", 1500, () => renderLadder());
+    }
+    return { supports: (t) => !!configs[t], init };
+  })();
+  window.ClassroomTools = ClassroomTools;
+</script>

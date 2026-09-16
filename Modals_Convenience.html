@@ -24,8 +24,7 @@
         <p class="convenience-subtitle">일상을 더 편리하게 :)</p>
       </div>
 
-      <!-- 1단계: 도구 목록 (2행 5열 그리드 — QR/계산기/타이머는 기존 기능 그대로, 나머지 7개는
-           우선 UI 카드만 추가하고 누르면 "준비 중" 화면으로 안내합니다) -->
+      <!-- 11개 도구. 내부 화면은 실제 진입 시 초기화합니다. -->
       <div id="convenienceStep1">
         <div class="convenience-app-grid">
           <button type="button" class="convenience-app-card app-mint" onclick="openConvenienceTool('qr')">
@@ -77,6 +76,11 @@
             <span class="convenience-app-icon"><i class="fas fa-chair" aria-hidden="true"></i></span>
             <span class="convenience-app-name">자리뽑기</span>
             <span class="convenience-app-desc">자리 배정</span>
+          </button>
+          <button type="button" class="convenience-app-card app-ladder" onclick="openConvenienceTool('ladder')">
+            <span class="convenience-app-icon" aria-hidden="true">⇅</span>
+            <span class="convenience-app-name">사다리타기</span>
+            <span class="convenience-app-desc">번호와 결과를 연결해요</span>
           </button>
         </div>
       </div>
@@ -184,156 +188,14 @@
       </div>
 
       <!-- 2단계: 룰렛 돌리기 (서버 호출 없음 — 항목 입력 → conic-gradient 휠 → 랜덤 회전 애니메이션) -->
-      <div id="convenienceStepRoulette" style="display:none;">
-        <div class="convenience-step-head">
-          <button type="button" class="convenience-backlink" onclick="backToConvenienceList()"><i class="fas fa-chevron-left" aria-hidden="true"></i> 편의 기능</button>
-          <span class="convenience-step-title-inline"><i class="fas fa-compact-disc" aria-hidden="true" style="color:#1c78b0;"></i> 룰렛 돌리기</span>
-        </div>
-        <div class="convenience-split">
-          <div class="convenience-split-col">
-            <div class="field">
-              <label for="rouletteItemsInput">항목 (한 줄에 하나씩, 2~12개)</label>
-              <textarea id="rouletteItemsInput" class="convenience-textarea" rows="6" placeholder="예:&#10;민준&#10;서연&#10;하윤&#10;지호"></textarea>
-            </div>
-            <button class="btn-search" style="width:100%;" onclick="rouletteApplyItems()">룰렛에 반영</button>
-          </div>
-          <div class="convenience-split-col convenience-split-col-result">
-            <div class="convenience-roulette-wrap">
-              <div class="convenience-roulette-pointer" aria-hidden="true"></div>
-              <div class="convenience-roulette-wheel" id="rouletteWheel"></div>
-            </div>
-            <div class="convenience-legend" id="rouletteLegend"></div>
-            <button type="button" id="rouletteSpinBtn" class="btn-search" style="width:100%; margin-top:10px;" onclick="rouletteSpin()"><i class="fas fa-play"></i> 돌리기</button>
-            <div class="convenience-big-result" id="rouletteResult"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2단계: 랜덤 순서 정하기 (Fisher–Yates 셔플) -->
-      <div id="convenienceStepShuffle" style="display:none;">
-        <div class="convenience-step-head">
-          <button type="button" class="convenience-backlink" onclick="backToConvenienceList()"><i class="fas fa-chevron-left" aria-hidden="true"></i> 편의 기능</button>
-          <span class="convenience-step-title-inline"><i class="fas fa-shuffle" aria-hidden="true" style="color:#c23c6b;"></i> 랜덤 순서 정하기</span>
-        </div>
-        <div class="convenience-split">
-          <div class="convenience-split-col">
-            <div class="field">
-              <label for="shuffleNamesInput">이름 / 항목 (줄바꿈 또는 쉼표 구분, 2개 이상)</label>
-              <textarea id="shuffleNamesInput" class="convenience-textarea" rows="6" placeholder="예: 1모둠, 2모둠, 3모둠&#10;또는 한 줄에 하나씩"></textarea>
-            </div>
-            <button class="btn-search" style="width:100%;" onclick="shuffleRun()"><i class="fas fa-shuffle"></i> 순서 섞기</button>
-          </div>
-          <div class="convenience-split-col convenience-split-col-result">
-            <div class="convenience-rank-wrap" id="shuffleResultWrap">
-              <ol class="convenience-rank-list" id="shuffleResultList"></ol>
-              <div class="convenience-tool-actions">
-                <button type="button" class="qr-tool-secondary-btn" onclick="shuffleRun()"><i class="fas fa-rotate-left"></i> 다시 섞기</button>
-                <button type="button" class="qr-tool-secondary-btn" onclick="shuffleCopy()"><i class="fas fa-copy"></i> 복사</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2단계: 주사위 · 동전 던지기 -->
-      <div id="convenienceStepDice" style="display:none;">
-        <div class="convenience-step-head">
-          <button type="button" class="convenience-backlink" onclick="backToConvenienceList()"><i class="fas fa-chevron-left" aria-hidden="true"></i> 편의 기능</button>
-          <span class="convenience-step-title-inline"><i class="fas fa-dice" aria-hidden="true" style="color:#9c7405;"></i> 주사위 · 동전</span>
-        </div>
-        <div class="convenience-tab-row">
-          <button type="button" id="diceModeDice" class="convenience-tab-btn active" onclick="diceSetMode('dice')"><i class="fas fa-dice-five"></i> 주사위</button>
-          <button type="button" id="diceModeCoin" class="convenience-tab-btn" onclick="diceSetMode('coin')"><i class="fas fa-coins"></i> 동전</button>
-        </div>
-        <div id="diceDiceArea">
-          <div class="convenience-count-row" id="diceCountRow">
-            <button type="button" class="dice-count-btn active" data-count="1" onclick="diceSetCount(1)">1개</button>
-            <button type="button" class="dice-count-btn" data-count="2" onclick="diceSetCount(2)">2개</button>
-            <button type="button" class="dice-count-btn" data-count="3" onclick="diceSetCount(3)">3개</button>
-            <button type="button" class="dice-count-btn" data-count="4" onclick="diceSetCount(4)">4개</button>
-          </div>
-          <div class="convenience-dice-faces" id="diceFaces"></div>
-          <div class="convenience-big-result" id="diceSum"></div>
-          <button type="button" class="btn-search" style="width:100%;" onclick="diceRoll()"><i class="fas fa-dice"></i> 굴리기</button>
-        </div>
-        <div id="diceCoinArea" style="display:none;">
-          <div class="convenience-coin" id="coinResult">?</div>
-          <button type="button" class="btn-search" style="width:100%;" onclick="coinFlip()"><i class="fas fa-coins"></i> 던지기</button>
-        </div>
-        <div class="convenience-history">
-          <div class="convenience-history-label">최근 기록</div>
-          <ul id="diceHistory"></ul>
-        </div>
-      </div>
-
-      <!-- 2단계: 가위바위보 추첨 -->
-      <div id="convenienceStepRps" style="display:none;">
-        <div class="convenience-step-head">
-          <button type="button" class="convenience-backlink" onclick="backToConvenienceList()"><i class="fas fa-chevron-left" aria-hidden="true"></i> 편의 기능</button>
-          <span class="convenience-step-title-inline"><i class="fas fa-hand-scissors" aria-hidden="true" style="color:#c9403a;"></i> 가위바위보 추첨</span>
-        </div>
-        <div class="field">
-          <label for="rpsNamesInput">참가자 이름 (2명 이상, 줄바꿈 또는 쉼표 구분)</label>
-          <textarea id="rpsNamesInput" class="convenience-textarea" rows="3" placeholder="예: 민준, 서연, 하윤"></textarea>
-        </div>
-        <button class="btn-search" style="width:100%;" onclick="rpsRun()"><i class="fas fa-hand-scissors"></i> 가위바위보!</button>
-        <div class="convenience-rps-picks" id="rpsPicks"></div>
-        <div class="convenience-big-result" id="rpsResult"></div>
-      </div>
-
-      <!-- 2단계: 숫자 추첨기 -->
-      <div id="convenienceStepNumberPick" style="display:none;">
-        <div class="convenience-step-head">
-          <button type="button" class="convenience-backlink" onclick="backToConvenienceList()"><i class="fas fa-chevron-left" aria-hidden="true"></i> 편의 기능</button>
-          <span class="convenience-step-title-inline"><i class="fas fa-hashtag" aria-hidden="true" style="color:#147f96;"></i> 숫자 추첨기</span>
-        </div>
-        <div class="convenience-form-row">
-          <div class="field"><label for="numMinInput">최소값</label><input type="number" id="numMinInput" value="1"></div>
-          <div class="field"><label for="numMaxInput">최대값</label><input type="number" id="numMaxInput" value="30"></div>
-          <div class="field"><label for="numCountInput">뽑을 개수</label><input type="number" id="numCountInput" value="1" min="1"></div>
-        </div>
-        <label class="convenience-checkbox-row"><input type="checkbox" id="numAllowDup"> 중복 허용</label>
-        <button class="btn-search" style="width:100%;" onclick="numberPickRun()"><i class="fas fa-hashtag"></i> 추첨하기</button>
-        <div class="convenience-number-result" id="numResult"></div>
-      </div>
-
-      <!-- 2단계: 토너먼트 대진표 -->
-      <div id="convenienceStepBracket" style="display:none;">
-        <div class="convenience-step-head">
-          <button type="button" class="convenience-backlink" onclick="backToConvenienceList()"><i class="fas fa-chevron-left" aria-hidden="true"></i> 편의 기능</button>
-          <span class="convenience-step-title-inline"><i class="fas fa-sitemap" aria-hidden="true" style="color:#4c4fb0;"></i> 토너먼트 대진표</span>
-        </div>
-        <div class="field">
-          <label for="bracketNamesInput">참가자 이름 (2~32명, 줄바꿈 또는 쉼표 구분)</label>
-          <textarea id="bracketNamesInput" class="convenience-textarea" rows="3" placeholder="예: 1반, 2반, 3반, 4반, 5반"></textarea>
-        </div>
-        <button class="btn-search" style="width:100%;" onclick="bracketRun()"><i class="fas fa-sitemap"></i> 대진표 생성</button>
-        <div id="bracketResult"></div>
-      </div>
-
-      <!-- 2단계: 자리뽑기 -->
-      <div id="convenienceStepSeat" style="display:none;">
-        <div class="convenience-step-head">
-          <button type="button" class="convenience-backlink" onclick="backToConvenienceList()"><i class="fas fa-chevron-left" aria-hidden="true"></i> 편의 기능</button>
-          <span class="convenience-step-title-inline"><i class="fas fa-chair" aria-hidden="true" style="color:#4f8a3f;"></i> 자리뽑기</span>
-        </div>
-        <div class="convenience-split">
-          <div class="convenience-split-col">
-            <div class="convenience-form-row">
-              <div class="field"><label for="seatRowsInput">행(줄) 수</label><input type="number" id="seatRowsInput" value="4" min="1" max="12"></div>
-              <div class="field"><label for="seatColsInput">열(칸) 수</label><input type="number" id="seatColsInput" value="6" min="1" max="12"></div>
-            </div>
-            <div class="field">
-              <label for="seatNamesInput">학생 이름 (줄바꿈 또는 쉼표 구분)</label>
-              <textarea id="seatNamesInput" class="convenience-textarea" rows="6" placeholder="한 줄에 한 명씩 입력"></textarea>
-            </div>
-            <button class="btn-search" style="width:100%;" onclick="seatRun()"><i class="fas fa-shuffle"></i> 자리 배치</button>
-          </div>
-          <div class="convenience-split-col convenience-split-col-result">
-            <div id="seatResult"></div>
-          </div>
-        </div>
-      </div>
+      <div id="convenienceStepRoulette" style="display:none;"></div>
+      <div id="convenienceStepShuffle" style="display:none;"></div>
+      <div id="convenienceStepDice" style="display:none;"></div>
+      <div id="convenienceStepRps" style="display:none;"></div>
+      <div id="convenienceStepNumberPick" style="display:none;"></div>
+      <div id="convenienceStepBracket" style="display:none;"></div>
+      <div id="convenienceStepSeat" style="display:none;"></div>
+      <div id="convenienceStepLadder" style="display:none;"></div>
 
     </div>
 
@@ -352,19 +214,17 @@
   const CONVENIENCE_TOOL_STEPS = [
     'convenienceStepQr', 'convenienceStepCalc', 'convenienceStepTimer',
     'convenienceStepRoulette', 'convenienceStepShuffle', 'convenienceStepDice',
-    'convenienceStepRps', 'convenienceStepNumberPick', 'convenienceStepBracket', 'convenienceStepSeat'
+    'convenienceStepRps', 'convenienceStepNumberPick', 'convenienceStepBracket', 'convenienceStepSeat', 'convenienceStepLadder'
   ];
   const CONVENIENCE_TOOL_ELEMENT_ID = {
     qr: 'convenienceStepQr', calc: 'convenienceStepCalc', timer: 'convenienceStepTimer',
     roulette: 'convenienceStepRoulette', shuffle: 'convenienceStepShuffle', dice: 'convenienceStepDice',
     rps: 'convenienceStepRps', numberpick: 'convenienceStepNumberPick',
-    bracket: 'convenienceStepBracket', seat: 'convenienceStepSeat'
+    bracket: 'convenienceStepBracket', seat: 'convenienceStepSeat', ladder: 'convenienceStepLadder'
   };
   // 도구 화면을 새로 열 때마다(또는 모달을 처음 열 때) 불러줄 초기화 함수
   const CONVENIENCE_TOOL_RESET = {
-    qr: resetQrToolSafe, calc: resetCalcToolSafe, timer: resetTimerToolSafe,
-    roulette: resetRouletteTool, shuffle: resetShuffleTool, dice: resetDiceTool,
-    rps: resetRpsTool, numberpick: resetNumberPickTool, bracket: resetBracketTool, seat: resetSeatTool
+    qr: resetQrToolSafe, calc: resetCalcToolSafe, timer: resetTimerToolSafe
   };
   // QR/계산기/타이머의 reset 함수는 아래쪽(기존 코드)에 정의되어 있어, 정의 전에 참조해도
   // 실제 호출 시점(클릭 이후)엔 이미 존재하므로 안전합니다. 다만 혹시 모를 누락에 대비한 안전 래퍼.
@@ -384,7 +244,7 @@
   function shuffleArray(arr) {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = ClassroomRandom.int(i + 1);
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
@@ -395,7 +255,7 @@
     document.getElementById('convenienceHeader').style.display = '';
     CONVENIENCE_TOOL_STEPS.forEach(id => { document.getElementById(id).style.display = 'none'; });
     updateConvenienceClock();
-    // 모달을 새로 열 때마다 모든 도구를 깨끗한 상태로 되돌립니다(지난 세션의 입력/결과가 남아있지 않도록).
+    // QR/계산기/타이머 기존 동작 유지. 랜덤 도구는 진입 시 생성하고 세션 입력을 보존합니다.
     Object.keys(CONVENIENCE_TOOL_RESET).forEach(tool => CONVENIENCE_TOOL_RESET[tool]());
     openMod('convenienceMod');
   }
@@ -417,12 +277,17 @@
   }
 
   function openConvenienceTool(tool) {
+    if (window.ClassroomTools && ClassroomTools.supports(tool)) ClassroomTools.init(tool);
     document.getElementById('convenienceStep1').style.display = 'none';
     document.getElementById('convenienceHeader').style.display = 'none'; // 도구 화면엔 자체 "⬅ 뒤로" 헤더가 있어 중복 표시하지 않습니다.
     CONVENIENCE_TOOL_STEPS.forEach(id => { document.getElementById(id).style.display = 'none'; });
     const elId = CONVENIENCE_TOOL_ELEMENT_ID[tool];
     if (!elId) return;
     document.getElementById(elId).style.display = 'block';
+    if (window.ClassroomTools && ClassroomTools.supports(tool)) {
+      document.querySelector('#convenienceMod .convenience-screen').scrollTop = 0;
+      document.querySelector('#convenienceMod .convenience-device').scrollTop = 0;
+    }
   }
   function backToConvenienceList() {
     timerPause(); // 다른 도구로 이동할 때도 타이머는 안전하게 멈춰둡니다.
@@ -850,304 +715,4 @@
     } catch (e) { /* 소리 재생 실패는 조용히 무시 (알림창은 그대로 뜸) */ }
   }
 
-  // ===== 룰렛 돌리기 (서버 호출 없음) =====
-  const ROULETTE_COLORS = ['#5fb8ac', '#f2a65a', '#8a68b0', '#e26d8c', '#4c8fc0', '#8fb84f', '#d98c3f', '#6b7fd7', '#c95f6a', '#45a897', '#b0895f', '#7fa8d9'];
-  let _roulette = { items: [], rotation: 0 };
-
-  function resetRouletteTool() {
-    _roulette = { items: [], rotation: 0 };
-    const input = document.getElementById('rouletteItemsInput');
-    if (input) input.value = '';
-    const wheel = document.getElementById('rouletteWheel');
-    if (wheel) { wheel.style.transition = 'none'; wheel.style.transform = 'rotate(0deg)'; wheel.style.background = '#f4f2f7'; }
-    const legend = document.getElementById('rouletteLegend');
-    if (legend) legend.innerHTML = '';
-    const result = document.getElementById('rouletteResult');
-    if (result) result.textContent = '';
-  }
-
-  function rouletteApplyItems() {
-    const raw = document.getElementById('rouletteItemsInput').value;
-    const items = parseListInput(raw);
-    if (items.length < 2) { showAlert('항목을 2개 이상 입력해주세요(한 줄에 하나씩, 또는 쉼표로 구분).'); return; }
-    if (items.length > 12) { showAlert('항목은 최대 12개까지 가능합니다.'); return; }
-    _roulette.items = items;
-    _roulette.rotation = 0;
-    const wheel = document.getElementById('rouletteWheel');
-    wheel.style.transition = 'none';
-    wheel.style.transform = 'rotate(0deg)';
-    const n = items.length;
-    const slice = 360 / n;
-    const gradParts = [];
-    for (let i = 0; i < n; i++) {
-      gradParts.push(`${ROULETTE_COLORS[i % ROULETTE_COLORS.length]} ${i * slice}deg ${(i + 1) * slice}deg`);
-    }
-    wheel.style.background = `conic-gradient(${gradParts.join(',')})`;
-    document.getElementById('rouletteLegend').innerHTML = items.map((label, i) =>
-      `<span class="convenience-legend-item" id="rouletteLegend${i}"><span class="convenience-legend-dot" style="background:${ROULETTE_COLORS[i % ROULETTE_COLORS.length]}"></span>${escapeHtml(label)}</span>`
-    ).join('');
-    document.getElementById('rouletteResult').textContent = '';
-  }
-
-  function rouletteSpin() {
-    const items = _roulette.items;
-    if (items.length < 2) { showAlert('먼저 항목을 입력하고 "룰렛에 반영"을 눌러주세요.'); return; }
-    const idx = Math.floor(Math.random() * items.length);
-    const sliceAngle = 360 / items.length;
-    const centerAngle = idx * sliceAngle + sliceAngle / 2;
-    const extraSpins = 5 * 360;
-    _roulette.rotation += extraSpins + (360 - centerAngle);
-    const wheel = document.getElementById('rouletteWheel');
-    wheel.style.transition = 'transform 3.2s cubic-bezier(.17,.67,.16,1)';
-    wheel.style.transform = `rotate(${_roulette.rotation}deg)`;
-    document.getElementById('rouletteResult').textContent = '';
-    document.querySelectorAll('#rouletteLegend .convenience-legend-item').forEach(el => el.classList.remove('is-winner'));
-    const btn = document.getElementById('rouletteSpinBtn');
-    btn.disabled = true;
-    setTimeout(() => {
-      document.getElementById('rouletteResult').textContent = '🎉 ' + items[idx];
-      const legendEl = document.getElementById('rouletteLegend' + idx);
-      if (legendEl) legendEl.classList.add('is-winner');
-      btn.disabled = false;
-    }, 3250);
-  }
-
-  // ===== 랜덤 순서 정하기 (서버 호출 없음) =====
-  function resetShuffleTool() {
-    const input = document.getElementById('shuffleNamesInput');
-    if (input) input.value = '';
-    const wrap = document.getElementById('shuffleResultWrap');
-    if (wrap) wrap.classList.remove('show');
-    const list = document.getElementById('shuffleResultList');
-    if (list) list.innerHTML = '';
-  }
-
-  function shuffleRun() {
-    const raw = document.getElementById('shuffleNamesInput').value;
-    const names = parseListInput(raw);
-    if (names.length < 2) { showAlert('이름(항목)을 2개 이상 입력해주세요.'); return; }
-    const arr = shuffleArray(names);
-    document.getElementById('shuffleResultList').innerHTML = arr.map((name, i) =>
-      `<li class="convenience-rank-row"><span class="convenience-rank-badge">${i + 1}</span><span class="convenience-rank-name">${escapeHtml(name)}</span></li>`
-    ).join('');
-    document.getElementById('shuffleResultWrap').classList.add('show');
-  }
-
-  function shuffleCopy() {
-    const rows = Array.from(document.querySelectorAll('#shuffleResultList .convenience-rank-name')).map(el => el.textContent);
-    if (!rows.length) { showAlert('먼저 순서를 섞어주세요.'); return; }
-    const text = rows.map((n, i) => (i + 1) + '. ' + n).join('\n');
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => showAlert('결과를 클립보드에 복사했습니다.')).catch(() => showAlert('복사에 실패했습니다.'));
-    } else {
-      showAlert('이 브라우저에서는 복사 기능을 지원하지 않습니다.');
-    }
-  }
-
-  // ===== 주사위 · 동전 던지기 (서버 호출 없음) =====
-  const DICE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-  let _diceMode = 'dice';
-  let _diceCount = 1;
-  let _diceHistory = [];
-
-  function resetDiceTool() {
-    _diceMode = 'dice';
-    _diceCount = 1;
-    _diceHistory = [];
-    const faces = document.getElementById('diceFaces'); if (faces) faces.innerHTML = '';
-    const sum = document.getElementById('diceSum'); if (sum) sum.textContent = '';
-    const coin = document.getElementById('coinResult'); if (coin) coin.textContent = '?';
-    const hist = document.getElementById('diceHistory'); if (hist) hist.innerHTML = '';
-    const modeDice = document.getElementById('diceModeDice'); if (modeDice) modeDice.classList.add('active');
-    const modeCoin = document.getElementById('diceModeCoin'); if (modeCoin) modeCoin.classList.remove('active');
-    const diceArea = document.getElementById('diceDiceArea'); if (diceArea) diceArea.style.display = '';
-    const coinArea = document.getElementById('diceCoinArea'); if (coinArea) coinArea.style.display = 'none';
-    document.querySelectorAll('.dice-count-btn').forEach(b => b.classList.toggle('active', b.dataset.count === '1'));
-  }
-
-  function diceSetMode(mode) {
-    _diceMode = mode;
-    document.getElementById('diceModeDice').classList.toggle('active', mode === 'dice');
-    document.getElementById('diceModeCoin').classList.toggle('active', mode === 'coin');
-    document.getElementById('diceDiceArea').style.display = mode === 'dice' ? '' : 'none';
-    document.getElementById('diceCoinArea').style.display = mode === 'coin' ? '' : 'none';
-  }
-
-  function diceSetCount(n) {
-    _diceCount = n;
-    document.querySelectorAll('.dice-count-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.count, 10) === n));
-  }
-
-  function diceRoll() {
-    const rolls = [];
-    for (let i = 0; i < _diceCount; i++) rolls.push(1 + Math.floor(Math.random() * 6));
-    const facesEl = document.getElementById('diceFaces');
-    facesEl.innerHTML = rolls.map(r => `<span class="dice-face">${DICE_FACES[r - 1]}</span>`).join('');
-    facesEl.classList.remove('dice-roll-anim'); void facesEl.offsetWidth; facesEl.classList.add('dice-roll-anim');
-    document.getElementById('diceSum').textContent = rolls.length > 1 ? ('합계: ' + rolls.reduce((a, b) => a + b, 0)) : '';
-    pushDiceHistory('주사위 ' + rolls.join(', '));
-  }
-
-  function coinFlip() {
-    const result = Math.random() < 0.5 ? '앞면' : '뒷면';
-    const el = document.getElementById('coinResult');
-    el.classList.remove('coin-flip-anim'); void el.offsetWidth; el.classList.add('coin-flip-anim');
-    setTimeout(() => { el.textContent = result; }, 260);
-    pushDiceHistory('동전 ' + result);
-  }
-
-  function pushDiceHistory(text) {
-    _diceHistory.unshift(text);
-    _diceHistory = _diceHistory.slice(0, 5);
-    document.getElementById('diceHistory').innerHTML = _diceHistory.map(t => `<li>${escapeHtml(t)}</li>`).join('');
-  }
-
-  // ===== 가위바위보 추첨 (서버 호출 없음) =====
-  const RPS_EMOJI = { '가위': '✌️', '바위': '✊', '보': '🖐️' };
-  const RPS_BEATS = { '가위': '보', '바위': '가위', '보': '바위' }; // key가 이기는 대상(value)
-
-  function resetRpsTool() {
-    const input = document.getElementById('rpsNamesInput'); if (input) input.value = '';
-    const picks = document.getElementById('rpsPicks'); if (picks) picks.innerHTML = '';
-    const result = document.getElementById('rpsResult'); if (result) result.textContent = '';
-  }
-
-  function rpsRun() {
-    const raw = document.getElementById('rpsNamesInput').value;
-    const names = parseListInput(raw);
-    if (names.length < 2) { showAlert('참가자 이름을 2명 이상 입력해주세요.'); return; }
-    if (names.length > 20) { showAlert('참가자는 최대 20명까지 가능합니다.'); return; }
-    const moves = ['가위', '바위', '보'];
-    const picks = names.map(name => ({ name, move: moves[Math.floor(Math.random() * 3)] }));
-    const distinctMoves = Array.from(new Set(picks.map(p => p.move)));
-    let winners = [];
-    let resultText;
-    if (distinctMoves.length === 1 || distinctMoves.length === 3) {
-      resultText = '🤝 무승부! 버튼을 다시 눌러 재추첨해보세요.';
-    } else {
-      const [a, b] = distinctMoves;
-      const winningMove = RPS_BEATS[a] === b ? a : b;
-      winners = picks.filter(p => p.move === winningMove).map(p => p.name);
-      resultText = '🏆 승자: ' + winners.map(escapeHtml).join(', ');
-    }
-    document.getElementById('rpsPicks').innerHTML = picks.map(p =>
-      `<div class="convenience-rps-pick${winners.indexOf(p.name) !== -1 ? ' is-winner' : ''}"><span class="convenience-rps-emoji">${RPS_EMOJI[p.move]}</span><span>${escapeHtml(p.name)}</span></div>`
-    ).join('');
-    document.getElementById('rpsResult').innerHTML = resultText;
-  }
-
-  // ===== 숫자 추첨기 (서버 호출 없음) =====
-  function resetNumberPickTool() {
-    const minEl = document.getElementById('numMinInput'); if (minEl) minEl.value = '1';
-    const maxEl = document.getElementById('numMaxInput'); if (maxEl) maxEl.value = '30';
-    const countEl = document.getElementById('numCountInput'); if (countEl) countEl.value = '1';
-    const dup = document.getElementById('numAllowDup'); if (dup) dup.checked = false;
-    const result = document.getElementById('numResult'); if (result) result.innerHTML = '';
-  }
-
-  function numberPickRun() {
-    const min = parseInt(document.getElementById('numMinInput').value, 10);
-    const max = parseInt(document.getElementById('numMaxInput').value, 10);
-    const count = parseInt(document.getElementById('numCountInput').value, 10);
-    const allowDup = document.getElementById('numAllowDup').checked;
-    if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) { showAlert('최소값과 최대값을 올바르게 입력해주세요.'); return; }
-    if (!Number.isFinite(count) || count < 1) { showAlert('뽑을 개수를 1 이상 입력해주세요.'); return; }
-    if (count > 200) { showAlert('한 번에 최대 200개까지 뽑을 수 있습니다.'); return; }
-    const rangeSize = max - min + 1;
-    if (!allowDup && count > rangeSize) { showAlert('중복을 허용하지 않으면 범위(' + rangeSize + '개) 안에서만 뽑을 수 있습니다.'); return; }
-    let result;
-    if (allowDup) {
-      result = [];
-      for (let i = 0; i < count; i++) result.push(min + Math.floor(Math.random() * rangeSize));
-    } else {
-      const pool = [];
-      for (let n = min; n <= max; n++) pool.push(n);
-      result = shuffleArray(pool).slice(0, count);
-    }
-    document.getElementById('numResult').innerHTML = result.map(n => `<span class="convenience-number-ball">${n}</span>`).join('');
-  }
-
-  // ===== 토너먼트 대진표 (서버 호출 없음) =====
-  function resetBracketTool() {
-    const input = document.getElementById('bracketNamesInput'); if (input) input.value = '';
-    const result = document.getElementById('bracketResult'); if (result) result.innerHTML = '';
-  }
-
-  function bracketRun() {
-    const raw = document.getElementById('bracketNamesInput').value;
-    let names = parseListInput(raw);
-    if (names.length < 2) { showAlert('참가자를 2명 이상 입력해주세요.'); return; }
-    if (names.length > 32) { showAlert('참가자는 최대 32명까지 가능합니다.'); return; }
-    names = shuffleArray(names);
-    let size = 2;
-    while (size < names.length) size *= 2;
-    const matchCount = size / 2;
-    const byeCount = size - names.length;
-    // 부전승은 서로 다른 경기에 한 번씩만 배정합니다(같은 경기에 부전승 2개가 겹치지 않도록).
-    const matchIdx = shuffleArray(Array.from({ length: matchCount }, (_, i) => i));
-    const byeMatches = {};
-    matchIdx.slice(0, byeCount).forEach(i => { byeMatches[i] = true; });
-    const round1 = [];
-    let cursor = 0;
-    for (let m = 0; m < matchCount; m++) {
-      if (byeMatches[m]) { round1.push([names[cursor], null]); cursor += 1; }
-      else { round1.push([names[cursor], names[cursor + 1]]); cursor += 2; }
-    }
-    const round2Seeds = round1.map(pair => (pair[0] && !pair[1]) ? pair[0] : null);
-    renderBracket(round1, round2Seeds, size);
-  }
-
-  function renderBracket(round1, round2Seeds, size) {
-    const totalRounds = Math.round(Math.log2(size));
-    const roundsHtml = [renderBracketRound(1, round1, false)];
-    const round2Pairs = [];
-    for (let i = 0; i < round2Seeds.length; i += 2) round2Pairs.push([round2Seeds[i], round2Seeds[i + 1]]);
-    if (totalRounds >= 2) roundsHtml.push(renderBracketRound(2, round2Pairs, true));
-    for (let r = 3; r <= totalRounds; r++) {
-      const matchCount = size / Math.pow(2, r);
-      const pairs = Array.from({ length: matchCount }, () => [null, null]);
-      roundsHtml.push(renderBracketRound(r, pairs, true));
-    }
-    document.getElementById('bracketResult').innerHTML = '<div class="convenience-bracket">' + roundsHtml.join('') + '</div>';
-  }
-
-  function renderBracketRound(roundNum, pairs, isTbd) {
-    const rows = pairs.map(pair => {
-      const a = pair[0] ? escapeHtml(pair[0]) : (isTbd ? 'TBD' : '—');
-      const b = pair[1] ? escapeHtml(pair[1]) : (isTbd ? 'TBD' : '<em>부전승</em>');
-      return `<div class="convenience-bracket-match"><span>${a}</span><span class="vs">vs</span><span>${b}</span></div>`;
-    }).join('');
-    return `<div class="convenience-bracket-round"><h5>${roundNum}라운드</h5>${rows}</div>`;
-  }
-
-  // ===== 자리뽑기 (서버 호출 없음) =====
-  function resetSeatTool() {
-    const rows = document.getElementById('seatRowsInput'); if (rows) rows.value = '4';
-    const cols = document.getElementById('seatColsInput'); if (cols) cols.value = '6';
-    const names = document.getElementById('seatNamesInput'); if (names) names.value = '';
-    const result = document.getElementById('seatResult'); if (result) result.innerHTML = '';
-  }
-
-  function seatRun() {
-    const rows = parseInt(document.getElementById('seatRowsInput').value, 10);
-    const cols = parseInt(document.getElementById('seatColsInput').value, 10);
-    if (!rows || !cols || rows < 1 || cols < 1 || rows > 12 || cols > 12) { showAlert('행/열 수를 1~12 사이로 입력해주세요.'); return; }
-    const raw = document.getElementById('seatNamesInput').value;
-    const names = parseListInput(raw);
-    if (!names.length) { showAlert('학생 이름을 한 명 이상 입력해주세요.'); return; }
-    const totalSeats = rows * cols;
-    const shuffled = shuffleArray(names).slice(0, totalSeats);
-    const seats = shuffled.slice();
-    while (seats.length < totalSeats) seats.push(null);
-    let boardHtml = `<div class="convenience-seat-podium"><i class="fas fa-chalkboard"></i> 교탁</div>`;
-    boardHtml += `<div class="convenience-seat-board" style="--seat-cols:${cols};">`;
-    for (let i = 0; i < totalSeats; i++) {
-      boardHtml += `<div class="convenience-seat${seats[i] ? '' : ' is-empty'}">${seats[i] ? escapeHtml(seats[i]) : ''}</div>`;
-    }
-    boardHtml += '</div>';
-    if (names.length > totalSeats) {
-      boardHtml = `<p class="convenience-seat-warning">⚠️ 좌석(${totalSeats}개)보다 이름이 ${names.length - totalSeats}명 더 많아, 배치되지 못한 인원이 있습니다.</p>` + boardHtml;
-    }
-    document.getElementById('seatResult').innerHTML = boardHtml;
-  }
 </script>
