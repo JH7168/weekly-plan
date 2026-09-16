@@ -8,6 +8,13 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
 
+    <!-- 하단 "교육기관 바로가기" 배너의 로고 4곳(도메인당 이미지 1장뿐)은 preconnect(TCP/TLS까지 미리 맺음)를
+         쓸 만큼 중요하지 않아, 더 가벼운 dns-prefetch(DNS 조회만 미리)만 적용합니다(3차 진단 근거로 결정). -->
+    <link rel="dns-prefetch" href="https://www.jge.go.kr">
+    <link rel="dns-prefetch" href="https://www.jnstudy.kr">
+    <link rel="dns-prefetch" href="https://star.moe.go.kr">
+    <link rel="dns-prefetch" href="https://stas.moe.go.kr">
+
     <!-- 홈 화면에 추가했을 때 표시될 이름/아이콘 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -62,7 +69,11 @@
     </script>
     <? } ?>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- 이 프로젝트는 fas(solid) 아이콘만 쓰고 far(regular)/fab(brands)는 전혀 쓰지 않아(3차 진단 확인),
+         all.min.css 대신 core+solid만 받습니다. 웹폰트(.woff2) 요청 수는 원래도 실제 쓰는 스타일만
+         내려받혔으므로(브라우저가 @font-face를 필요할 때만 가져옴) 그대로지만, CSS 자체는 약 19.7KB 줄어듭니다. -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/solid.min.css">
     <!-- 서식 노트 등 손글씨 느낌이 필요한 곳에만 쓰는 가벼운 한글 손글씨 웹폰트 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -119,8 +130,7 @@
 
     </div>
 
-    <!-- 시청각실 주간 시간표 및 예약 시스템 모듈 연결 -->
-    <?!= HtmlService.createHtmlOutputFromFile('Audi_System').getContent(); ?>
+    <!-- 시청각실 주간 시간표 및 예약 시스템 모듈: [LAZY] 2차로 지연 로딩 전환(openAudiWeekly() 참고). -->
 
     <!-- 상단: (윗줄) 학년 필터 + 조회 컨트롤 한 줄, (아랫줄 오른쪽) 오늘 급식 카드 2개 -->
     <div class="top-panel">
@@ -218,9 +228,10 @@
       <div class="institution-banner-grid">
         <a class="institution-banner institution-banner-province" href="https://www.jge.go.kr/jgemain/main.do" target="_blank" rel="noopener noreferrer" aria-label="전남광주통합특별시 교육청 홈페이지 새 창에서 열기">
           <span class="institution-banner-pattern" aria-hidden="true"></span>
-          <span class="institution-banner-icon institution-banner-official-mark" aria-hidden="true"><svg viewBox="0 0 132 72"><g><circle class="official-mark-sun" cx="30" cy="11" r="8"/><path class="official-mark-green" d="M3 21c11-1 20 1 27 6v10c-8-5-17-7-27-6zM3 35c11-1 20 2 27 7v10c-8-5-17-7-27-7z"/><path class="official-mark-navy" d="M3 49c11-1 20 2 27 7V31h16v25c0 9-7 14-18 14C13 70 3 62 3 49zm27 7c0 2 1 3 2 3s2-1 2-3V22h12v34z"/><path class="official-mark-blue" d="M52 17c23-2 48-2 76 0v39c-22 13-47 16-76 10z"/><path class="official-mark-person" d="M53 34c20 5 46 5 74-2v9c-8 3-16 5-24 6 2 8 7 13 17 14l-2 9c-16-1-25-8-29-21l-5 1-8 19-12-2 7-20c-7-1-13-3-19-5z"/><rect class="official-mark-green" x="70" y="24" width="8" height="13" rx="4" transform="rotate(-22 74 30.5)"/><rect class="official-mark-yellow" x="87" y="22" width="8" height="13" rx="4" transform="rotate(9 91 28.5)"/><rect class="official-mark-orange" x="103" y="25" width="8" height="13" rx="4" transform="rotate(28 107 31.5)"/></g></svg></span>
+          <span class="institution-banner-logo institution-banner-logo-wide institution-banner-logo-jge" aria-hidden="true">
+            <img src="https://www.jge.go.kr/main/cf/fileDownload.do?fileKey=eb6a23c24ebc65ed239fb7971739acc7" alt="" decoding="async" loading="eager">
+          </span>
           <span class="institution-banner-copy">
-            <span class="institution-banner-label">OFFICIAL EDUCATION OFFICE</span>
             <strong>전남광주통합특별시 교육청</strong>
           </span>
           <span class="institution-banner-arrow" aria-hidden="true"><i class="fas fa-arrow-up-right-from-square"></i></span>
@@ -228,9 +239,10 @@
 
         <a class="institution-banner institution-banner-yeosu" href="https://ysed.jge.go.kr/ysed/main.do?sysId=ysed" target="_blank" rel="noopener noreferrer" aria-label="여수교육지원청 홈페이지 새 창에서 열기">
           <span class="institution-banner-pattern" aria-hidden="true"></span>
-          <span class="institution-banner-icon institution-banner-official-mark" aria-hidden="true"><svg viewBox="0 0 132 72"><g><circle class="official-mark-sun" cx="30" cy="11" r="8"/><path class="official-mark-green" d="M3 21c11-1 20 1 27 6v10c-8-5-17-7-27-6zM3 35c11-1 20 2 27 7v10c-8-5-17-7-27-7z"/><path class="official-mark-navy" d="M3 49c11-1 20 2 27 7V31h16v25c0 9-7 14-18 14C13 70 3 62 3 49zm27 7c0 2 1 3 2 3s2-1 2-3V22h12v34z"/><path class="official-mark-blue" d="M52 17c23-2 48-2 76 0v39c-22 13-47 16-76 10z"/><path class="official-mark-person" d="M53 34c20 5 46 5 74-2v9c-8 3-16 5-24 6 2 8 7 13 17 14l-2 9c-16-1-25-8-29-21l-5 1-8 19-12-2 7-20c-7-1-13-3-19-5z"/><rect class="official-mark-green" x="70" y="24" width="8" height="13" rx="4" transform="rotate(-22 74 30.5)"/><rect class="official-mark-yellow" x="87" y="22" width="8" height="13" rx="4" transform="rotate(9 91 28.5)"/><rect class="official-mark-orange" x="103" y="25" width="8" height="13" rx="4" transform="rotate(28 107 31.5)"/></g></svg></span>
+          <span class="institution-banner-logo institution-banner-logo-wide institution-banner-logo-yeosu" aria-hidden="true">
+            <img src="https://www.jge.go.kr/main/cf/fileDownload.do?fileKey=eb6a23c24ebc65ed239fb7971739acc7" alt="" decoding="async" loading="eager">
+          </span>
           <span class="institution-banner-copy">
-            <span class="institution-banner-label">YEO-SU EDUCATION</span>
             <strong>여수교육지원청</strong>
           </span>
           <span class="institution-banner-arrow" aria-hidden="true"><i class="fas fa-arrow-up-right-from-square"></i></span>
@@ -238,12 +250,8 @@
 
         <a class="institution-banner institution-banner-training" href="https://www.jnstudy.kr/" target="_blank" rel="noopener noreferrer" aria-label="전남교육연수포털 홈페이지 새 창에서 열기">
           <span class="institution-banner-pattern" aria-hidden="true"></span>
-          <span class="institution-banner-icon institution-banner-training-mark" aria-hidden="true">
-            <svg viewBox="0 0 52 52">
-              <circle class="training-mark-disc" cx="26" cy="26" r="23"/>
-              <path class="training-mark-blue" d="M13 28.5c0-8.2 6-14.8 13.7-14.8 5.2 0 9.7 3.1 11.9 7.5-2.7-2.4-6.2-3.8-10.1-3.8-7 0-12.9 4.7-15.5 11.1z"/>
-              <path class="training-mark-red" d="M39 23.5c0 8.2-6 14.8-13.7 14.8-5.2 0-9.7-3.1-11.9-7.5 2.7 2.4 6.2 3.8 10.1 3.8 7 0 12.9-4.7 15.5-11.1z"/>
-            </svg>
+          <span class="institution-banner-logo institution-banner-logo-icon institution-banner-logo-training" aria-hidden="true">
+            <img src="https://www.jnstudy.kr/resource/image/favicon.ico" alt="" decoding="async" loading="eager" width="34" height="34">
           </span>
           <span class="institution-banner-copy">
             <span class="institution-banner-label">PROFESSIONAL LEARNING</span>
@@ -254,12 +262,8 @@
 
         <a class="institution-banner institution-banner-records" href="https://star.moe.go.kr/web/main/index.do" target="_blank" rel="noopener noreferrer" aria-label="학교생활기록부 종합 지원포털 홈페이지 새 창에서 열기">
           <span class="institution-banner-pattern" aria-hidden="true"></span>
-          <span class="institution-banner-star-logo" aria-hidden="true">
-            <svg viewBox="0 0 58 58" role="img">
-              <path class="star-outline" d="M28.8 5.7l5.6 13.1 14.2 1.3-10.8 9.3 3.2 13.9-12.2-7.4-12.2 7.4 3.2-13.9L9 20.1l14.2-1.3z"/>
-              <path class="star-person" d="M28.8 19.5c4.6 0 8.3 3.7 8.3 8.3 0 7.3-4.5 13.1-8.3 16.4-3.8-3.3-8.3-9.1-8.3-16.4 0-4.6 3.7-8.3 8.3-8.3z"/>
-              <circle class="star-point" cx="41.6" cy="12.1" r="4.6"/>
-            </svg>
+          <span class="institution-banner-logo institution-banner-logo-icon institution-banner-logo-records" aria-hidden="true">
+            <img src="https://star.moe.go.kr/resource/tmpl/assets/images/favicon/favicon-48x48.png" alt="" decoding="async" loading="eager" width="38" height="38">
           </span>
           <span class="institution-banner-copy">
             <span class="institution-banner-label">SCHOOL RECORDS SUPPORT</span>
@@ -269,11 +273,8 @@
         </a>
         <a class="institution-banner institution-banner-stas" href="https://stas.moe.go.kr/cmn/main" target="_blank" rel="noopener noreferrer" aria-label="학생평가지원포털 홈페이지 새 창에서 열기">
           <span class="institution-banner-pattern" aria-hidden="true"></span>
-          <span class="institution-banner-star-logo institution-banner-stas-logo" aria-hidden="true">
-            <svg viewBox="0 0 58 58" role="img">
-              <path class="stas-star-outline" d="M28.8 5.7l5.6 13.1 14.2 1.3-10.8 9.3 3.2 13.9-12.2-7.4-12.2 7.4 3.2-13.9L9 20.1l14.2-1.3z"/>
-              <path class="stas-star-person" d="M28.8 19.5c4.6 0 8.3 3.7 8.3 8.3 0 7.3-4.5 13.1-8.3 16.4-3.8-3.3-8.3-9.1-8.3-16.4 0-4.6 3.7-8.3 8.3-8.3z"/>
-            </svg>
+          <span class="institution-banner-logo institution-banner-logo-wide institution-banner-logo-stas" aria-hidden="true">
+            <img src="https://stas.moe.go.kr/assets/ptl/images/logo_stas.png" alt="" decoding="async" loading="lazy">
           </span>
           <span class="institution-banner-copy">
             <span class="institution-banner-label">STUDENT ASSESSMENT SUPPORT</span>
@@ -427,12 +428,10 @@
       <i class="fas fa-chevron-up"></i><span>TOP</span>
     </button>
 
-    <?!= include('Modals_Task'); ?>
-    <?!= include('Modals_Admin'); ?>
-    <?!= include('Modals_Resub'); ?>
-    <?!= include('Modals_TeacherLookup'); ?>
-    <?!= include('Modals_Convenience'); ?>
-    <?!= include('Random_Tools'); ?>
+    <!-- [LAZY] 편의 기능/결보강(1차)에 이어 부서 업무·전달사항(Task), 관리자·현황판·서식·건의함(Admin),
+         교사 조회(TeacherLookup), 시청각실 예약(Audi)도 초기 응답에서 빼고, 각 진입 함수(switchTo,
+         openAdminLogin, tlOpenPasswordMod, openAudiWeekly 등)가 처음 불릴 때만 getLazyModalHtml()로
+         받아 <body>에 삽입합니다(성능 진단 2차 최적화, Code.js:1150 참고). -->
 
     <script>
       const serverData = <?!= JSON.stringify(initialData) ?>;

@@ -801,30 +801,29 @@
     background-image: linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px);
     background-size: 18px 18px; mask-image: linear-gradient(90deg, transparent 20%, #000 100%);
   }
-  .institution-banner-icon {
+  .institution-banner-province, .institution-banner-yeosu { grid-template-columns: 64px minmax(0, 1fr) 20px; }
+  .institution-banner-logo {
     display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
-    border: 1px solid rgba(255,255,255,0.26); border-radius: 12px;
-    background: rgba(255,255,255,0.13); box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
-    color: var(--banner-accent); font-size: 18px; backdrop-filter: blur(4px);
+    overflow: hidden; border: 1px solid rgba(255,255,255,0.72); border-radius: 12px;
+    background: rgba(255,255,255,0.96); box-shadow: 0 4px 12px rgba(16,25,60,0.16);
   }
-  .institution-banner-province, .institution-banner-yeosu { grid-template-columns: 62px minmax(0, 1fr) 20px; }
-  .institution-banner-official-mark { width: 62px; background: #ffffff; border-color: rgba(255,255,255,0.72); padding: 5px; }
-  .institution-banner-official-mark svg { display: block; width: 100%; height: 100%; overflow: visible; }
-  .official-mark-sun { fill: #ef642d; }
-  .official-mark-green { fill: #17945c; }
-  .official-mark-navy { fill: #30318b; }
-  .official-mark-blue { fill: #0878b5; }
-  .official-mark-person { fill: #ffffff; }
-  .official-mark-yellow { fill: #f4bd30; }
-  .official-mark-orange { fill: #ef6528; }
-  .institution-banner-training-mark {
-    background: #ffffff; border-color: rgba(255,255,255,0.75); border-radius: 50%; padding: 3px;
-    box-shadow: 0 4px 12px rgba(16,25,60,0.2);
+  .institution-banner-logo img { display: block; flex: none; object-fit: contain; }
+  /* 교육청·지원청의 공식 헤더 로고에서 왼쪽 심볼만 보이도록 자릅니다. 원본 비율과 색상은 그대로 유지합니다. */
+  .institution-banner-logo-wide { justify-content: flex-start; width: 62px; padding: 3px; }
+  .institution-banner-logo-wide img { width: auto; max-width: none; height: 36px; }
+  /* 두 카드에는 교육청이 배포한 심벌마크 전용 PNG만 표시합니다. */
+  .institution-banner-logo-jge,
+  .institution-banner-logo-yeosu { justify-content: center; width: 64px; }
+  .institution-banner-logo-jge img,
+  .institution-banner-logo-yeosu img {
+    width: 100%; max-width: 100%; height: auto; object-fit: contain; object-position: center;
   }
-  .institution-banner-training-mark svg { display: block; width: 100%; height: 100%; }
-  .training-mark-disc { fill: #f0f1f3; }
-  .training-mark-blue { fill: #005a93; }
-  .training-mark-red { fill: #d92744; }
+  .institution-banner-logo-icon img { width: 34px; height: 34px; }
+  .institution-banner-logo-training { border-radius: 50%; }
+  .institution-banner-logo-training img { width: 32px; height: 32px; image-rendering: auto; }
+  .institution-banner-logo-records img { width: 38px; height: 38px; }
+  .institution-banner-stas { grid-template-columns: 52px minmax(0, 1fr) 20px; }
+  .institution-banner-logo-stas { width: 52px; }
   .institution-banner-copy { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
   .institution-banner-label { overflow: hidden; color: var(--banner-accent); font-size: 8.5px; font-weight: 900; letter-spacing: 0.85px; white-space: nowrap; text-overflow: ellipsis; }
   .institution-banner-copy strong { color: #ffffff; font-size: 14px; line-height: 1.35; letter-spacing: -0.45px; word-break: keep-all; }
@@ -849,15 +848,6 @@
   .institution-banner-records .institution-banner-arrow { color: #315d91; }
   .institution-banner-records:hover { color: #26364a; box-shadow: 0 13px 26px rgba(28,67,112,0.2); }
   .institution-banner-records:hover .institution-banner-arrow { color: #0f4d8a; }
-  .institution-banner-star-logo {
-    display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px;
-    border: 1px solid #d6e1ef; border-radius: 13px; background: rgba(255,255,255,0.88);
-    box-shadow: 0 4px 12px rgba(20,68,119,0.1); transform: rotate(-3deg);
-  }
-  .institution-banner-star-logo svg { width: 42px; height: 42px; overflow: visible; }
-  .institution-banner-star-logo .star-outline { fill: #ffffff; stroke: #164887; stroke-width: 3.2; stroke-linejoin: round; }
-  .institution-banner-star-logo .star-person { fill: #10a5c8; }
-  .institution-banner-star-logo .star-point { fill: #f5c400; stroke: #ffffff; stroke-width: 1.5; }
   .institution-banner-stas {
     --banner-start: #ffffff; --banner-end: #f4f8ff; --banner-accent: #1d63c9;
     border-color: #ccdcf5; color: #23324a; box-shadow: 0 8px 20px rgba(24,71,135,0.12);
@@ -872,8 +862,6 @@
   .institution-banner-stas .institution-banner-arrow { color: #2f5a91; }
   .institution-banner-stas:hover { color: #23324a; box-shadow: 0 13px 26px rgba(24,71,135,0.2); }
   .institution-banner-stas:hover .institution-banner-arrow { color: #0f4d8a; }
-  .institution-banner-stas-logo .stas-star-outline { fill: #2f6fe0; stroke: #164887; stroke-width: 2.6; stroke-linejoin: round; }
-  .institution-banner-stas-logo .stas-star-person { fill: #8bc34a; }
 
   /* 3. 조회 필터 박스 (무조건 한 줄 유지) */
   /* 상단 패널: (윗줄) 학년+조회 컨트롤 한 줄, (아랫줄) 오늘 급식 오른쪽 정렬 */
@@ -1460,11 +1448,18 @@
     .institution-links-heading { align-items: center; justify-content: space-between; }
     .institution-banner-grid { --visible-count: 1; --banner-gap: 9px; }
     .institution-banner { aspect-ratio: 5 / 1; grid-template-columns: 34px minmax(0, 1fr) 14px; gap: 7px; padding: 7px 10px; border-radius: 11px; }
-    .institution-banner-province, .institution-banner-yeosu { grid-template-columns: 46px minmax(0, 1fr) 14px; }
-    .institution-banner-icon { width: 34px; height: 34px; border-radius: 9px; padding: 3px; font-size: 15px; }
-    .institution-banner-official-mark { width: 46px; height: 34px; padding: 3px; }
-    .institution-banner-star-logo { width: 34px; height: 34px; border-radius: 9px; }
-    .institution-banner-star-logo svg { width: 30px; height: 30px; }
+    .institution-banner-province, .institution-banner-yeosu { grid-template-columns: 52px minmax(0, 1fr) 14px; }
+    .institution-banner-logo { width: 34px; height: 34px; border-radius: 9px; }
+    .institution-banner-logo-wide { width: 46px; height: 34px; padding: 2px; }
+    .institution-banner-logo-wide img { height: 30px; }
+    .institution-banner-logo-jge,
+    .institution-banner-logo-yeosu { width: 52px; padding: 2px; }
+    .institution-banner-logo-icon img { width: 28px; height: 28px; }
+    .institution-banner-logo-training { border-radius: 50%; }
+    .institution-banner-logo-training img { width: 26px; height: 26px; }
+    .institution-banner-logo-records img { width: 29px; height: 29px; }
+    .institution-banner-stas { grid-template-columns: 42px minmax(0, 1fr) 14px; }
+    .institution-banner-logo-stas { width: 42px; }
     .institution-banner-copy { gap: 0; }
     .institution-banner-copy strong { font-size: 12px; line-height: 1.25; }
     .institution-banner-label { display: none; }

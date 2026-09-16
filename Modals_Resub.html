@@ -136,9 +136,9 @@
   let rsSlots = [];
   let rsSelectedIndices = new Set(); // 1단계에서 다중 선택된 슬롯 인덱스
   let rsPendingA = [];    // 다중 선택 후 아직 처리하지 않은 결강수업 대기열
-  let rsSubjectRoster = null; // '교과' 시트 원본
-  let rsHomeroom = null;      // '담임교사' 시트 원본 (시트가 없으면 계속 null일 수 있어 아래 플래그로 로딩 여부를 따로 추적)
-  let rsSupportDataLoaded = false;
+  // rsSubjectRoster/rsHomeroom/rsSupportDataLoaded는 Modals_TeacherLookup.html도 함께 읽고 쓰므로
+  // (교사 조회에서도 같은 '교과'/'담임교사' 데이터를 미리 채워두는 최적화), 결보강이 지연 로딩으로
+  // 아직 열리지 않은 상태에서 교사 조회를 먼저 열어도 안전하도록 JS_Main.html 쪽에 선언해뒀습니다.
   const RS_DAY_IDX = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4 };
   const RS_DAY_BY_JS = { 1: '월', 2: '화', 3: '수', 4: '목', 5: '금' };
   let rsManualCalMonth = {}; // "직접입력" 자체 달력이 target별로 지금 보여주는 연/월 { y, m }
@@ -1275,7 +1275,10 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  // DOMContentLoaded는 이 파일이 지연 로딩으로 삽입되기 훨씬 전(초기 페이지 로딩 시)에 이미 끝난
+  // 상태라 리스너가 다시는 등록되지 않는 죽은 코드였습니다(3차 정리). 이 스크립트가 실행되는 시점에는
+  // 위 #resubMod HTML이 이미 DOM에 삽입돼 있으므로, 이벤트를 기다리지 않고 바로 등록합니다.
+  {
     const modContent = document.querySelector('#resubMod .modal-content');
     if (modContent) {
       modContent.addEventListener('scroll', function () {
@@ -1283,7 +1286,7 @@
         rsHideManualCalendar();
       });
     }
-  });
+  }
 
   function rsRenderDateDropdown(target) {
     const ctx = rsResolveDateTarget(target);

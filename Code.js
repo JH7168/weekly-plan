@@ -1148,6 +1148,23 @@ function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
+// [속도 최적화] 초기 로딩에서 뺀 모달(편의 기능/결보강)을 사용자가 처음 열 때만 내려주는 지연 로딩용 함수.
+// 클라이언트가 파일명을 직접 지정하지 못하도록 화이트리스트(key → 파일명 목록)만 허용합니다.
+// 편의 기능은 Random_Tools.html의 전역(ClassroomRandom/ClassroomTools 등)에 의존하므로 항상 함께 내려줍니다.
+const LAZY_MODAL_FILES_ = {
+  convenience: ['Modals_Convenience', 'Random_Tools'],
+  resub: ['Modals_Resub'],
+  task: ['Modals_Task'],
+  admin: ['Modals_Admin'],
+  teacherLookup: ['Modals_TeacherLookup'],
+  audi: ['Audi_System']
+};
+function getLazyModalHtml(key) {
+  const files = LAZY_MODAL_FILES_[key];
+  if (!files) throw new Error('허용되지 않은 화면입니다.');
+  return files.map(include).join('\n');
+}
+
 /**
  * [속도 최적화 및 스타일 병합] 전체시간표 시트의 값과 배경색 데이터를 캐싱하여 한 번에 반환
  */

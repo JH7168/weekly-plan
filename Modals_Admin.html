@@ -237,13 +237,9 @@
     }).getStudentCountStatus();
   }
 
-  function preloadStudentCountStatus() {
-    g.withSuccessHandler(data => {
-      studentCountCache = data || null;
-      renderStudentCountStatus(studentCountCache);
-    }).getStudentCountStatus();
-  }
-  window.addEventListener('load', () => setTimeout(preloadStudentCountStatus, 300));
+  // preloadStudentCountStatus()(페이지 로딩 300ms 후 미리 fetch)는 이 파일이 지연 로딩으로 바뀌면서
+  // window의 load 이벤트가 이미 끝난 뒤에 등록돼 다시는 실행되지 않는 죽은 코드였습니다(3차 정리).
+  // openStudentCountMod()가 열릴 때마다 항상 자체적으로 새로 fetch하므로 기능상 손실은 없습니다.
 
   function animateStudentCountPanelFromButton() {
     const modal = document.getElementById('studentCountMod');
