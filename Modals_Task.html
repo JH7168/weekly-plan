@@ -59,41 +59,60 @@
       </div>
 
       <div class="field" style="margin-bottom:15px;">
-        <label style="font-weight:bold; display:block; margin-bottom:5px;">상세 내용 입력</label>
-        <textarea id="wizardSingleInput" style="width:100%; height:170px; padding:15px; border:1px solid #cbd5e1; border-radius:5px; resize:none; font-family:inherit; font-size:14px; line-height:1.6;" placeholder="1. 일시: 3교시~4교시&#10;2. 장소: 시청각실&#10;3. 대상: 1학년"></textarea>
-      </div>
-
-      <div class="field" style="margin-bottom:15px;">
-        <label style="font-weight:bold; display:block; margin-bottom:5px;">전달사항 <span style="font-weight:normal; color:#999; font-size:12px;">(선택 — 상세 보기에서 별도 박스로 표시됩니다)</span></label>
-        <textarea id="wizardNoticeInput" style="width:100%; height:80px; padding:15px; border:1px solid #fde08b; background:#fffdf0; border-radius:5px; resize:none; font-family:inherit; font-size:14px; line-height:1.6;" placeholder="예: 임장지도 부탁드립니다."></textarea>
+        <label style="font-weight:bold; display:block; margin-bottom:5px;">내용<span style="font-weight:normal; color:#999; font-size:12px;">(일시, 장소, 대상이 있다면 반드시 입력해 주세요.)</span></label>
+        <div class="notice-editor-wrap">
+          <div class="notice-toolbar" data-target="wizardNoticeInput">
+            <button type="button" class="notice-toolbar-select" data-action="size-toggle"><span data-role="size-label">보통</span> <i class="fas fa-caret-down" aria-hidden="true"></i></button>
+            <button type="button" class="notice-toolbar-select" data-action="color-toggle"><span class="notice-toolbar-swatch" data-role="color-swatch" style="background:#3f3f46"></span> <i class="fas fa-caret-down" aria-hidden="true"></i></button>
+            <span class="notice-toolbar-sep" aria-hidden="true"></span>
+            <button type="button" class="notice-toolbar-btn" data-action="bold" aria-pressed="false" aria-label="굵게">B</button>
+            <button type="button" class="notice-toolbar-btn notice-italic-btn" data-action="italic" aria-pressed="false" aria-label="기울임">I</button>
+            <button type="button" class="notice-toolbar-btn notice-underline-btn" data-action="underline" aria-pressed="false" aria-label="밑줄">U</button>
+          </div>
+          <div id="wizardNoticeInput" class="notice-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="내용" data-placeholder="1. 일시: 3교시~4교시&#10;2. 장소: 시청각실&#10;3. 대상: 1학년"></div>
+        </div>
       </div>
 
       <div class="field schedule-attachment-field">
-        <label>첨부파일 <span class="field-hint">(선택 · 여러 번 추가 가능, 전체 30MB 이하)</span></label>
-        <div class="schedule-dropzone" id="wzDropzone" onclick="document.getElementById('wzAttachmentFile').click()">
-          <i class="fas fa-cloud-upload-alt"></i>
-          <span>여기로 <b>파일을 끌어다 놓거나</b>, 눌러서 선택하세요</span>
+        <button type="button" class="schedule-section-toggle" id="wzAttachmentToggle" aria-expanded="false" aria-controls="wzAttachmentBody" onclick="toggleScheduleSection_('wzAttachmentBody')">
+          <i class="fas fa-paperclip" aria-hidden="true"></i><span>첨부파일 등록</span>
+          <span class="schedule-section-count" id="wzAttachmentCount"></span>
+          <i class="fas fa-chevron-down schedule-section-caret" aria-hidden="true"></i>
+        </button>
+        <div class="schedule-section-body" id="wzAttachmentBody" style="display:none;">
+          <div class="field-hint">선택 · 여러 번 추가 가능, 전체 30MB 이하</div>
+          <div class="schedule-dropzone" id="wzDropzone" onclick="document.getElementById('wzAttachmentFile').click()">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <span>여기로 <b>파일을 끌어다 놓거나</b>, 눌러서 선택하세요</span>
+          </div>
+          <input type="file" id="wzAttachmentFile" multiple accept=".hwp,.hwpx,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.ppt,.pptx,.pdf,.txt,.zip,.jpg,.jpeg,.png,.gif" onchange="addScheduleFiles('register', this)">
+          <div id="wzAttachmentList" class="schedule-file-list"></div>
         </div>
-        <input type="file" id="wzAttachmentFile" multiple accept=".hwp,.hwpx,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.ppt,.pptx,.pdf,.txt,.zip,.jpg,.jpeg,.png,.gif" onchange="addScheduleFiles('register', this)">
-        <div id="wzAttachmentList" class="schedule-file-list"></div>
       </div>
 
       <div class="field schedule-attachment-field schedule-link-field">
-        <label>링크 <span class="field-hint">(선택 · 주소를 넣고 원하는 버튼 이름으로 저장 · 여러 개 가능)</span></label>
-        <div class="schedule-link-input">
-          <input type="text" id="wzLinkName" placeholder="버튼 이름 (예: 신청 폼)">
-          <input type="url" id="wzLinkUrl" placeholder="https://... 주소 붙여넣기" onkeydown="if(event.key==='Enter'){event.preventDefault();addScheduleLink('register');}">
-          <button type="button" class="schedule-link-add" onclick="addScheduleLink('register')">추가</button>
+        <button type="button" class="schedule-section-toggle" id="wzLinkToggle" aria-expanded="false" aria-controls="wzLinkBody" onclick="toggleScheduleSection_('wzLinkBody')">
+          <i class="fas fa-link" aria-hidden="true"></i><span>링크 등록</span>
+          <span class="schedule-section-count" id="wzLinkCount"></span>
+          <i class="fas fa-chevron-down schedule-section-caret" aria-hidden="true"></i>
+        </button>
+        <div class="schedule-section-body" id="wzLinkBody" style="display:none;">
+          <div class="field-hint">선택 · 주소를 넣고 원하는 버튼 이름으로 저장 · 여러 개 가능</div>
+          <div class="schedule-link-input">
+            <input type="text" id="wzLinkName" placeholder="버튼 이름 (예: 신청 폼)">
+            <input type="url" id="wzLinkUrl" placeholder="https://... 주소 붙여넣기" onkeydown="if(event.key==='Enter'){event.preventDefault();addScheduleLink('register');}">
+            <button type="button" class="schedule-link-add" onclick="addScheduleLink('register')">추가</button>
+          </div>
+          <div id="wzLinkList" class="schedule-file-list"></div>
         </div>
-        <div id="wzLinkList" class="schedule-file-list"></div>
       </div>
 
       <div class="field" style="margin-bottom:15px;">
-        <label style="font-weight:bold; display:block; margin-bottom:5px;">대상 학년</label>
+        <label style="font-weight:bold; display:block; margin-bottom:5px;">대상 학년<span style="font-weight:normal; color:#999; font-size:12px;">(해당 학년 학생들에게 전달되어야 할 경우 체크)</span></label>
         <div id="wzGradeGroup" class="grade-check-group">
-          <label class="grade-check-item"><input type="checkbox" value="1" checked>1학년</label>
-          <label class="grade-check-item"><input type="checkbox" value="2" checked>2학년</label>
-          <label class="grade-check-item"><input type="checkbox" value="3" checked>3학년</label>
+          <label class="grade-check-item"><input type="checkbox" value="1">1학년</label>
+          <label class="grade-check-item"><input type="checkbox" value="2">2학년</label>
+          <label class="grade-check-item"><input type="checkbox" value="3">3학년</label>
         </div>
       </div>
 
@@ -218,39 +237,65 @@
       <label>일정명</label>
       <input type="text" id="singleEditTitle">
     </div>
-    <div class="field">
+    <!-- 옛 '전달사항 등록'(별도 Notice) 항목을 수정할 때만 쓰는 평문 입력칸입니다.
+         부서 업무/연간행사 수정에서는 아래의 서식 지원 '내용' 칸 하나로 통합되어 숨깁니다. -->
+    <div class="field" id="singleEditTextField">
       <label>내용</label>
       <textarea id="singleEditText" rows="5"></textarea>
     </div>
     <div class="field" id="singleEditNoticeField">
-      <label>전달사항</label>
-      <textarea id="singleEditNotice" rows="3"></textarea>
+      <label>내용<span style="font-weight:normal; color:#999; font-size:12px;">(일시, 장소, 대상이 있다면 반드시 입력해 주세요.)</span></label>
+      <div class="notice-editor-wrap">
+        <div class="notice-toolbar" data-target="singleEditNotice">
+          <button type="button" class="notice-toolbar-select" data-action="size-toggle"><span data-role="size-label">보통</span> <i class="fas fa-caret-down" aria-hidden="true"></i></button>
+          <button type="button" class="notice-toolbar-select" data-action="color-toggle"><span class="notice-toolbar-swatch" data-role="color-swatch" style="background:#3f3f46"></span> <i class="fas fa-caret-down" aria-hidden="true"></i></button>
+          <span class="notice-toolbar-sep" aria-hidden="true"></span>
+          <button type="button" class="notice-toolbar-btn" data-action="bold" aria-pressed="false" aria-label="굵게">B</button>
+          <button type="button" class="notice-toolbar-btn notice-italic-btn" data-action="italic" aria-pressed="false" aria-label="기울임">I</button>
+          <button type="button" class="notice-toolbar-btn notice-underline-btn" data-action="underline" aria-pressed="false" aria-label="밑줄">U</button>
+        </div>
+        <div id="singleEditNotice" class="notice-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="내용" style="min-height:120px;"></div>
+      </div>
     </div>
     <div class="field schedule-attachment-field" id="singleEditAttachmentField">
-      <label>첨부파일 <span class="field-hint">(여러 번 추가 가능 · 전체 30MB 이하)</span></label>
-      <div id="singleEditExistingAttachment" class="schedule-file-list"></div>
-      <div class="schedule-dropzone" id="singleEditDropzone" onclick="document.getElementById('singleEditAttachmentFile').click()">
-        <i class="fas fa-cloud-upload-alt"></i>
-        <span>여기로 <b>파일을 끌어다 놓거나</b>, 눌러서 선택하세요</span>
+      <button type="button" class="schedule-section-toggle" id="singleEditAttachmentToggle" aria-expanded="false" aria-controls="singleEditAttachmentBody" onclick="toggleScheduleSection_('singleEditAttachmentBody')">
+        <i class="fas fa-paperclip" aria-hidden="true"></i><span>첨부파일 등록</span>
+        <span class="schedule-section-count" id="singleEditAttachmentCount"></span>
+        <i class="fas fa-chevron-down schedule-section-caret" aria-hidden="true"></i>
+      </button>
+      <div class="schedule-section-body" id="singleEditAttachmentBody" style="display:none;">
+        <div class="field-hint">여러 번 추가 가능 · 전체 30MB 이하</div>
+        <div id="singleEditExistingAttachment" class="schedule-file-list"></div>
+        <div class="schedule-dropzone" id="singleEditDropzone" onclick="document.getElementById('singleEditAttachmentFile').click()">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <span>여기로 <b>파일을 끌어다 놓거나</b>, 눌러서 선택하세요</span>
+        </div>
+        <input type="file" id="singleEditAttachmentFile" multiple accept=".hwp,.hwpx,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.ppt,.pptx,.pdf,.txt,.zip,.jpg,.jpeg,.png,.gif" onchange="addScheduleFiles('edit', this)">
+        <div id="singleEditNewAttachmentList" class="schedule-file-list"></div>
       </div>
-      <input type="file" id="singleEditAttachmentFile" multiple accept=".hwp,.hwpx,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.ppt,.pptx,.pdf,.txt,.zip,.jpg,.jpeg,.png,.gif" onchange="addScheduleFiles('edit', this)">
-      <div id="singleEditNewAttachmentList" class="schedule-file-list"></div>
     </div>
     <div class="field schedule-attachment-field schedule-link-field" id="singleEditLinkField">
-      <label>링크 <span class="field-hint">(주소를 넣고 원하는 버튼 이름으로 저장 · 여러 개 가능)</span></label>
-      <div class="schedule-link-input">
-        <input type="text" id="singleEditLinkName" placeholder="버튼 이름 (예: 신청 폼)">
-        <input type="url" id="singleEditLinkUrl" placeholder="https://... 주소 붙여넣기" onkeydown="if(event.key==='Enter'){event.preventDefault();addScheduleLink('edit');}">
-        <button type="button" class="schedule-link-add" onclick="addScheduleLink('edit')">추가</button>
+      <button type="button" class="schedule-section-toggle" id="singleEditLinkToggle" aria-expanded="false" aria-controls="singleEditLinkBody" onclick="toggleScheduleSection_('singleEditLinkBody')">
+        <i class="fas fa-link" aria-hidden="true"></i><span>링크 등록</span>
+        <span class="schedule-section-count" id="singleEditLinkCount"></span>
+        <i class="fas fa-chevron-down schedule-section-caret" aria-hidden="true"></i>
+      </button>
+      <div class="schedule-section-body" id="singleEditLinkBody" style="display:none;">
+        <div class="field-hint">주소를 넣고 원하는 버튼 이름으로 저장 · 여러 개 가능</div>
+        <div class="schedule-link-input">
+          <input type="text" id="singleEditLinkName" placeholder="버튼 이름 (예: 신청 폼)">
+          <input type="url" id="singleEditLinkUrl" placeholder="https://... 주소 붙여넣기" onkeydown="if(event.key==='Enter'){event.preventDefault();addScheduleLink('edit');}">
+          <button type="button" class="schedule-link-add" onclick="addScheduleLink('edit')">추가</button>
+        </div>
+        <div id="singleEditLinkList" class="schedule-file-list"></div>
       </div>
-      <div id="singleEditLinkList" class="schedule-file-list"></div>
     </div>
     <div class="field">
-      <label>대상 학년</label>
+      <label>대상 학년<span style="font-weight:normal; color:#999; font-size:12px;">(해당 학년 학생들에게 전달되어야 할 경우 체크)</span></label>
       <div id="singleEditGradeGroup" class="grade-check-group">
-        <label class="grade-check-item"><input type="checkbox" value="1" checked>1학년</label>
-        <label class="grade-check-item"><input type="checkbox" value="2" checked>2학년</label>
-        <label class="grade-check-item"><input type="checkbox" value="3" checked>3학년</label>
+        <label class="grade-check-item"><input type="checkbox" value="1">1학년</label>
+        <label class="grade-check-item"><input type="checkbox" value="2">2학년</label>
+        <label class="grade-check-item"><input type="checkbox" value="3">3학년</label>
       </div>
     </div>
 
@@ -313,6 +358,425 @@
   let wzLinks = [];            // 등록 마법사에서 추가한 링크 [{name, url}]
   let currentEditLinks = [];   // 수정창의 링크 [{name, url}]
 
+  // ===== 전달사항 리치 텍스트 편집기 =====
+  // 옛 '<내용>' 특수기호 강조 규칙을 대체합니다. 굵게/기울임/밑줄/글자크기/글자색을 버튼으로 직접
+  // 선택하며, 선택 영역이 있으면 그 영역에, 없으면(커서만 있으면) 이후 입력되는 글자에 적용됩니다.
+  // 저장 형식은 strong/em/u/span(color·font-size만 허용)이며, 렌더링은 JS_Main.html의
+  // renderNoticeRichText_/sanitizeNoticeStyle_가 화이트리스트 기준으로 안전하게 처리합니다.
+  const NOTICE_SIZES = [
+    { label: '작게', px: 12 },
+    { label: '보통', px: 14 },
+    { label: '조금 크게', px: 16 },
+    { label: '크게', px: 19 },
+    { label: '아주 크게', px: 23 },
+  ];
+  const NOTICE_DEFAULT_SIZE = 14;
+  const NOTICE_DEFAULT_COLOR = '#3f3f46';
+  const NOTICE_COLORS_NORMAL = [
+    { name: '검정', hex: '#2b2b2b' }, { name: '빨강', hex: '#c43d3d' },
+    { name: '주황', hex: '#c1650e' }, { name: '골드', hex: '#96690a' },
+    { name: '초록', hex: '#217a4b' }, { name: '파랑', hex: '#2e67b0' },
+    { name: '남색', hex: '#3b4e96' }, { name: '보라', hex: '#6d4796' },
+  ];
+  const NOTICE_COLORS_PASTEL = [
+    { name: '파스텔 차콜', hex: '#5f6673' }, { name: '파스텔 레드', hex: '#c06868' },
+    { name: '파스텔 오렌지', hex: '#bd7539' }, { name: '파스텔 골드', hex: '#9a7a2a' },
+    { name: '파스텔 그린', hex: '#3f8867' }, { name: '파스텔 블루', hex: '#4e7fb8' },
+    { name: '파스텔 인디고', hex: '#5c70b5' }, { name: '파스텔 퍼플', hex: '#8768a8' },
+  ];
+  const noticeEditors_ = {}; // id -> { editorEl, toolbarEl, sticky: {bold,italic,underline,color,fontSize}|null }
+  let noticeOpenDropdown_ = null; // { id, kind, menuEl } 현재 열려 있는 드롭다운(하나만 동시에 열림)
+
+  function normalizeNoticeColor_(str) {
+    str = String(str || '').trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(str)) return str.toLowerCase();
+    const m = str.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if (m) return '#' + [m[1], m[2], m[3]].map(n => Number(n).toString(16).padStart(2, '0')).join('');
+    return null;
+  }
+  function snapNoticeFontSize_(px) {
+    let best = NOTICE_SIZES[0].px, bestDiff = Infinity;
+    NOTICE_SIZES.forEach(s => { const d = Math.abs(s.px - px); if (d < bestDiff) { bestDiff = d; best = s.px; } });
+    return best;
+  }
+
+  // 요소 하나가 굵게/기울임/밑줄/색상/크기를 갖고 있는지 판정하는 공용 함수들입니다.
+  // flattenNoticeDom_(직렬화용)과 updateNoticeToolbarState_(툴바 표시용)가 함께 씁니다 —
+  // 판정 기준이 한 곳에만 있어야 "저장되는 서식"과 "툴바에 보이는 서식"이 항상 같습니다.
+  function noticeIsBold_(el) { return /^(B|STRONG)$/.test(el.tagName) || el.style.fontWeight === 'bold' || parseInt(el.style.fontWeight, 10) >= 600; }
+  function noticeIsItalic_(el) { return /^(I|EM)$/.test(el.tagName) || el.style.fontStyle === 'italic'; }
+  function noticeIsUnderline_(el) { return el.tagName === 'U' || (el.style.textDecorationLine || el.style.textDecoration || '').indexOf('underline') !== -1; }
+  function noticeColorOf_(el) {
+    if (el.tagName === 'FONT' && el.getAttribute('color')) return normalizeNoticeColor_(el.getAttribute('color'));
+    if (el.style.color) return normalizeNoticeColor_(el.style.color);
+    return null;
+  }
+  function noticeSizeOf_(el) {
+    if (el.style.fontSize) {
+      const m = String(el.style.fontSize).match(/^(\d+(?:\.\d+)?)px$/);
+      if (m) return snapNoticeFontSize_(parseFloat(m[1]));
+    }
+    return null;
+  }
+  // contenteditable의 실제 DOM(브라우저가 execCommand로 만든 <b>/<font>/<span style="..."> 등 제각각인 형태)을
+  // "이 구간은 굵게/기울임/밑줄이고 색은 X, 크기는 Y" 형태의 평탄화된 조각(run) 배열로 바꿉니다.
+  // 브라우저마다 태그가 달라도(<b> vs <strong>, <font color> vs style) 결과가 항상 같아집니다.
+  function flattenNoticeDom_(root) {
+    const runs = [];
+    function walk(node, ctx) {
+      if (node.nodeType === 3) {
+        const text = node.nodeValue.replace(/\u200b/g, ''); // 서식 유지용 제로폭 공백은 저장하지 않습니다.
+        if (text) runs.push(Object.assign({ type: 'text', text: text }, ctx));
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      if (node.tagName === 'BR') { runs.push({ type: 'br' }); return; }
+      if (/^(DIV|P)$/.test(node.tagName) && runs.length) runs.push({ type: 'br' });
+      const next = Object.assign({}, ctx);
+      if (noticeIsBold_(node)) next.bold = true;
+      if (noticeIsItalic_(node)) next.italic = true;
+      if (noticeIsUnderline_(node)) next.underline = true;
+      const c = noticeColorOf_(node); if (c) next.color = c;
+      const s = noticeSizeOf_(node); if (s) next.fontSize = s;
+      Array.from(node.childNodes).forEach(child => walk(child, next));
+    }
+    Array.from(root.childNodes).forEach(child => walk(child, { bold: false, italic: false, underline: false, color: null, fontSize: null }));
+    return runs;
+  }
+
+  // 평탄화된 run들을 저장용 문자열로 직렬화합니다. (strong/em/u/span만 사용, 줄바꿈은 \n 그대로)
+  function serializeNoticeToStorage_(editorEl) {
+    const runs = flattenNoticeDom_(editorEl);
+    let out = '';
+    runs.forEach(run => {
+      if (run.type === 'br') { out += '\n'; return; }
+      if (!run.text) return;
+      // 사용자가 문자 그대로 입력한 <, >는 옛 <내용> 강조 표기와 구분되도록 저장 시 &lt;/&gt;
+      // 글자 그대로 한 번 더 감싸 둡니다(renderNoticeRichText_가 표시할 때 한 겹만 되돌려 실제
+      // '<','>' 글자로 보여주므로, 새로 입력한 <, >는 서식 없이 완전한 일반 문자로 남습니다).
+      let piece = run.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const styleParts = [];
+      if (run.color && run.color !== NOTICE_DEFAULT_COLOR) styleParts.push('color:' + run.color);
+      if (run.fontSize && run.fontSize !== NOTICE_DEFAULT_SIZE) styleParts.push('font-size:' + run.fontSize + 'px');
+      if (styleParts.length) piece = '<span style="' + styleParts.join(';') + '">' + piece + '</span>';
+      if (run.bold) piece = '<strong>' + piece + '</strong>';
+      if (run.italic) piece = '<em>' + piece + '</em>';
+      if (run.underline) piece = '<u>' + piece + '</u>';
+      out += piece;
+    });
+    return out.replace(/^\n+/, '').replace(/\n+$/, ''); // 앞뒤 빈 줄만 정리(내용 중간 줄바꿈은 유지)
+  }
+
+  // <font size="7">(마커) → <span style="font-size:Npx">로 치환합니다. execCommand('fontSize')는
+  // 선택 영역에 안정적으로 적용되므로, 임의의 마커 레벨(7)로 감싸게 한 뒤 원하는 px로 바꿔치기합니다.
+  function replaceNoticeMarkerTags_(editorEl, px) {
+    editorEl.querySelectorAll('font[size="7"]').forEach(f => {
+      const span = document.createElement('span');
+      span.style.fontSize = px + 'px';
+      while (f.firstChild) span.appendChild(f.firstChild);
+      f.replaceWith(span);
+    });
+  }
+  function replaceNoticeColorTags_(editorEl, hex) {
+    editorEl.querySelectorAll('font[color]').forEach(f => {
+      const span = document.createElement('span');
+      span.style.color = hex;
+      while (f.firstChild) span.appendChild(f.firstChild);
+      f.replaceWith(span);
+    });
+  }
+
+  // 선택 없이 커서만 있을 때, 그 위치에 빈 span(제로폭 공백 포함)을 만들어 커서를 그 안에 둡니다.
+  // 이후 입력되는 글자가 자연스럽게 이 span 안에 들어가 서식을 이어받습니다.
+  // B/I/U/색상/크기 다섯 가지 모두 이 하나의 span에 누적됩니다 — execCommand의 내장 sticky 상태는
+  // Range.insertNode로 DOM을 바꾸는 순간 초기화돼 버려서(다른 서식과 섞으면 사라짐), 커서만 있는
+  // 경우엔 다섯 가지 전부 이 방식으로 통일해 서로 안전하게 조합되게 합니다.
+  function getOrCreateNoticeStickySpan_(id) {
+    const state = noticeEditors_[id];
+    if (!state) return null;
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return null;
+    const range = sel.getRangeAt(0);
+    if (state.stickySpan && state.editorEl.contains(state.stickySpan) && range.collapsed &&
+        range.startContainer === state.stickySpan.firstChild) {
+      return state.stickySpan; // 같은 자리에서 연속으로 서식을 고르는 경우, 새로 만들지 않고 이어서 적용
+    }
+    const span = document.createElement('span');
+    span.appendChild(document.createTextNode('\u200b'));
+    range.deleteContents();
+    range.insertNode(span);
+    const newRange = document.createRange();
+    newRange.setStart(span.firstChild, 1);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+    state.stickySpan = span;
+    return span;
+  }
+
+  function applyNoticeColor_(id, hex) {
+    const state = noticeEditors_[id];
+    if (!state) return;
+    const sel = window.getSelection();
+    if (sel.rangeCount && !sel.getRangeAt(0).collapsed) {
+      document.execCommand('foreColor', false, hex);
+      replaceNoticeColorTags_(state.editorEl, hex);
+      state.editorEl.querySelectorAll('span[style]').forEach(sp => {
+        const c = normalizeNoticeColor_(sp.style.color);
+        if (c) sp.style.color = c;
+      });
+    } else {
+      const span = getOrCreateNoticeStickySpan_(id);
+      if (span) span.style.color = hex;
+    }
+    state.editorEl.focus();
+    updateNoticeToolbarState_(id);
+  }
+  function applyNoticeFontSize_(id, px) {
+    const state = noticeEditors_[id];
+    if (!state) return;
+    const sel = window.getSelection();
+    if (sel.rangeCount && !sel.getRangeAt(0).collapsed) {
+      document.execCommand('fontSize', false, '7');
+      replaceNoticeMarkerTags_(state.editorEl, px);
+    } else {
+      const span = getOrCreateNoticeStickySpan_(id);
+      if (span) span.style.fontSize = px + 'px';
+    }
+    state.editorEl.focus();
+    updateNoticeToolbarState_(id);
+  }
+  function applyNoticeInline_(id, cmd) {
+    const state = noticeEditors_[id];
+    if (!state) return;
+    const sel = window.getSelection();
+    if (sel.rangeCount && !sel.getRangeAt(0).collapsed) {
+      state.editorEl.focus();
+      document.execCommand(cmd, false, null);
+    } else {
+      const span = getOrCreateNoticeStickySpan_(id);
+      if (span) {
+        const prop = cmd === 'bold' ? 'fontWeight' : cmd === 'italic' ? 'fontStyle' : 'textDecoration';
+        const onVal = cmd === 'bold' ? 'bold' : cmd === 'italic' ? 'italic' : 'underline';
+        span.style[prop] = (span.style[prop] === onVal) ? '' : onVal;
+      }
+      state.editorEl.focus();
+    }
+    updateNoticeToolbarState_(id);
+  }
+
+  // 현재 커서/선택 위치의 서식 상태를 읽습니다. queryCommandState는 커서만 있고 선택 영역이 없을 때
+  // (특히 수동으로 만든 sticky span 안에서는) 브라우저마다 신뢰할 수 없어서, getComputedStyle로
+  // 직접 판정합니다 — 툴바 표시와 드롭다운의 "현재 선택" 체크 표시가 이 함수 하나를 공유합니다.
+  function getNoticeCurrentFormat_(id) {
+    const state = noticeEditors_[id];
+    if (!state) return null;
+    const node = window.getSelection().anchorNode;
+    const el = (node && state.editorEl.contains(node)) ? (node.nodeType === 1 ? node : node.parentElement) : null;
+    const cs = el ? window.getComputedStyle(el) : null;
+    if (!cs) return { bold: false, italic: false, underline: false, color: NOTICE_DEFAULT_COLOR, fontSize: NOTICE_DEFAULT_SIZE };
+    const sizeMatch = String(cs.fontSize).match(/^(\d+(?:\.\d+)?)px$/);
+    return {
+      bold: cs.fontWeight === 'bold' || parseInt(cs.fontWeight, 10) >= 600,
+      italic: cs.fontStyle === 'italic',
+      underline: (cs.textDecorationLine || cs.textDecoration || '').indexOf('underline') !== -1,
+      color: normalizeNoticeColor_(cs.color) || NOTICE_DEFAULT_COLOR,
+      fontSize: sizeMatch ? snapNoticeFontSize_(parseFloat(sizeMatch[1])) : NOTICE_DEFAULT_SIZE,
+    };
+  }
+  function updateNoticeToolbarState_(id) {
+    const state = noticeEditors_[id];
+    if (!state) return;
+    const tb = state.toolbarEl;
+    const fmt = getNoticeCurrentFormat_(id);
+    if (!fmt) return;
+    tb.querySelector('[data-action="bold"]').setAttribute('aria-pressed', String(fmt.bold));
+    tb.querySelector('[data-action="italic"]').setAttribute('aria-pressed', String(fmt.italic));
+    tb.querySelector('[data-action="underline"]').setAttribute('aria-pressed', String(fmt.underline));
+    const swatch = tb.querySelector('[data-role="color-swatch"]');
+    if (swatch) swatch.style.background = fmt.color;
+    const sizeLabel = tb.querySelector('[data-role="size-label"]');
+    const sizeEntry = NOTICE_SIZES.find(s => s.px === fmt.fontSize) || NOTICE_SIZES[1];
+    if (sizeLabel) sizeLabel.textContent = sizeEntry.label;
+  }
+
+  function updateNoticeEmptyState_(editorEl) {
+    const empty = !editorEl.textContent.trim() && editorEl.querySelectorAll('img,br').length === 0;
+    editorEl.classList.toggle('is-empty', empty);
+  }
+
+  // ---- 드롭다운(글자크기/색상) 위치: 아래 공간 충분하면 아래, 부족하면 위, viewport 밖으로는 나가지 않게 clamp ----
+  function positionNoticeDropdown_(triggerEl, menuEl) {
+    const rect = triggerEl.getBoundingClientRect();
+    document.body.appendChild(menuEl); // 모달 overflow에 잘리지 않도록 body 바로 아래(position:fixed)에 둡니다.
+    const menuHeight = menuEl.offsetHeight || 220;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    menuEl.style.left = Math.min(rect.left, window.innerWidth - menuEl.offsetWidth - 8) + 'px';
+    menuEl.style.width = Math.max(rect.width, 190) + 'px';
+    if (spaceBelow < menuHeight && rect.top > spaceBelow) {
+      menuEl.style.top = Math.max(8, rect.top - menuHeight - 4) + 'px';
+    } else {
+      menuEl.style.top = (rect.bottom + 4) + 'px';
+    }
+  }
+  function closeNoticeDropdowns_() {
+    if (noticeOpenDropdown_ && noticeOpenDropdown_.menuEl) noticeOpenDropdown_.menuEl.remove();
+    noticeOpenDropdown_ = null;
+  }
+  // innerHTML 문자열 조립 대신 DOM API로 직접 만듭니다(이스케이프 걱정도 없고, lazy 로딩되는
+  // 파일 안에 HTML 태그가 문자열로 잔뜩 섞여 있는 것도 피할 수 있습니다).
+  function renderNoticeSizeMenu_(id) {
+    const menu = document.createElement('div');
+    menu.className = 'notice-dropdown';
+    const fmt = getNoticeCurrentFormat_(id);
+    const curPx = fmt ? fmt.fontSize : NOTICE_DEFAULT_SIZE;
+    NOTICE_SIZES.forEach(s => {
+      const opt = document.createElement('div');
+      opt.className = 'notice-size-option';
+      opt.dataset.px = String(s.px);
+      opt.setAttribute('role', 'option');
+      opt.setAttribute('aria-checked', String(s.px === curPx));
+      opt.style.fontSize = Math.min(s.px, 17) + 'px';
+      opt.textContent = s.label;
+      menu.appendChild(opt);
+    });
+    return menu;
+  }
+  function noticeColorSwatchEl_(c, curColor) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'notice-color-item';
+    btn.dataset.hex = c.hex;
+    btn.title = c.name;
+    const checked = c.hex === curColor;
+    btn.setAttribute('aria-checked', String(checked));
+    btn.style.background = c.hex;
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-check';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.style.display = checked ? '' : 'none';
+    btn.appendChild(icon);
+    return btn;
+  }
+  function noticeColorGroupEl_(labelText, colors, curColor) {
+    const frag = document.createDocumentFragment();
+    const label = document.createElement('div');
+    label.className = 'notice-color-group-label';
+    label.textContent = labelText;
+    frag.appendChild(label);
+    const grid = document.createElement('div');
+    grid.className = 'notice-color-swatches';
+    colors.forEach(c => grid.appendChild(noticeColorSwatchEl_(c, curColor)));
+    frag.appendChild(grid);
+    return frag;
+  }
+  function renderNoticeColorMenu_(id) {
+    const menu = document.createElement('div');
+    menu.className = 'notice-dropdown';
+    const fmt = getNoticeCurrentFormat_(id);
+    const curColor = fmt ? fmt.color : NOTICE_DEFAULT_COLOR;
+    menu.appendChild(noticeColorGroupEl_('일반', NOTICE_COLORS_NORMAL, curColor));
+    menu.appendChild(noticeColorGroupEl_('파스텔', NOTICE_COLORS_PASTEL, curColor));
+
+    const defaultRow = document.createElement('div');
+    defaultRow.className = 'notice-color-default-row';
+    defaultRow.dataset.hex = NOTICE_DEFAULT_COLOR;
+    const defaultChecked = curColor === NOTICE_DEFAULT_COLOR;
+    defaultRow.setAttribute('aria-checked', String(defaultChecked));
+    const defaultSwatch = document.createElement('span');
+    defaultSwatch.className = 'notice-toolbar-swatch';
+    defaultSwatch.style.background = NOTICE_DEFAULT_COLOR;
+    defaultRow.appendChild(defaultSwatch);
+    const defaultLabel = document.createElement('span');
+    defaultLabel.textContent = '기본 글자색';
+    defaultRow.appendChild(defaultLabel);
+    if (defaultChecked) {
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-check';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.style.marginLeft = 'auto';
+      defaultRow.appendChild(icon);
+    }
+    menu.appendChild(defaultRow);
+    return menu;
+  }
+  function toggleNoticeDropdown_(id, kind, triggerBtn) {
+    if (noticeOpenDropdown_ && noticeOpenDropdown_.id === id && noticeOpenDropdown_.kind === kind) { closeNoticeDropdowns_(); return; }
+    closeNoticeDropdowns_();
+    const menu = kind === 'size' ? renderNoticeSizeMenu_(id) : renderNoticeColorMenu_(id);
+    menu.addEventListener('mousedown', e => e.preventDefault()); // 선택 영역 유지
+    menu.addEventListener('click', e => {
+      const sizeOpt = e.target.closest('.notice-size-option');
+      if (sizeOpt) { applyNoticeFontSize_(id, Number(sizeOpt.dataset.px)); closeNoticeDropdowns_(); return; }
+      const colorItem = e.target.closest('.notice-color-item, .notice-color-default-row');
+      if (colorItem) { applyNoticeColor_(id, colorItem.dataset.hex); closeNoticeDropdowns_(); return; }
+    });
+    positionNoticeDropdown_(triggerBtn, menu);
+    noticeOpenDropdown_ = { id, kind, menuEl: menu };
+  }
+  // 드롭다운 바깥을 클릭하면 닫습니다. (전역 리스너는 이 파일이 지연 로딩될 때 한 번만 등록됩니다.)
+  document.addEventListener('mousedown', e => {
+    if (noticeOpenDropdown_ && !e.target.closest('.notice-dropdown') && !e.target.closest('.notice-toolbar-select')) closeNoticeDropdowns_();
+  });
+
+  // 서식 버튼/드롭다운 트리거를 누를 때 에디터의 선택 영역이 사라지지 않게 합니다(mousedown 단계에서 기본
+  // 동작을 막는 표준적인 방법 — blur가 일어나기 전에 막아서 원래 선택이 그대로 유지됩니다).
+  function initNoticeEditor_(id) {
+    if (noticeEditors_[id]) return noticeEditors_[id];
+    const editorEl = document.getElementById(id);
+    const toolbarEl = document.querySelector('.notice-toolbar[data-target="' + id + '"]');
+    if (!editorEl || !toolbarEl) return null;
+    const state = { editorEl, toolbarEl, stickySpan: null };
+    noticeEditors_[id] = state;
+
+    toolbarEl.addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });
+    toolbarEl.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      if (action === 'bold' || action === 'italic' || action === 'underline') applyNoticeInline_(id, action);
+      else if (action === 'size-toggle') toggleNoticeDropdown_(id, 'size', btn);
+      else if (action === 'color-toggle') toggleNoticeDropdown_(id, 'color', btn);
+    });
+    editorEl.addEventListener('input', () => { state.stickySpan = null; updateNoticeEmptyState_(editorEl); });
+    editorEl.addEventListener('keyup', () => updateNoticeToolbarState_(id));
+    editorEl.addEventListener('mouseup', () => updateNoticeToolbarState_(id));
+    editorEl.addEventListener('focus', () => updateNoticeToolbarState_(id));
+    editorEl.addEventListener('keydown', e => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      if (key === 'b') { e.preventDefault(); applyNoticeInline_(id, 'bold'); }
+      else if (key === 'i') { e.preventDefault(); applyNoticeInline_(id, 'italic'); }
+      else if (key === 'u') { e.preventDefault(); applyNoticeInline_(id, 'underline'); }
+    });
+    // 붙여넣기는 서식/스타일을 모두 제거하고 일반 텍스트만 넣습니다(한글/워드/웹사이트의 불필요한
+    // HTML을 정리하는 가장 확실한 방법 — 필요하면 툴바로 다시 서식을 입힐 수 있습니다).
+    editorEl.addEventListener('paste', e => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, text);
+    });
+    updateNoticeEmptyState_(editorEl);
+    return state;
+  }
+
+  // 서버 원문(raw, 이스케이프 전)을 받아 에디터에 넣을 안전한 HTML로 바꿉니다.
+  // escapeHtmlClient_로 표시 규칙과 동일하게 이스케이프한 뒤, renderNoticeRichText_로 새 서식/옛 <> 강조를
+  // 복원합니다(JS_Main.html에 정의됨, 결보강처럼 항상 먼저 로드되므로 이 시점에 이미 사용 가능합니다).
+  function loadNoticeEditorContent_(id, rawText) {
+    const editorEl = document.getElementById(id);
+    if (!editorEl) return;
+    const escaped = escapeHtmlClient_(rawText || '');
+    editorEl.innerHTML = renderNoticeRichText_(escaped).replace(/\n/g, '<br>');
+    updateNoticeEmptyState_(editorEl);
+  }
+  function getNoticeEditorValue_(id) {
+    const editorEl = document.getElementById(id);
+    if (!editorEl) return '';
+    return serializeNoticeToStorage_(editorEl).trim();
+  }
+
   function addScheduleFiles(mode, input) {
     const added = Array.from(input.files || []);
     const target = mode === 'register' ? wzAttachmentFiles : currentEditNewFiles;
@@ -358,6 +822,52 @@
     return row;
   }
 
+  // 예전에 '내용'과 '전달사항'을 따로 입력해 저장한 글을, 통합된 '내용' 칸 하나로 합쳐서 보여줍니다.
+  // 둘 다 있으면 내용 뒤에 빈 줄을 한 줄 두고 그 아래에 전달사항을 이어 붙입니다.
+  function mergeDetailAndNotice_(detail, notice) {
+    const d = String(detail || '').replace(/\s+$/, '');
+    const n = String(notice || '').replace(/^\s+/, '');
+    if (d && n) return d + '\n\n' + n;
+    return d || n;
+  }
+
+  // ===== 첨부파일 / 링크 칸 접기·펼치기 =====
+  // 평소에는 버튼만 보여 입력창이 길어지지 않게 하고, 버튼을 누르면 해당 칸이 열립니다.
+  // 이미 담긴 첨부/링크가 있으면(주로 '수정') 자동으로 열어서 내용을 바로 볼 수 있게 합니다.
+  const SCHEDULE_SECTION_TOGGLES_ = {
+    wzAttachmentBody: { toggle: 'wzAttachmentToggle', count: 'wzAttachmentCount' },
+    wzLinkBody: { toggle: 'wzLinkToggle', count: 'wzLinkCount' },
+    singleEditAttachmentBody: { toggle: 'singleEditAttachmentToggle', count: 'singleEditAttachmentCount' },
+    singleEditLinkBody: { toggle: 'singleEditLinkToggle', count: 'singleEditLinkCount' },
+  };
+  function setScheduleSectionOpen_(bodyId, open) {
+    const body = document.getElementById(bodyId);
+    const meta = SCHEDULE_SECTION_TOGGLES_[bodyId];
+    if (!body || !meta) return;
+    body.style.display = open ? 'block' : 'none';
+    const toggle = document.getElementById(meta.toggle);
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.classList.toggle('is-open', open);
+    }
+  }
+  function toggleScheduleSection_(bodyId) {
+    const body = document.getElementById(bodyId);
+    if (!body) return;
+    setScheduleSectionOpen_(bodyId, body.style.display === 'none');
+  }
+  // 담긴 개수를 버튼에 표시하고, 내용이 있으면 접혀 있지 않도록 펼쳐 둡니다.
+  function updateScheduleSectionCount_(bodyId, count) {
+    const meta = SCHEDULE_SECTION_TOGGLES_[bodyId];
+    if (!meta) return;
+    const badge = document.getElementById(meta.count);
+    if (badge) {
+      badge.textContent = count ? String(count) : '';
+      badge.style.display = count ? 'inline-flex' : 'none';
+    }
+    if (count) setScheduleSectionOpen_(bodyId, true);
+  }
+
   function renderScheduleFileLists(mode) {
     if (mode === 'register') {
       const list = document.getElementById('wzAttachmentList');
@@ -368,6 +878,7 @@
         () => { wzAttachmentFiles.splice(idx, 1); renderScheduleFileLists('register'); },
         false
       )));
+      updateScheduleSectionCount_('wzAttachmentBody', wzAttachmentFiles.length);
       return;
     }
     const existingList = document.getElementById('singleEditExistingAttachment');
@@ -386,6 +897,7 @@
       () => { currentEditNewFiles.splice(idx, 1); renderScheduleFileLists('edit'); },
       false
     )));
+    updateScheduleSectionCount_('singleEditAttachmentBody', currentEditAttachments.length + currentEditNewFiles.length);
   }
 
   function readScheduleAttachmentPayloads(items) {
@@ -455,6 +967,7 @@
       value => { item.name = value; },
       () => { arr.splice(idx, 1); renderScheduleLinkLists(mode); }
     )));
+    updateScheduleSectionCount_(mode === 'register' ? 'wzLinkBody' : 'singleEditLinkBody', arr.length);
   }
 
   // ===== 드래그&드롭 파일 업로드 =====
@@ -488,10 +1001,13 @@
         + `<button class="dept-btn dept-add-btn" onclick="openCustomDeptInput()" title="부서명 직접 입력">+</button>`;
       document.getElementById('wzDept').value = '';
       document.getElementById('wzTitle').value = '';
-      document.getElementById('wizardSingleInput').value = ''; // 통합 텍스트 에어리어 초기화
-      document.getElementById('wizardNoticeInput').value = ''; // 전달사항 칸 초기화
+      initNoticeEditor_('wizardNoticeInput'); // 내용(서식) 편집기는 이 화면을 열 때만 초기화합니다.
+      loadNoticeEditorContent_('wizardNoticeInput', ''); // 내용 칸 초기화
       document.getElementById('wzAttachmentFile').value = '';
       wzAttachmentFiles = [];
+      // 첨부/링크 칸은 접은 채로 시작합니다(내용이 생기면 아래 렌더 함수가 자동으로 펼칩니다).
+      setScheduleSectionOpen_('wzAttachmentBody', false);
+      setScheduleSectionOpen_('wzLinkBody', false);
       renderScheduleFileLists('register');
       wzLinks = [];
       document.getElementById('wzLinkName').value = '';
@@ -499,7 +1015,7 @@
       renderScheduleLinkLists('register');
       setupScheduleDropzone('wzDropzone', 'register');
       document.getElementById('wzIsRange').checked = false;
-      setCheckedGrades('wzGradeGroup', '1,2,3');
+      setCheckedGrades('wzGradeGroup', ''); // 처음에는 아무 학년도 체크하지 않은 상태로 시작합니다.
       document.getElementById('wzRepeat').checked = false;
       document.getElementById('wzRepeatWeeks').value = 4;
       toggleRepeatFields('wz');
@@ -574,8 +1090,8 @@
 
       // 일시 예시를 실제 선택한 날짜에 맞춰 보여줍니다: 하루면 교시만, 기간이면 "월.일.(요일)~월.일.(요일)".
       const scheduleExample = isRange ? `${formatMD(wzStartD)}~${formatMD(wzEndD)}` : '3교시~4교시';
-      document.getElementById('wizardSingleInput').placeholder =
-        `1. 일시: ${scheduleExample}\n2. 장소: 시청각실\n3. 대상: 1학년`;
+      document.getElementById('wizardNoticeInput').setAttribute('data-placeholder',
+        `1. 일시: ${scheduleExample}\n2. 장소: 시청각실\n3. 대상: 1학년`);
     }
   }
 
@@ -644,13 +1160,13 @@
     const title = document.getElementById('wzTitle').value.trim();
     if (!title) { showAlert("제목을 입력해주세요."); return; }
 
-    // 상세 내용(내용)은 비어도 됩니다. 제목만 있으면 등록할 수 있고, 전달사항/첨부/링크만 추가해도 됩니다.
-    const detail = document.getElementById('wizardSingleInput').value.trim();
-    const notice = document.getElementById('wizardNoticeInput').value.trim();
+    // 내용은 비어도 됩니다. 제목만 있으면 등록할 수 있고, 첨부/링크만 추가해도 됩니다.
+    const notice = getNoticeEditorValue_('wizardNoticeInput');
 
-    // 제목은 화면에 [ ] 안에 담아 저장합니다(기존 데이터·표시 로직과 형식을 맞추기 위함).
-    // 전달사항이 있으면 "【전달사항】" 구분 헤더 뒤에 붙여, 상세 보기에서 별도 박스로 분리 표시합니다.
-    let finalContent = detail ? `[${title}]\n${detail}` : `[${title}]`;
+    // 제목은 [ ] 안에 담아 저장합니다(기존 데이터·표시 로직과 형식을 맞추기 위함).
+    // 내용은 "【전달사항】" 구분 헤더 뒤에 저장합니다 — 이 표식이 곧 "서식이 살아 있는 본문"이라는
+    // 뜻이고, 상세 보기에서 노란 박스로 표시됩니다. (표식 이름은 기존 데이터와 호환을 위해 유지)
+    let finalContent = `[${title}]`;
     if (notice) finalContent += `\n\n【전달사항】\n${notice}`;
 
     // 대상 학년을 하나도 선택하지 않아도 등록할 수 있습니다. 이 경우 학년별(1/2/3학년) 필터에는
@@ -671,7 +1187,7 @@
     toggleLoading(true, attachmentPayloads.length ? "파일과 일정을 저장 중..." : "저장 중...");
     g.withSuccessHandler(() => {
       toggleLoading(false); closeMod('workMod');
-      focusSavedScheduleRange(wzStartD, wzEndD || wzStartD, weeks);
+      focusSavedScheduleRange();
       showAlert(isRepeat ? `${weeks}주간 반복 등록이 완료되었습니다.` : "등록이 완료되었습니다.");
     }).withFailureHandler(err => {
       toggleLoading(false);
@@ -700,7 +1216,7 @@
     toggleLoading(true, "저장 중...");
     g.withSuccessHandler(() => {
       toggleLoading(false); closeMod('notMod');
-      focusSavedScheduleRange(sDVal, isRange ? eDVal : sDVal, weeks);
+      focusSavedScheduleRange();
       showAlert(isRepeat ? `${weeks}주간 반복 등록되었습니다.` : "저장됨");
     }).withFailureHandler(err => {
       toggleLoading(false);
@@ -962,6 +1478,9 @@
     document.getElementById('singleEditNoticeField').style.display = isNotice ? 'none' : 'block';
     document.getElementById('singleEditAttachmentField').style.display = isNotice ? 'none' : 'block';
     document.getElementById('singleEditAttachmentFile').value = '';
+    // 첨부/링크 칸은 접은 채로 시작하고, 이미 저장된 내용이 있으면 렌더 함수가 자동으로 펼칩니다.
+    setScheduleSectionOpen_('singleEditAttachmentBody', false);
+    setScheduleSectionOpen_('singleEditLinkBody', false);
     currentEditAttachments = isNotice ? [] : (item.attachments || []).map(file => Object.assign({}, file, { displayName: file.fileName }));
     currentEditNewFiles = [];
     renderScheduleFileLists('edit');
@@ -972,14 +1491,17 @@
     currentEditLinks = isNotice ? [] : (item.links || []).map(l => ({ name: l.name, url: l.url }));
     renderScheduleLinkLists('edit');
     setupScheduleDropzone('singleEditDropzone', 'edit');
+    // 옛 '전달사항 등록' 항목만 평문 칸을 쓰고, 나머지는 서식 지원 '내용' 칸 하나로 통합합니다.
+    document.getElementById('singleEditTextField').style.display = isNotice ? 'block' : 'none';
     if (isNotice) {
       document.getElementById('singleEditText').value = item.fullText;
     } else {
-      // 저장 텍스트를 일정명/내용/전달사항 3칸으로 분해합니다. (옛 형식의 "전달사항" 라벨도 자동 감지)
       const p = parseTaskText(item.fullText);
       document.getElementById('singleEditTitle').value = p.title;
-      document.getElementById('singleEditText').value = p.detail;
-      document.getElementById('singleEditNotice').value = p.notice;
+      // 내용 편집기는 처음 열릴 때만 초기화하고, 옛 '<...>' 강조가 있었다면 새 서식으로 이미
+      // 적용된 상태로 보여줍니다(사용자가 <, > 문자를 직접 지울 필요가 없습니다).
+      initNoticeEditor_('singleEditNotice');
+      loadNoticeEditorContent_('singleEditNotice', mergeDetailAndNotice_(p.detail, p.notice));
     }
     setCheckedGrades('singleEditGradeGroup', item.grades);
     openMod('singleEditMod');
@@ -997,17 +1519,16 @@
       if (!start || !end || !text) { showAlert("날짜와 내용을 모두 입력하세요."); return; }
     } else {
       const title = document.getElementById('singleEditTitle').value.trim();
-      const detail = document.getElementById('singleEditText').value.trim();
-      const notice = document.getElementById('singleEditNotice').value.trim();
-      // 내용(상세)이 비어도 됩니다. 일정명·내용·전달사항·첨부·링크 중 하나만 있으면 저장할 수 있습니다.
-      const hasAny = title || detail || notice
+      const notice = getNoticeEditorValue_('singleEditNotice');
+      // 내용이 비어도 됩니다. 일정명·내용·첨부·링크 중 하나만 있으면 저장할 수 있습니다.
+      const hasAny = title || notice
         || (currentEditAttachments && currentEditAttachments.length)
         || (currentEditNewFiles && currentEditNewFiles.length)
         || (currentEditLinks && currentEditLinks.length);
       if (!start || !end) { showAlert("날짜를 입력하세요."); return; }
-      if (currentEditType !== 'annual' && !hasAny) { showAlert("일정명·내용·전달사항 중 하나 이상 입력해주세요."); return; }
-      // 일정명/내용/전달사항을 다시 저장 형식으로 결합합니다. (내용이 없으면 앞쪽 빈 줄 없이 전달사항만)
-      text = title ? `[${title}]\n${detail}` : detail;
+      if (currentEditType !== 'annual' && !hasAny) { showAlert("일정명·내용 중 하나 이상 입력해주세요."); return; }
+      // 일정명과 내용을 저장 형식으로 결합합니다(내용은 서식 유지를 위해 【전달사항】 표식 뒤에 저장).
+      text = title ? `[${title}]` : '';
       if (notice) text += (text ? `\n\n` : '') + `【전달사항】\n${notice}`;
     }
     // 대상 학년 미선택도 허용합니다(교직원용 등). 학년 정보 없이 저장되어 '전체' 필터에서만 표시됩니다.
@@ -1041,7 +1562,8 @@
         closeMod('editMod'); // 목록 창은 더 이상 띄우지 않고 바로 달력으로 돌아갑니다.
         isEdited = true;
         showAlert(currentEditType === 'annual' ? "세부 내용이 저장되었습니다." : "수정 완료");
-        loadAll(); // 달력 새로고침
+        // 수정 전 보고 있던 주차/필터를 유지한 채 달력만 새로고침합니다.
+        focusSavedScheduleRange();
       } else {
         showAlert("저장 실패");
       }
@@ -1087,14 +1609,19 @@
     const gradeField = document.getElementById('singleEditGradeGroup').closest('.field');
     if (gradeField) gradeField.style.display = 'none';
 
-    // 세부(상세/전달사항) 채우기 — 수정창엔 이스케이프 안 된 원문(rawText)을 넣습니다.
+    // 세부 내용 채우기 — 수정창엔 이스케이프 안 된 원문(rawText)을 넣습니다.
+    // 예전에 내용/전달사항을 따로 저장한 경우에는 둘을 빈 줄로 이어 붙여 한 칸에 보여줍니다.
+    document.getElementById('singleEditTextField').style.display = 'none';
     const p = parseTaskText((d.annual && d.annual.rawText) || '');
-    document.getElementById('singleEditText').value = p.detail;
-    document.getElementById('singleEditNotice').value = p.notice;
+    initNoticeEditor_('singleEditNotice');
+    loadNoticeEditorContent_('singleEditNotice', mergeDetailAndNotice_(p.detail, p.notice));
 
     // 첨부/링크
     document.getElementById('singleEditAttachmentField').style.display = 'block';
     document.getElementById('singleEditAttachmentFile').value = '';
+    // 첨부/링크 칸은 접은 채로 시작하고, 이미 저장된 내용이 있으면 렌더 함수가 자동으로 펼칩니다.
+    setScheduleSectionOpen_('singleEditAttachmentBody', false);
+    setScheduleSectionOpen_('singleEditLinkBody', false);
     currentEditAttachments = (d.attachments || []).map(f => Object.assign({}, f, { displayName: f.fileName }));
     currentEditNewFiles = [];
     renderScheduleFileLists('edit');

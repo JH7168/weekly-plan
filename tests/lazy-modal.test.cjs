@@ -144,19 +144,33 @@ function ok(cond, label) { if (cond) { pass++; console.log('PASS ' + label); } e
     ok(!!qrStep && qrStep.style.display === 'block', 'QR 화면으로 정상 전환됨(openConvenienceTool 순서가 보존됨)');
   }
 
-  // ---- 4. 실패 처리: 로딩 실패 시 DOM 미삽입, 다음 클릭에서 재시도 가능 ----
+  // ---- 4. 실패 처리: 계속 실패하면 DOM 미삽입, 이후 클릭에서 재시도 가능 ----
+  //        (자동 1회 재시도가 있어 첫 클릭만으로 서버 호출이 2회 발생함 — 아래 4b에서 별도 검증)
   {
     const env = freshEnv();
     env.setBehavior(() => 'fail');
     vm.runInContext('openResubMod();', env.ctx);
-    await flush(30);
+    await flush(60); // 자동 재시도(내부적으로 다시 getLazyModalHtml 호출)까지 끝나길 기다립니다.
+    ok(env.getCalls().length === 2, '계속 실패: 자동 재시도까지 포함해 서버 호출 2회 발생');
     ok(env.document.getElementById('resubMod') === null, '실패 시: DOM이 깨진 상태로 남지 않음(삽입 안 됨)');
 
     env.setBehavior(() => 'ok');
     vm.runInContext('openResubMod();', env.ctx);
-    ok(env.getCalls().length === 2, '실패 후 재시도: 새 서버 호출이 다시 발생함');
+    ok(env.getCalls().length === 3, '자동 재시도까지 모두 실패한 뒤 사용자가 다시 누르면: 새 서버 호출이 또 발생함');
     await flush(30);
     ok(!!env.document.getElementById('resubMod'), '재시도 성공: 결보강 모달 DOM 삽입 확인');
+  }
+
+  // ---- 4b. 자동 재시도: 첫 시도만 실패하고 재시도가 성공하면, 사용자가 다시 누르지 않아도 정상 로드됨 ----
+  {
+    const env = freshEnv();
+    let callNum = 0;
+    env.setBehavior(() => { callNum++; return callNum === 1 ? 'fail' : 'ok'; }); // 1번째만 실패, 2번째(자동 재시도)는 성공
+    vm.runInContext('openAdminLogin();', env.ctx);
+    await flush(60);
+    ok(env.getCalls().length === 2, '자동 재시도: 서버 호출이 실패 1회 + 자동 재시도 1회로 총 2회');
+    ok(!!env.document.getElementById('adminLoginMod'), '자동 재시도 성공: 사용자가 다시 누르지 않아도 모달이 정상 삽입됨');
+    ok(env.document.getElementById('adminLoginMod').style.display === 'flex', '자동 재시도 성공: 모달이 실제로 열림');
   }
 
   // ---- 5. 보안: 화이트리스트에 없는 key는 거부됨(임의 파일 접근 불가) ----

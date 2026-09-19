@@ -1066,6 +1066,36 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; /* 일정명은 막대(기간) 안에서 가운데 정렬, 한 줄로 자르고 눌러서 세부 내용 팝업을 봅니다. */
   }
   .event-bar:hover, .event-bar:focus-visible { filter: brightness(0.97); outline: none; }
+  /* 순서 바꾸기 대상 항목(data-rownum이 있는 부서 업무 막대/목록 줄)은 꾹 눌렀을 때 브라우저의
+     기본 텍스트 선택/길게 눌러 메뉴(iOS 콜아웃)가 대신 뜨지 않도록 막습니다. 이게 없으면 pointer
+     이벤트가 오기 전에 브라우저가 먼저 선택 모드로 가져가 버려 "꾹 눌러도 안 움직이는" 것처럼 보입니다. */
+  [data-rownum][data-dept][data-start] {
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  /* 항목을 잡았을 때(순서 바꾸기 시작)와, 그 위로 끌어다 놓을 수 있는 대상 위에 있을 때의 표시입니다.
+     잡힌 것이 한눈에 보이도록 살짝 커지고 들린 느낌(그림자)을 줍니다. */
+  .event-bar.item-reorder-armed, .mobile-list-row.item-reorder-armed {
+    opacity: 0.9; transform: scale(1.04); box-shadow: 0 6px 16px rgba(37,99,235,0.45);
+    outline: 2px solid #2563eb; outline-offset: -2px; position: relative; z-index: 5;
+    transition: transform .12s, box-shadow .12s; touch-action: none;
+  }
+  /* 끄는 동안에는 글자 선택/기본 끌기 동작이 끼어들지 않게 합니다. */
+  body.item-reorder-active { -webkit-user-select: none; user-select: none; cursor: grabbing; }
+  /* 잡은 항목이 갈 수 있는 자리: 점선 네모로 보여주고, 그 위에 올리면 진하게 표시합니다. */
+  .item-reorder-slot {
+    position: fixed; z-index: 10080; pointer-events: none; border-radius: 6px;
+    border: 2px dashed #2563eb; background: rgba(37,99,235,0.08);
+  }
+  .item-reorder-slot.is-active { background: rgba(37,99,235,0.3); border-style: solid; }
+  /* 포인터를 따라다니는 복사본(지금 옮기는 중인 항목) */
+  .item-reorder-ghost {
+    opacity: 0.85; box-shadow: 0 8px 20px rgba(0,0,0,0.3); transform: scale(1.03);
+    pointer-events: none; border-radius: 6px;
+  }
+  .event-bar.item-reorder-target {
+    outline: 2px dashed #2563eb; outline-offset: -2px; background: #dbeafe !important;
+  }
+  .mobile-list-row.item-reorder-target { background: #dbeafe; outline: 2px dashed #2563eb; outline-offset: -2px; }
   /* 연간 행사 막대는 부서 업무 막대와 색을 다르게 해서 "부서명 없는 행사 줄"임을 한눈에 구분되게 합니다.
      맨 왼쪽 칸은 글자 없이 비어 있으므로(구분 표시 불필요) 주황 배경 없이 다른 행과 같게 둡니다. */
   .event-bar.cal-event-bar { background: #fff7ed; border-left-color: #f97316; }
@@ -1169,6 +1199,70 @@
   .schedule-file-permissions label { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #ddd6fe; border-radius: 999px; background: #faf8ff; color: #5b21b6; font-size: 12.5px; font-weight: 750; cursor: pointer; }
   .schedule-file-permissions input { width: 16px; height: 16px; margin: 0; accent-color: #7c3aed; }
   .schedule-file-permissions label:has(input:checked) { background: #ede9fe; border-color: #8b5cf6; box-shadow: 0 0 0 1px rgba(124,58,237,0.08); }
+  /* 전달사항 리치 텍스트 툴바: 종이/플래너 톤(아이보리+베이지) — 워드프로세서 회색 UI를 피합니다. */
+  .notice-editor-wrap { position: relative; }
+  .notice-toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+    padding: 6px 7px; margin: 6px 0 0; border: 1px solid #e8d9ae; border-radius: 9px 9px 0 0;
+    background: #fdf7e6; border-bottom: none;
+  }
+  .notice-toolbar-btn {
+    min-width: 32px; min-height: 32px; padding: 5px 9px; border: 1px solid #e8d9ae; border-radius: 7px;
+    background: #fffefb; color: #6b5a2e; font-size: 13px; font-weight: 800; font-family: inherit;
+    cursor: pointer; transition: 0.15s; line-height: 1;
+  }
+  .notice-toolbar-btn:hover { background: #fff3d6; }
+  .notice-toolbar-btn[aria-pressed="true"] { background: var(--notice); border-color: var(--notice); color: #fff; }
+  .notice-toolbar-btn.notice-italic-btn { font-style: italic; }
+  .notice-toolbar-btn.notice-underline-btn { text-decoration: underline; }
+  .notice-toolbar-select {
+    display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 5px 10px; border: 1px solid #e8d9ae;
+    border-radius: 7px; background: #fffefb; color: #6b5a2e; font-size: 12.5px; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: 0.15s;
+  }
+  .notice-toolbar-select:hover { background: #fff3d6; }
+  .notice-toolbar-select i { font-size: 10px; color: #b8923a; }
+  .notice-toolbar-swatch { width: 15px; height: 15px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); flex: none; }
+  .notice-toolbar-sep { width: 1px; height: 22px; background: #e8d9ae; margin: 0 2px; }
+  .notice-rich-editor {
+    width: 100%; min-height: 80px; padding: 12px 14px; box-sizing: border-box;
+    border: 1px solid #e8d9ae; border-top: none; border-radius: 0 0 9px 9px;
+    background: #fffdf0; font-family: inherit; font-size: 14px; line-height: 1.6; color: #3f3f46;
+    outline: none; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;
+  }
+  .notice-rich-editor:focus { box-shadow: inset 0 0 0 2px rgba(245,176,38,0.28); }
+  .notice-rich-editor.is-empty::before { content: attr(data-placeholder); color: #b3a27a; pointer-events: none; }
+  /* 글자 크기/색상 드롭다운: 모달 바깥으로도 잘리지 않도록 position:fixed로 JS가 위치를 계산합니다. */
+  .notice-dropdown {
+    position: fixed; z-index: 10070; background: #fffefb; border: 1px solid #e8d9ae; border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(60,45,10,0.22); padding: 8px; max-height: 280px; overflow-y: auto;
+  }
+  .notice-size-option {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 8px 10px; border-radius: 7px; cursor: pointer; color: #4a3f2a; font-weight: 600;
+  }
+  .notice-size-option:hover { background: #fff3d6; }
+  .notice-size-option[aria-checked="true"] { background: var(--notice); color: #fff; }
+  .notice-color-group-label { font-size: 11px; font-weight: 800; color: #9c8a5a; letter-spacing: 0.3px; margin: 4px 2px 6px; }
+  .notice-color-group-label:first-child { margin-top: 0; }
+  .notice-color-swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 4px; }
+  .notice-color-item {
+    width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
+    display: grid; place-items: center; padding: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12);
+  }
+  .notice-color-item:hover { transform: scale(1.08); }
+  .notice-color-item[aria-checked="true"] { border-color: #6b5a2e; }
+  .notice-color-item[aria-checked="true"] i { color: #fff; font-size: 11px; text-shadow: 0 0 2px rgba(0,0,0,.5); }
+  .notice-color-default-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 7px; cursor: pointer; margin-top: 2px; border-top: 1px solid #f0e6c8; }
+  .notice-color-default-row:hover { background: #fff3d6; }
+  .notice-color-default-row[aria-checked="true"] { background: #fff3d6; }
+  .notice-color-default-row[aria-checked="true"] i { color: #96690a; font-size: 11px; }
+  .notice-color-default-row .notice-toolbar-swatch { width: 18px; height: 18px; }
+  @media (max-width: 640px) {
+    .notice-toolbar-btn, .notice-toolbar-select { min-height: 36px; }
+    .notice-color-item { width: 32px; height: 32px; }
+  }
+
   /* 드래그&드롭 영역: 파일을 끌어다 놓거나 눌러서 선택 */
   .schedule-dropzone {
     display: flex; align-items: center; justify-content: center; gap: 9px;
@@ -1185,6 +1279,23 @@
   .schedule-link-input input { min-width: 0; padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; }
   .schedule-link-add { border: none; background: #7c3aed; color: #ffffff; border-radius: 8px; padding: 9px 16px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .schedule-link-add:hover { background: #6d28d9; }
+  /* 첨부파일/링크 칸을 여는 버튼. 평소엔 버튼만 보이고, 누르면 아래 입력 영역이 펼쳐집니다. */
+  .schedule-section-toggle {
+    display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;
+    padding: 11px 14px; border: 1px solid #d8dbe3; border-radius: 10px; background: #f8f9fc;
+    color: #3f3f46; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; transition: 0.15s;
+  }
+  .schedule-section-toggle:hover { background: #eef1f8; border-color: #c3c8d4; }
+  .schedule-section-toggle > i:first-child { color: #7c3aed; }
+  .schedule-section-toggle.is-open { background: #f1ecfe; border-color: #c4b5fd; color: #5b21b6; }
+  .schedule-section-caret { margin-left: auto; font-size: 12px; color: #94a3b8; transition: transform 0.15s; }
+  .schedule-section-toggle.is-open .schedule-section-caret { transform: rotate(180deg); }
+  .schedule-section-count {
+    display: none; align-items: center; justify-content: center; min-width: 20px; height: 20px;
+    padding: 0 6px; border-radius: 999px; background: #7c3aed; color: #fff; font-size: 12px; font-weight: 800;
+  }
+  .schedule-section-body { margin-top: 10px; }
+  .schedule-section-body > .field-hint { display: block; margin-bottom: 8px; }
   @media (max-width: 520px) { .schedule-link-input { grid-template-columns: 1fr; } }
   .item-detail-attachment { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eef0f3; }
   .item-detail-attachment-label { margin-bottom: 7px; font-size: 13px; font-weight: 800; color: #6d28d9; }

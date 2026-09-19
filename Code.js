@@ -528,6 +528,16 @@ function getWeekMondaysForMonth_(year, month) {
 // 매칭해 연간행사 팝업의 상세/전달사항/첨부/링크로만 사용됩니다. (부서 업무와 동일한 코드 재사용)
 const ANNUAL_DEPT_ = '__연간행사__';
 
+// Data 시트 I열(표시순서)에 쓰는 값입니다. 비어 있으면 시작일(타임스탬프)을 그대로 순서 값으로 써서,
+// 지금까지와 똑같이 '시작일 순'으로 표시됩니다. 사용자가 끌어서 순서를 바꾼 항목만 실제 값이 들어가고,
+// 그 값도 타임스탬프와 같은 단위라서 날짜가 다른 항목들 사이에도 자연스럽게 끼어들 수 있습니다.
+const SCHEDULE_ORDER_COL_ = 9; // I열
+function scheduleSortKey_(row, startTime) {
+  const raw = row[SCHEDULE_ORDER_COL_ - 1];
+  const num = (raw === '' || raw === null || raw === undefined) ? NaN : Number(raw);
+  return isFinite(num) ? num : startTime;
+}
+
 // 한 주(월요일 시작)에 대한 연간 행사/부서별 업무를 계산합니다.
 // getCombinedData(주간 조회, 모바일용)와 getMonthlyCombinedData(월간 조회, PC용)가 공통으로 사용합니다.
 function buildWeekResult_(weekStart, schMap, datVals) {
@@ -570,13 +580,18 @@ function buildWeekResult_(weekStart, schMap, datVals) {
       deptMap[r[0]].push({
         date: formatSimple(r[1], r[2]), time: st, st: st, et: et,
         text: escapeHtml_(r[3]), grades: r[5] || '',
-        attachments: parseScheduleAttachments_(r[6]), links: parseScheduleLinks_(r[7]), rowNum: dataIdx + 2
+        attachments: parseScheduleAttachments_(r[6]), links: parseScheduleLinks_(r[7]), rowNum: dataIdx + 2,
+        sortKey: scheduleSortKey_(r, st)
       });
     }
   });
   const list = Object.keys(deptMap).map(name => {
-    const items = deptMap[name].sort((a,b) => a.time - b.time);
-    return { name, items, first: items[0].time };
+    // 표시 순서: 기본은 지금까지와 똑같이 '시작일 순'이고(표시순서 칸이 비어 있으면 시작일을 그대로 씀),
+    // 사용자가 끌어서 순서를 바꾼 항목만 그 값으로 자리를 잡습니다.
+    const items = deptMap[name].sort((a,b) => (a.sortKey - b.sortKey) || (a.rowNum - b.rowNum));
+    // 부서 줄의 위아래 순서는 예전처럼 '가장 이른 일정'을 기준으로 정합니다(수동 정렬에 흔들리지 않게).
+    const first = Math.min.apply(null, items.map(it => it.time));
+    return { name, items, first };
   }).sort((a,b) => {
     const oa = deptOrderIndex_(a.name), ob = deptOrderIndex_(b.name);
     if (oa !== ob) return oa - ob;
@@ -1138,6 +1153,67 @@ function updateRowContent(type, rowNum, newText, newStart, newEnd, newAuthor, ne
   } catch (e) {
     createdAttachments.forEach(item => { try { DriveApp.getFileById(item.fileId).setTrashed(true); } catch (cleanupErr) {} });
     console.error("수정 오류: " + e.toString());
+    return false;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// 같은 부서 안에서 보이는 일정들의 표시 순서를 통째로 다시 정합니다.
+// rowNums는 "새로 보여줄 순서"대로 담긴 행 번호 배열입니다(예: [8, 5, 12]이면 8번 행이 맨 위).
+// 날짜가 서로 달라도 됩니다 — 관련 있는 일정끼리 나란히 두고 싶을 때를 위한 기능이라,
+// 이 묶음이 지금 차지하고 있는 '순서 값'들을 그대로 재사용해 묶음 안에서만 자리를 바꿉니다.
+// (그래서 같은 부서의 다른 주 일정들과의 상대 위치는 흐트러지지 않습니다.)
+function reorderScheduleItems(rowNums) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (e) {
+    console.error("순서 변경 오류: 락 획득 실패");
+    return false;
+  }
+  try {
+    const sheet = SS.getSheetByName("Data");
+    if (!sheet) throw new Error("시트를 찾을 수 없습니다.");
+    const lastRow = sheet.getLastRow();
+    const rows = (rowNums || []).map(Number);
+    if (rows.length < 2) throw new Error("순서를 바꿀 항목이 2개 이상이어야 합니다.");
+    const seen = {};
+    rows.forEach(r => {
+      if (!Number.isInteger(r) || r < 2 || r > lastRow) throw new Error("대상 항목을 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.");
+      if (seen[r]) throw new Error("대상 항목이 중복되었습니다.");
+      seen[r] = true;
+    });
+
+    // 대상 행들을 먼저 모두 읽습니다(부서 확인 + 현재 순서 값 확보).
+    const infoByRow = {};
+    rows.forEach(r => {
+      const vals = sheet.getRange(r, 1, 1, SCHEDULE_ORDER_COL_).getValues()[0];
+      if (!(vals[1] instanceof Date)) throw new Error("대상 항목의 날짜가 올바르지 않습니다.");
+      infoByRow[r] = { dept: String(vals[0]), key: scheduleSortKey_(vals, vals[1].getTime()) };
+    });
+
+    // 같은 부서 항목끼리만 순서를 바꿀 수 있습니다(클라이언트에서 이미 같은 부서 줄 안에서만 고를 수
+    // 있게 막아두지만, 그 사이 다른 사용자가 항목을 지워 행 번호가 밀리는 등의 경합에 대비합니다).
+    const deptName = infoByRow[rows[0]].dept;
+    if (!rows.every(r => infoByRow[r].dept === deptName)) {
+      throw new Error("같은 부서 항목끼리만 순서를 바꿀 수 있습니다.");
+    }
+
+    // 이 묶음이 쓰던 순서 값들을 오름차순으로 모아, 새 순서대로 하나씩 다시 나눠줍니다.
+    // 값이 겹치면(같은 날짜라 기본값이 같은 경우) 1ms씩 벌려 순서가 확실히 정해지게 합니다.
+    const slots = rows.map(r => infoByRow[r].key).sort((a, b) => a - b);
+    for (let i = 1; i < slots.length; i++) {
+      if (slots[i] <= slots[i - 1]) slots[i] = slots[i - 1] + 1;
+    }
+    if (sheet.getRange(1, SCHEDULE_ORDER_COL_).getValue() !== '표시순서') {
+      sheet.getRange(1, SCHEDULE_ORDER_COL_).setValue('표시순서');
+    }
+    rows.forEach((r, i) => { sheet.getRange(r, SCHEDULE_ORDER_COL_).setValue(slots[i]); });
+    invalidateSheetCache_("Data");
+    return true;
+  } catch (e) {
+    console.error("순서 변경 오류: " + e.toString());
     return false;
   } finally {
     lock.releaseLock();
