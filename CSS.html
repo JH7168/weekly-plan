@@ -1567,7 +1567,15 @@
     /* 예전에는 min-width:850px + overflow-x:auto로 PC 화면을 그대로 축소 없이 가로 스크롤만
        시켰습니다. 폰 폭에 맞춰 실제로 줄어들도록 그 강제 최소폭을 제거합니다. */
     body { padding: 10px; }
-    .header-area { padding-top: 42px; }
+
+    /* 모바일 화면 순서: 제목 → 오늘 급식 → 오늘의 일정 → 연·월(주차) 표시 → (연간행사) → 부서별 일정.
+       .planner-paper의 실제 자식 순서(HTML)는 PC 레이아웃 그대로 두고, 모바일에서만 flex order로
+       "오늘 급식" 카드(.planner-calendar-controls)를 맨 위 근처로 끌어올립니다. 나머지 요소는 order를
+       안 건드려 원래 순서(오늘의 일정 → 주차 표시 → … → 부서별 일정)를 그대로 유지합니다. */
+    .planner-paper { display: flex; flex-direction: column; }
+    .planner-calendar-controls { order: -5; }
+
+    .header-area { order: -10; padding-top: 42px; }
     .school-home-btn { min-height: 40px; padding: 8px 11px; font-size: 12px; }
     .search-box { padding: 10px 10px; }
     .card-btn { height: 80px; font-size: 13px; }
