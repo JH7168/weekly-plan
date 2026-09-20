@@ -1568,12 +1568,19 @@
        시켰습니다. 폰 폭에 맞춰 실제로 줄어들도록 그 강제 최소폭을 제거합니다. */
     body { padding: 10px; }
 
-    /* 모바일 화면 순서: 제목 → 오늘 급식 → 오늘의 일정 → 연·월(주차) 표시 → (연간행사) → 부서별 일정.
-       .planner-paper의 실제 자식 순서(HTML)는 PC 레이아웃 그대로 두고, 모바일에서만 flex order로
-       "오늘 급식" 카드(.planner-calendar-controls)를 맨 위 근처로 끌어올립니다. 나머지 요소는 order를
-       안 건드려 원래 순서(오늘의 일정 → 주차 표시 → … → 부서별 일정)를 그대로 유지합니다. */
+    /* 모바일 화면 순서: 제목 → 오늘 급식 → 오늘의 일정 → 연·월(주차) 표시 → 부서별 일정 등록 → (연간행사) → 부서별 일정.
+       .planner-paper의 실제 자식 순서(HTML)는 PC 레이아웃 그대로 두고, 모바일에서만 flex order로 재배치합니다.
+       급식 카드와 "부서별 일정 등록" 버튼은 원래 같은 박스(.planner-calendar-controls)에 나란히 들어 있어
+       통째로만 옮길 수 있었는데, 등록 버튼은 그대로 두고 급식 카드만 위로 올려야 하므로 그 박스를
+       display:contents로 "투명하게" 만들어 두 자식을 .planner-paper의 개별 항목으로 분리합니다.
+       - 급식 카드(#mealNow)만 order:-5로 맨 위 근처로 끌어올리고,
+       - 등록 버튼 줄(.calendar-register-row)은 order를 건드리지 않아 원래 자리(주차 표시 다음,
+         연간행사 앞)에 그대로 남습니다. */
     .planner-paper { display: flex; flex-direction: column; }
-    .planner-calendar-controls { order: -5; }
+    /* 클래스 선택자 하나짜리라 뒤에 나오는 무조건(non-media) 규칙에 밀릴 수 있어, 부모까지 묶어
+       우선순위를 확실히 높입니다(다른 .planner-calendar-controls 규칙의 순서에 영향받지 않도록). */
+    .planner-paper .planner-calendar-controls { display: contents; }
+    #mealNow { order: -5; flex: 0 1 auto; } /* flex:1 1 0(급식 위젯 공용 스타일)이 세로 flex에서 칸을 억지로 늘리지 않도록 되돌립니다. */
 
     .header-area { order: -10; padding-top: 42px; }
     .school-home-btn { min-height: 40px; padding: 8px 11px; font-size: 12px; }
