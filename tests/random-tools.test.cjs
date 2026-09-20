@@ -126,18 +126,46 @@ for (const n of [2, 4, 5, 8, 9, 32])
     R.advance(b, 0, at, 1);
     if (b.rounds.length > 1) assert.equal(b.rounds.at(-1)[0].winner, null);
   });
-test("seats fewer names, overflow rejection, pin student + empty", () => {
-  const a = ["a", "b", "c"];
-  const out = R.seats(a, 2, 3);
-  assert.equal(out.filter(Boolean).length, 3);
-  assert.throws(() => R.seats(a, 1, 2));
-  const s = ["a", null, "b", "c"];
-  const next = R.seats(a, 2, 2, s, new Set([0, 1]));
-  assert.equal(next[0], "a");
-  assert.equal(next[1], null);
-  assert.throws(() => R.seats(["b", "c"], 2, 2, s, new Set([0])));
-  assert.throws(() => R.seats(a, 1, 3, s, new Set([1])));
-  assert.throws(() => R.seats(a, 0, 3));
+test("seatPlan: 좌석 수와 학생 수가 맞아야 배치되고, 모든 학생이 정확히 한 자리에 앉는다", () => {
+  const students = [1, 2, 3, 4, 5, 6];
+  const out = R.seatPlan(2, 3, [], [], students);
+  assert.equal(out.length, 6);
+  assert.deepEqual(plain(out).sort((a, b) => a - b), students);
+  // 자리가 남거나 모자라면 무엇을 해야 하는지 알려주며 거절합니다.
+  assert.throws(() => R.seatPlan(2, 4, [], [], students), /자리가 2개 많습니다/);
+  assert.throws(() => R.seatPlan(2, 2, [], [], students), /학생이 2명 많습니다/);
+  assert.throws(() => R.seatPlan(0, 3, [], [], students));
+  assert.throws(() => R.seatPlan(13, 1, [], [], students));
+});
+test("seatPlan: 제외석은 비우고, 남은 자리 수가 학생 수와 맞으면 배치된다", () => {
+  const students = [1, 2, 3, 4];
+  const out = R.seatPlan(2, 3, [1, 4], [], students);
+  assert.equal(out[1], null);
+  assert.equal(out[4], null);
+  assert.deepEqual(plain(out).filter((n) => n != null).sort((a, b) => a - b), students);
+  assert.throws(() => R.seatPlan(2, 3, [99], [], students), /자리 구조에 없습니다/);
+});
+test("seatPlan: 지정석은 그 번호가 그 자리에 앉고 랜덤 대상에서 빠진다", () => {
+  const students = [1, 2, 3, 4, 5, 6];
+  for (let i = 0; i < 20; i++) {
+    const out = R.seatPlan(2, 3, [], [[0, 3], [5, 1]], students);
+    assert.equal(out[0], 3);
+    assert.equal(out[5], 1);
+    assert.deepEqual(plain(out).sort((a, b) => a - b), students);
+  }
+});
+test("seatPlan: 잘못된 지정석은 이유를 알려주며 거절한다", () => {
+  const students = [1, 2, 3, 4];
+  assert.throws(() => R.seatPlan(2, 2, [], [[0, 9]], students), /번호 범위에 없거나 궐번/);
+  assert.throws(() => R.seatPlan(2, 2, [], [[0, 1], [1, 1]], students), /두 자리에 지정/);
+  assert.throws(() => R.seatPlan(2, 3, [0], [[0, 1]], students), /지정석으로 쓸 수 없습니다/);
+  assert.throws(() => R.seatPlan(2, 2, [], [[99, 1]], students), /자리 구조에 없습니다/);
+});
+test("seatPlan: 궐번을 뺀 학생만 배치된다", () => {
+  const students = [1, 2, 3, 5, 6, 7]; // 4번이 궐번
+  const out = R.seatPlan(2, 3, [], [], students);
+  assert.equal(out.includes(4), false);
+  assert.deepEqual(plain(out).sort((a, b) => a - b), students);
 });
 for (const n of [2, 5, 12])
   test(`ladder ${n}: adjacency, bijection, fixed generation`, () => {

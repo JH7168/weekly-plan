@@ -60,6 +60,7 @@
     loadMeals();
     initScrollTopBtn();
     initInstitutionBannerCarousel();
+    initMobileTodayCard();
   };
 
   // 데스크톱은 배너가 4개를 넘을 때만 3초마다 자동 순환하고,
@@ -1015,6 +1016,113 @@
       workMobileEl.innerHTML = deptBlocks
         || `<div class="mobile-list-row"><div class="mobile-list-content mobile-list-empty">일정이 없습니다.</div></div>`;
     }
+
+    // 오늘의 일정 카드: 지금 막 받아온 이 주(currentWeekWorkList)에 오늘 날짜가 포함되어 있을 때만
+    // 갱신합니다(새 서버 호출 없이, 이미 불러온 데이터를 재사용). 다른 주로 이동해 오늘이 이 범위를
+    // 벗어나면 값을 건드리지 않고 마지막으로 확정된 오늘 일정을 그대로 유지합니다.
+    updateMobileTodayCard();
+  }
+
+  // ===== 모바일 전용: 오늘의 일정 요약 카드 =====
+  // PC 화면과 편의 기능 등 다른 기능에는 전혀 손대지 않고, 모바일 조회(getCombinedData)로 이미 받아온
+  // currentWeekWorkList만 재사용합니다. 새 google.script.run 호출은 추가하지 않습니다.
+
+  // 한 번 "오늘 일정"을 확정하면(mobileTodayLocked), 이후 사용자가 다른 주/월로 이동해 화면이 바뀌어도
+  // 이 카드는 흔들리지 않고 그 값을 그대로 보여줍니다 — 화면에 없는 주로 이동했다고 "오늘 일정"이
+  // 사라지거나 잘못된 값으로 바뀌면 안 되기 때문입니다.
+  let mobileTodayLocked = false;
+  let mobileTodayEntries = []; // 확정된 오늘 일정 원본: [{label, date, text, rowNum, attachments, links}]
+  let mobileTodayExpanded = false; // "전체 보기"를 눌렀는지
+  const MOBILE_TODAY_SHOW_LIMIT = 4;
+
+  // 오늘 날짜를 달력 표의 '오늘' 표시(renderWeekBlockHtml)와 똑같은 기준(자정, 주말 보정 없음)으로 구합니다.
+  function mobileTodayMidTime_() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+  function mobileTodayLabel_() {
+    const d = new Date(), days = ['일', '월', '화', '수', '목', '금', '토'];
+    return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`;
+  }
+
+  // 페이지를 열자마자(데이터 로딩 전) 호출됩니다. 표에는 원래 평일(월~금) 칸만 있어 토·일은 어떤 주를
+  // 조회해도 '오늘'이 될 수 없으므로, 주말에는 서버 응답을 기다릴 필요 없이 바로 빈 상태로 확정합니다.
+  function initMobileTodayCard() {
+    const dEl = document.getElementById('mobileTodayDate');
+    if (dEl) dEl.textContent = mobileTodayLabel_();
+    if (!isMobileLayout()) return;
+    const day = new Date().getDay();
+    if (day === 0 || day === 6) {
+      mobileTodayEntries = [];
+      mobileTodayLocked = true;
+      renderMobileTodayCard();
+    }
+  }
+
+  // renderFilteredWeek()이 끝날 때마다 호출됩니다. 아직 확정되지 않았다면, 지금 막 받아온 주가 오늘을
+  // 포함하는지 확인해 포함하면 그 자리에서 확정합니다(포함하지 않으면 손대지 않고 다음 기회를 기다립니다).
+  function updateMobileTodayCard() {
+    if (!isMobileLayout()) return;
+    if (!mobileTodayLocked) {
+      const todayTime = mobileTodayMidTime_();
+      const dayIdx = Math.round((todayTime - (currentWeekSTime || 0)) / 86400000);
+      if (dayIdx < 0 || dayIdx > 4 || !currentWeekSchedule || !currentWeekSchedule.length) return; // 오늘이 없는 주 — 다음 기회에
+      const entries = [];
+      (currentWeekWorkList || []).forEach(dept => {
+        (dept.items || []).forEach(item => {
+          if (item.st <= todayTime && item.et >= todayTime) {
+            entries.push({
+              label: dept.name, date: item.date || currentWeekSchedule[dayIdx].date, text: item.text,
+              rowNum: item.rowNum || null, attachments: item.attachments || [], links: item.links || []
+            });
+          }
+        });
+      });
+      mobileTodayEntries = entries;
+      mobileTodayLocked = true;
+    }
+    renderMobileTodayCard();
+  }
+
+  // 오늘 일정 항목 하나를 calendarItemDetails에 등록해, 기존 상세보기 팝업(showItemDetail)을 그대로
+  // 재사용합니다. renderFilteredWeek이 매번 calendarItemDetails를 새로 초기화하므로, 카드를 다시 그릴
+  // 때마다 여기서 다시 등록해 인덱스가 항상 지금의 배열을 정확히 가리키게 합니다.
+  function registerMobileTodayDetail_(entry) {
+    calendarItemDetails.push({
+      label: entry.label, dateLabel: entry.date || '', text: entry.text, weekCtx: null,
+      attachments: entry.attachments, links: entry.links, rowNum: entry.rowNum, annual: null
+    });
+    return calendarItemDetails.length - 1;
+  }
+
+  function renderMobileTodayCard() {
+    const body = document.getElementById('mobileTodayBody');
+    if (!body) return;
+    if (!mobileTodayEntries.length) {
+      body.innerHTML = `<div class="mobile-today-empty">오늘은 등록된 일정이 없어요 :)</div>`;
+      return;
+    }
+    const shown = mobileTodayExpanded ? mobileTodayEntries : mobileTodayEntries.slice(0, MOBILE_TODAY_SHOW_LIMIT);
+    const rowsHtml = shown.map(entry => {
+      const detailIdx = registerMobileTodayDetail_(entry);
+      const deptLabel = formatDeptName(entry.label).replace(/<br>/g, '');
+      const title = extractDeptTitle(entry.text);
+      return `<button type="button" class="mobile-today-row" onclick="showItemDetail(${detailIdx})" aria-label="${escapeHtmlClient_(entry.label)} ${escapeHtmlClient_(title)} 상세보기">
+        <span class="mobile-today-badge">${escapeHtmlClient_(deptLabel)}</span>
+        <span class="mobile-today-name">${title}</span>
+        <span class="mobile-today-chev" aria-hidden="true"><i class="fas fa-chevron-right"></i></span>
+      </button>`;
+    }).join('');
+    const moreHtml = (!mobileTodayExpanded && mobileTodayEntries.length > MOBILE_TODAY_SHOW_LIMIT)
+      ? `<button type="button" class="mobile-today-more" onclick="mobileTodayShowAll()">전체 ${mobileTodayEntries.length}개 보기</button>`
+      : '';
+    body.innerHTML = rowsHtml + moreHtml;
+  }
+
+  function mobileTodayShowAll() {
+    mobileTodayExpanded = true;
+    renderMobileTodayCard();
   }
 
   // (PC용) "N주차"를 선택확대/원래대로 하기 위한 상태. 이전의 날짜 단위 선택확대와 같은 방식이며,
@@ -1498,10 +1606,19 @@
         qrBox.className = 'item-detail-qr-box'; qrBox.style.display = 'none';
         const qrHolder = document.createElement('div');
         qrHolder.className = 'item-detail-qr-holder';
+        // 붙여넣을 때 QR 아래에 함께 들어갈 제목. 링크 이름이 있으면 미리 채워 둡니다.
+        const qrCaption = document.createElement('div');
+        qrCaption.className = 'item-detail-qr-caption';
+        const qrTitle = document.createElement('input');
+        qrTitle.type = 'text'; qrTitle.className = 'item-detail-qr-title'; qrTitle.maxLength = 60;
+        qrTitle.placeholder = 'QR 제목 (비워 두면 그림만 복사)';
+        qrTitle.title = '여기에 적은 제목이 QR 그림 아래에 함께 복사됩니다.';
+        qrTitle.value = (link.name && link.name !== link.url) ? link.name : '';
+        qrTitle.oninput = () => { qrCaption.textContent = qrTitle.value.trim(); };
         const qrCopy = document.createElement('button');
         qrCopy.type = 'button'; qrCopy.className = 'item-detail-qr-copy'; qrCopy.textContent = 'QR 복사';
-        qrBox.append(qrHolder, qrCopy);
-        qrBtn.onclick = () => toggleLinkQR(link.url, qrBox, qrHolder, qrCopy, qrBtn);
+        qrBox.append(qrHolder, qrCaption, qrTitle, qrCopy);
+        qrBtn.onclick = () => toggleLinkQR(link.url, qrBox, qrHolder, qrCopy, qrBtn, qrTitle, qrCaption);
 
         row.append(item, qrBox);
         linkList.appendChild(row);
@@ -1558,50 +1675,178 @@
     }
   }
 
+  // ===== QR 그림 만들기 =====
+  // 일정 상세의 '링크 QR'도 한글 문서에 붙여넣을 수 있는 고해상도 그림이어야 해서,
+  // 편의 기능 'QR코드 만들기'와 같은 방식(칸 정보를 직접 캔버스에 그리기)으로 만듭니다.
+  // 편의 기능 쪽 파일은 보호 대상이라 손대지 않고, 여기에 같은 동작의 함수를 따로 둡니다.
+  // 이미 로드된 qrcodejs 라이브러리(QRCode)가 계산한 QR 모듈(칸) 정보만 꺼내 쓰고,
+  // 실제 그림은 우리가 직접 고해상도 캔버스에 그립니다. (라이브러리의 자체 그림은 사용하지 않음 —
+  // 그래야 화면 미리보기가 아닌, 확대해도 흐려지지 않는 원본을 만들 수 있습니다.)
+  function qrBuildMatrix(text) {
+    if (typeof QRCode === 'undefined') {
+      throw new Error('QR 생성 기능을 아직 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 잠시 후 다시 시도해주세요.');
+    }
+    const holder = document.createElement('div');
+    const qr = new QRCode(holder, { text: text, correctLevel: QRCode.CorrectLevel.M });
+    const model = qr._oQRCode;
+    if (!model || typeof model.isDark !== 'function' || typeof model.getModuleCount !== 'function') {
+      throw new Error('QR 모듈 정보를 가져오지 못했습니다.');
+    }
+    const count = model.getModuleCount();
+    const matrix = [];
+    for (let r = 0; r < count; r++) {
+      const row = [];
+      for (let c = 0; c < count; c++) row.push(model.isDark(r, c));
+      matrix.push(row);
+    }
+    return matrix;
+  }
+
+  // QR 모듈 정보를 정수 배율로 캔버스에 직접 그립니다.
+  // (anti-aliasing 없이 칸 경계를 딱 맞춰 그리므로 아무리 확대해도 모서리가 흐려지거나 계단져 보이지 않습니다.)
+  function qrRenderCanvas(matrix, targetPx) {
+    const count = matrix.length;
+    const quiet = 4; // QR 표준 여백(quiet zone)
+    const totalModules = count + quiet * 2;
+    const cell = Math.max(1, Math.floor(targetPx / totalModules));
+    const size = cell * totalModules;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#000000';
+    for (let r = 0; r < count; r++) {
+      for (let c = 0; c < count; c++) {
+        if (matrix[r][c]) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
+      }
+    }
+    return canvas;
+  }
+
+  // QR 이름이 캔버스 폭보다 길면 여러 줄로 나누고, 그래도 너무 길면 말줄임표로 줄입니다.
+  function qrWrapCanvasText(ctx, text, maxWidth, maxLines) {
+    const words = String(text).split(/\s+/).filter(Boolean);
+    let lines = [];
+    let line = '';
+    words.forEach(word => {
+      const test = line ? (line + ' ' + word) : word;
+      if (line && ctx.measureText(test).width > maxWidth) { lines.push(line); line = word; }
+      else { line = test; }
+    });
+    if (line) lines.push(line);
+
+    // 공백 없이 한 덩어리가 너무 긴 경우(글자 단위) 강제로 줄바꿈
+    const wrapped = [];
+    lines.forEach(l => {
+      if (ctx.measureText(l).width <= maxWidth) { wrapped.push(l); return; }
+      let cur = '';
+      for (const ch of l) {
+        const test = cur + ch;
+        if (cur && ctx.measureText(test).width > maxWidth) { wrapped.push(cur); cur = ch; }
+        else { cur = test; }
+      }
+      if (cur) wrapped.push(cur);
+    });
+    lines = wrapped.length ? wrapped : [''];
+
+    if (lines.length > maxLines) {
+      const kept = lines.slice(0, maxLines);
+      let last = kept[maxLines - 1];
+      while (last.length > 1 && ctx.measureText(last + '…').width > maxWidth) last = last.slice(0, -1);
+      kept[maxLines - 1] = last + '…';
+      return kept;
+    }
+    return lines;
+  }
+
+  // QR + QR 이름을 하나로 합친 최종 "고해상도" 이미지를 만듭니다.
+  // 화면 미리보기(작게)와는 완전히 별개로, 복사/저장할 때마다 이 함수로 큰 원본을 새로 만듭니다.
+  function qrBuildFinalCanvas(matrix, name) {
+    const QR_TARGET_PX = 1900; // 최소 1600px 요구보다 넉넉하게
+    const qrCanvas = qrRenderCanvas(matrix, QR_TARGET_PX);
+    const caption = String(name == null ? '' : name).trim();
+    if (!caption) return qrCanvas; // 제목을 비워 두면 QR 그림만 그대로 씁니다.
+    const qrSize = qrCanvas.width;
+    const fontSize = Math.round(qrSize * 0.052);
+    const lineGap = Math.round(fontSize * 0.3);
+    const gapAboveText = Math.round(qrSize * 0.045);
+    const bottomPad = Math.round(qrSize * 0.045);
+    const textInset = Math.round(qrSize * 0.08);
+
+    const mctx = document.createElement('canvas').getContext('2d');
+    mctx.font = `bold ${fontSize}px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
+    const lines = qrWrapCanvasText(mctx, caption, qrSize - textInset * 2, 3);
+    const textBlockHeight = lines.length * fontSize + (lines.length - 1) * lineGap;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = qrSize;
+    canvas.height = qrSize + gapAboveText + textBlockHeight + bottomPad;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(qrCanvas, 0, 0);
+
+    ctx.fillStyle = '#111111';
+    ctx.font = `bold ${fontSize}px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    let ty = qrSize + gapAboveText + fontSize * 0.82;
+    lines.forEach(line => { ctx.fillText(line, canvas.width / 2, ty); ty += fontSize + lineGap; });
+
+    return canvas;
+  }
+
   // 'QR코드 생성' 버튼: 링크 오른쪽에 QR 그림을 그려서 보여주거나(다시 누르면) 닫습니다.
   // QR은 브라우저 안에서 직접 그려지므로 주소가 외부 서버로 나가지 않습니다.
-  function toggleLinkQR(url, box, holder, copyBtn, genBtn) {
+  function toggleLinkQR(url, box, holder, copyBtn, genBtn, titleInput, captionEl) {
     if (box.style.display !== 'none') {          // 이미 열려 있으면 닫기
       box.style.display = 'none';
       genBtn.textContent = 'QR코드 생성';
       return;
     }
-    if (typeof QRCode === 'undefined') {
-      showAlert('QR 생성 기능을 아직 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 잠시 후 다시 시도해주세요.');
-      return;
-    }
-    holder.innerHTML = '';
+    let matrix;
     try {
-      new QRCode(holder, { text: url, width: 150, height: 150, correctLevel: QRCode.CorrectLevel.M });
-      box.style.display = 'flex';
-      genBtn.textContent = 'QR 닫기';
-      copyBtn.onclick = () => copyLinkQR(holder, copyBtn);
+      matrix = qrBuildMatrix(url);               // 편의 기능 QR과 똑같은 방식으로 칸 정보를 계산합니다.
     } catch (e) {
       showAlert('QR 코드를 만들지 못했습니다.\n' + (e && e.message ? e.message : e));
-    }
-  }
-
-  // QR 그림을 이미지(PNG)로 클립보드에 복사합니다. (다른 곳에 붙여넣어 활용)
-  function copyLinkQR(holder, btn) {
-    const canvas = holder.querySelector('canvas');
-    if (!canvas || !canvas.toBlob) {
-      showAlert('QR 이미지를 준비하지 못했습니다. QR 그림을 마우스 오른쪽 클릭(모바일은 길게 눌러) → "이미지 복사"를 사용해주세요.');
       return;
     }
+    // 화면에는 작게만 보여 주고, 복사할 때 고해상도 원본을 그때그때 따로 만듭니다.
+    const preview = qrRenderCanvas(matrix, 150);
+    preview.style.width = preview.width + 'px';
+    preview.style.height = preview.height + 'px';
+    holder.innerHTML = '';
+    holder.appendChild(preview);
+    if (captionEl) captionEl.textContent = titleInput ? titleInput.value.trim() : '';
+    box.style.display = 'flex';
+    genBtn.textContent = 'QR 닫기';
+    copyBtn.onclick = () => copyLinkQR(matrix, titleInput ? titleInput.value : '', copyBtn);
+  }
+
+  // QR 그림을 한글 문서에 바로 붙여넣을 수 있는 고해상도 PNG로 클립보드에 복사합니다.
+  // (편의 기능 'QR코드 만들기'의 복사와 같은 1900px 원본 + 아래 제목 형식입니다.)
+  function copyLinkQR(matrix, title, btn) {
+    let canvas;
+    try {
+      canvas = qrBuildFinalCanvas(matrix, title);
+    } catch (e) {
+      showAlert('QR 이미지를 만들지 못했습니다.');
+      return;
+    }
+    const manual = () => showAlert('이 브라우저에서는 버튼으로 바로 복사가 안 됩니다.\nQR 그림을 마우스 오른쪽 클릭(모바일은 길게 눌러) → \"이미지 복사\"를 사용해주세요.');
+    if (!canvas.toBlob || !navigator.clipboard || !window.ClipboardItem) { manual(); return; }
     const flash = () => {
       const o = btn.textContent;
       btn.textContent = '복사됨'; btn.classList.add('copied');
       setTimeout(() => { btn.textContent = o; btn.classList.remove('copied'); }, 1300);
     };
-    const manual = () => showAlert('이 브라우저에서는 버튼으로 바로 복사가 안 됩니다.\nQR 그림을 마우스 오른쪽 클릭(모바일은 길게 눌러) → "이미지 복사"를 사용해주세요.');
-    if (navigator.clipboard && window.ClipboardItem) {
-      canvas.toBlob(blob => {
-        if (!blob) { manual(); return; }
-        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(flash).catch(manual);
-      }, 'image/png');
-    } else {
-      manual();
-    }
+    canvas.toBlob(blob => {
+      if (!blob) { manual(); return; }
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(flash).catch(manual);
+    }, 'image/png');
   }
 
   // 세부 내용 팝업을 상단(제목/날짜 줄)을 잡고 자유롭게 옮길 수 있게 합니다. (닫기 × 버튼은 제외)

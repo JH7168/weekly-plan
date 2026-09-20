@@ -202,6 +202,9 @@
     margin: 8px 0 0;
     overflow-wrap: anywhere;
   }
+  #convenienceMod .rt-message.is-ok {
+    color: #3f6b3c;
+  }
   #convenienceMod .rt-message:empty {
     display: none;
   }
@@ -551,37 +554,282 @@
     width: 140px;
     font-weight: 800;
   }
+  /* ===== 자리뽑기: 단계형 자리배치 도구 =====
+     한 번에 한 단계만 보여 주고(종이 넘기듯 전환), 좌석은 교실 책상처럼 보이게 합니다. */
+  #convenienceMod .rt-seat-tool { display: flex; flex-direction: column; min-height: 0; gap: 8px; }
+  /* 상단 머리줄: 다른 편의 기능(계산기·QR)과 같은 '작은 뒤로가기 + 가운데 제목' 형태로 맞춥니다.
+     .rt button의 큰 박스 스타일이 여기까지 오지 않도록 되돌려 줍니다. */
+  #convenienceMod .rt-seat-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+  #convenienceMod .rt .rt-seat-head .convenience-backlink {
+    justify-self: start; min-height: 0; border: 0; border-radius: 999px;
+    padding: 6px 10px 6px 8px; background: transparent; color: #6b5f7a;
+    font-size: 12.5px; font-weight: 700; box-shadow: none; width: auto; margin: 0;
+  }
+  #convenienceMod .rt .rt-seat-head .convenience-backlink:hover { background: rgba(90,70,110,.08); color: #4a3f57; box-shadow: none; }
+  #convenienceMod .rt-seat-head .convenience-step-title-inline { justify-self: center; }
+  /* 이용방법: 작은 외곽선 버튼 */
+  #convenienceMod .rt .rt-seat-help-btn {
+    justify-self: end; min-height: 0; width: auto; margin: 0; padding: 6px 11px;
+    border: 1px solid #e0dcd2; border-radius: 999px; background: #fdfcfa; color: #6f6a60;
+    font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;
+  }
+  #convenienceMod .rt .rt-seat-help-btn:hover { background: #f5f2ec; border-color: #d2ccc0; color: #4a463f; box-shadow: none; }
+  #convenienceMod .rt-seat-help {
+    background: #f3f8f0; border: 1px solid #cfe0c6; border-radius: 12px; padding: 12px 16px;
+  }
+  #convenienceMod .rt-seat-help ol { margin: 6px 0 0; padding-left: 20px; }
+  #convenienceMod .rt-seat-help li { margin: 3px 0; font-size: 13px; color: #3f4f3c; }
+  /* 진행 표시: 지금 단계는 채워진 칩, 지나온 단계는 연하게 완료 표시 */
+  #convenienceMod .rt-seat-progress {
+    display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; overflow-x: auto;
+  }
+  #convenienceMod .rt-seat-progress li { flex: 1 1 0; min-width: 92px; }
+  #convenienceMod .rt-seat-progress button {
+    width: 100%; display: flex; align-items: center; gap: 6px; padding: 7px 9px; cursor: pointer;
+    border: 1px solid #dfe4da; border-radius: 999px; background: #fbfcfa; color: #8a948a;
+    font-family: inherit; font-size: 11.5px; font-weight: 700; text-align: left; transition: 0.18s;
+  }
+  #convenienceMod .rt-seat-progress button b {
+    flex: none; width: 19px; height: 19px; border-radius: 50%; background: #e4e9e1; color: #7b857b;
+    display: grid; place-items: center; font-size: 11px;
+  }
+  #convenienceMod .rt-seat-progress button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #convenienceMod .rt-seat-progress .is-done button { color: #4c7246; border-color: #cfe0c6; background: #f3f8f0; }
+  #convenienceMod .rt-seat-progress .is-done button b { background: #4c7246; color: #fff; }
+  #convenienceMod .rt-seat-progress .is-now button {
+    color: #fff; background: var(--rt-accent); border-color: var(--rt-accent);
+    box-shadow: 0 3px 10px rgba(76,114,70,.28);
+  }
+  #convenienceMod .rt-seat-progress .is-now button b { background: rgba(255,255,255,.28); color: #fff; }
+  /* 화면이 좁으면 지금 단계만 이름을 보여 주고, 나머지는 번호만 동그랗게 남깁니다. */
+  @media (max-width: 880px) {
+    #convenienceMod .rt-seat-progress li { flex: 0 0 auto; min-width: 0; }
+    #convenienceMod .rt-seat-progress li.is-now { flex: 1 1 auto; min-width: 104px; }
+    #convenienceMod .rt-seat-progress li:not(.is-now) button span { display: none; }
+    #convenienceMod .rt-seat-progress li:not(.is-now) button { justify-content: center; padding: 7px 10px; }
+  }
+  /* 단계 화면(한 번에 하나) */
+  #convenienceMod .rt-seat-stage { flex: 1 1 auto; min-height: 0; perspective: 1400px; }
+  #convenienceMod .rt-seat-page {
+    display: flex; flex-direction: column; height: 100%; min-height: 0;
+    background: #fff; border: 1px solid #e3e8e1; border-radius: 14px; padding: 14px 16px;
+  }
+  #convenienceMod .rt-seat-page[hidden] { display: none; }
+  #convenienceMod .rt-seat-page-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  /* 종이 넘김 느낌: 살짝 회전하며 들어옵니다. */
+  @keyframes rtSeatFlipNext {
+    from { opacity: 0; transform: translateX(26px) rotateY(-9deg); transform-origin: left center; }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes rtSeatFlipPrev {
+    from { opacity: 0; transform: translateX(-26px) rotateY(9deg); transform-origin: right center; }
+    to   { opacity: 1; transform: none; }
+  }
+  #convenienceMod .rt-seat-page.is-flip-next { animation: rtSeatFlipNext 320ms ease-out; }
+  #convenienceMod .rt-seat-page.is-flip-prev { animation: rtSeatFlipPrev 320ms ease-out; }
+  #convenienceMod .rt-seat-nav {
+    display: flex; justify-content: space-between; gap: 8px; padding-top: 10px; margin-top: 8px;
+    border-top: 1px dashed #e3e8e1;
+  }
+  /* 단계 이동 버튼은 글자 길이만큼만 차지하게 합니다(기본 버튼은 가로로 꽉 차기 때문). */
+  #convenienceMod .rt .rt-seat-nav > button {
+    flex: 0 0 auto; width: auto; min-width: 128px; white-space: nowrap; margin: 0;
+  }
+  #convenienceMod .rt .rt-seat-nav > button:only-child { margin-left: auto; }
+  #convenienceMod .rt-seat-note { font-size: 12.5px; color: #6b7a68; margin: 0 0 8px; }
+  #convenienceMod .rt-seat-size { align-items: flex-end; }
+  #convenienceMod .rt-seat-size-go { flex: 0 0 auto; }
+  /* 좌석표 + 교탁 */
+  #convenienceMod .rt-seat-board { overflow-x: auto; padding-bottom: 2px; }
   #convenienceMod .rt-seats {
-    display: grid;
-    grid-template-columns: repeat(var(--seat-cols), minmax(85px, 1fr));
-    gap: 10px;
-    min-width: calc(var(--seat-cols) * 95px);
+    display: grid; grid-template-columns: repeat(var(--seat-cols), minmax(58px, 1fr)); gap: 8px;
+    min-width: calc(var(--seat-cols) * 64px);
   }
+  /* 책상: 상판(나무색) + 아래 다리 그림자로 입체감 */
   #convenienceMod .rt .rt-seat {
-    min-height: 78px;
-    border-bottom: 5px solid #bdcfb8;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    align-items: center;
-    justify-content: center;
-    overflow-wrap: anywhere;
+    padding: 0; border: 0; background: none; box-shadow: none; cursor: default; font-family: inherit;
+    display: flex; flex-direction: column; align-items: stretch; transition: transform .16s, filter .16s;
   }
-  #convenienceMod .rt-seat small {
-    font-size: 11px;
-    color: #586957;
+  #convenienceMod .rt .rt-seat.is-clickable { cursor: pointer; }
+  #convenienceMod .rt .rt-seat.is-clickable:hover { transform: translateY(-2px); }
+  #convenienceMod .rt-seat-top {
+    position: relative; min-height: 46px; border-radius: 9px 9px 6px 6px; padding: 6px 4px;
+    background: linear-gradient(180deg, #f6e7cd 0%, #ecd6b0 100%);
+    border: 1px solid #d8bd90; box-shadow: inset 0 1px 0 rgba(255,255,255,.65), 0 1px 2px rgba(120,95,55,.18);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   }
-  #convenienceMod .rt-seat > span {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    width: 100%;
+  #convenienceMod .rt-seat-leg {
+    height: 5px; margin: 0 8px; border-radius: 0 0 5px 5px;
+    background: linear-gradient(180deg, #c9a97c, #ab8a5d);
   }
-  #convenienceMod .rt-seat[aria-pressed="true"] {
-    background: #e1edda;
-    border: 2px solid #527546;
-    border-bottom-width: 5px;
+  #convenienceMod .rt-seat-number { font-size: 14px; font-weight: 800; color: #5b4726; line-height: 1.1; }
+  #convenienceMod .rt-seat-name {
+    font-size: 12.5px; color: #3b3323; width: 100%; text-align: center; line-height: 1.2;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  #convenienceMod .rt-seat-pin { position: absolute; top: 2px; right: 4px; font-size: 11px; }
+  #convenienceMod .rt-seat-x { font-size: 15px; color: #a7adb3; font-weight: 800; }
+  /* 제외석: 회색 점선 책상 */
+  #convenienceMod .rt-seat.is-off .rt-seat-top {
+    background: repeating-linear-gradient(45deg, #f4f5f6, #f4f5f6 6px, #eceef0 6px, #eceef0 12px);
+    border: 1.5px dashed #b9bec3; box-shadow: none;
+  }
+  #convenienceMod .rt-seat.is-off .rt-seat-leg { background: #d7dade; }
+  /* 지정석: 초록 테두리 강조 */
+  #convenienceMod .rt-seat.is-fixed .rt-seat-top { border-color: var(--rt-accent); box-shadow: 0 0 0 2px rgba(76,114,70,.18); }
+  /* 지금 고른 좌석 */
+  #convenienceMod .rt-seat.is-sel .rt-seat-top { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.22); }
+  /* 교탁: 상판 + 몸통의 간단한 일러스트 */
+  #convenienceMod .rt-podium { width: 148px; margin: 14px auto 0; text-align: center; }
+  #convenienceMod .rt-podium-top {
+    display: block; height: 9px; border-radius: 5px;
+    background: linear-gradient(180deg, #6f8d66, #4c7246); box-shadow: 0 2px 4px rgba(50,70,45,.25);
+  }
+  #convenienceMod .rt-podium-label {
+    display: block; margin: 0 14px; padding: 5px 0; border-radius: 0 0 8px 8px;
+    background: linear-gradient(180deg, #e9efe4, #dbe4d4); border: 1px solid #c4d3ba; border-top: 0;
+    font-size: 12px; font-weight: 800; color: #3f4f3c; letter-spacing: 3px;
+  }
+  /* 좌석 옆에 뜨는 작은 입력 창(3단계 지정석) */
+  #convenienceMod .rt-seat-boardwrap { position: relative; }
+  #convenienceMod .rt-seat-poplayer[hidden] { display: none; }
+  #convenienceMod .rt-seat-pop {
+    position: absolute; z-index: 5; transform: translateX(-50%); width: 210px;
+    background: #fff; border: 1px solid #cfe0c6; border-radius: 12px; padding: 10px 12px;
+    box-shadow: 0 12px 28px rgba(40,60,35,.22);
+  }
+  /* 위쪽 말풍선 꼬리 */
+  #convenienceMod .rt-seat-pop::before {
+    content: ""; position: absolute; top: -6px; left: 50%; margin-left: -6px;
+    width: 10px; height: 10px; background: #fff;
+    border-left: 1px solid #cfe0c6; border-top: 1px solid #cfe0c6; transform: rotate(45deg);
+  }
+  #convenienceMod .rt-seat-pop b { display: block; font-size: 12px; color: #3f4f3c; margin-bottom: 6px; }
+  #convenienceMod .rt-seat-pop label { display: block; font-size: 12px; color: #55604f; margin-bottom: 4px; }
+  #convenienceMod .rt .rt-seat-pop input { width: 100%; box-sizing: border-box; }
+  #convenienceMod .rt-seat-pop-btns { display: flex; gap: 6px; margin-top: 9px; }
+  #convenienceMod .rt .rt-seat-pop-btns button {
+    flex: 1 1 0; width: auto; margin: 0; min-height: 38px; padding: 6px 8px; font-size: 12.5px; white-space: nowrap;
+  }
+  /* 좌석 수 / 학생 수 비교 */
+  #convenienceMod .rt-seat-tally {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px;
+    border-radius: 12px; padding: 10px 12px; font-size: 13px; border: 1px solid #e3e8e1; background: #fafbf9;
+  }
+  #convenienceMod .rt-seat-tally b { font-size: 15px; }
+  #convenienceMod .rt-seat-tally-say { margin-left: auto; font-weight: 800; }
+  #convenienceMod .rt-seat-tally.is-ok { border-color: #bfdcc4; background: #f2f9f3; color: #2f7a42; }
+  #convenienceMod .rt-seat-tally.is-warn { border-color: #f0cfc6; background: #fdf5f2; color: #b4432f; }
+  /* 마지막 단계 */
+  #convenienceMod .rt-seat-runbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  #convenienceMod .rt-seat-fold {
+    margin-top: 10px; border: 1px solid #e7e4dd; border-radius: 10px; padding: 8px 12px;
+    background: #fdfcfa; transition: background .15s ease, border-color .15s ease;
+  }
+  #convenienceMod .rt-seat-fold:hover { background: #f8f6f1; border-color: #ddd8ce; }
+  #convenienceMod .rt-seat-fold[open] { background: #fff; border-color: #e0dcd2; }
+  #convenienceMod .rt-seat-fold summary {
+    cursor: pointer; font-weight: 700; font-size: 13px; color: #5c564c;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #convenienceMod .rt-seat-fold summary i { font-size: 12px; color: #9a9184; }
+  #convenienceMod .rt-seat-fold[open] summary { color: #3f3a32; margin-bottom: 2px; }
+  #convenienceMod .rt-seat-fold textarea { margin-top: 8px; }
+  #convenienceMod .rt-seat-names {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 6px 10px; margin-top: 8px;
+  }
+  #convenienceMod .rt-seat-name-row { display: flex; align-items: center; gap: 5px; margin: 0; }
+  #convenienceMod .rt-seat-name-row span { font-size: 12px; color: #55604f; min-width: 22px; font-weight: 700; text-align: right; }
+  #convenienceMod .rt-seat-name-row input { flex: 1; min-width: 0; padding: 6px 8px; font-size: 13px; }
+  #convenienceMod .rt-seat-final { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  /* 역할이 다른 버튼은 색으로 구분합니다(초록은 핵심 실행 버튼에만).
+     복사 = 민트, 인쇄 = 라벤더, 전체 초기화 = 코랄. */
+  #convenienceMod .rt .rt-util-copy {
+    background: #eaf7f4; border-color: #b6ddd4; color: #14675a;
+  }
+  #convenienceMod .rt .rt-util-copy:hover:not(:disabled) { background: #dcf1eb; border-color: #96cdc1; }
+  #convenienceMod .rt .rt-util-print {
+    background: #f1eefb; border-color: #cbc2ea; color: #4b3f86;
+  }
+  #convenienceMod .rt .rt-util-print:hover:not(:disabled) { background: #e7e2f7; border-color: #b5a9e0; }
+  #convenienceMod .rt .rt-danger {
+    background: #fdf0ee; border-color: #f0c3ba; color: #a63b28;
+  }
+  #convenienceMod .rt .rt-danger:hover:not(:disabled) { background: #fbe4e0; border-color: #e5a396; }
+  #convenienceMod .rt .rt-util-copy i,
+  #convenienceMod .rt .rt-util-print i,
+  #convenienceMod .rt .rt-danger i,
+  #convenienceMod .rt .rt-seat-runbar i { margin-right: 5px; font-size: 12px; }
+  #convenienceMod .rt-seat-memo-view {
+    display: none; text-align: center; margin: 12px auto 0; max-width: 620px;
+    font-size: 17px; line-height: 1.6; color: #3f4a45; white-space: pre-wrap; word-break: keep-all;
+    font-family: var(--rt-print-hand);
+  }
+  /* 자리뽑기는 좌석표가 커서 기기 화면을 조금 더 넓게 씁니다(세로 화면인 모바일은 그대로 둡니다). */
+  @media (min-width: 641px) {
+    #convenienceMod .convenience-device.is-seat-wide { width: min(1180px, 96vw); max-width: 1180px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #convenienceMod .rt-seat-page.is-flip-next,
+    #convenienceMod .rt-seat-page.is-flip-prev { animation: none; }
+    #convenienceMod .rt .rt-seat.is-clickable:hover { transform: none; }
+  }
+  /* ===== 인쇄: 자리표만 A4에 =====
+     교사가 교탁 앞에 두고 보는 기준이라 '학생 자리 → 교탁 → 글귀' 순서로 놓습니다.
+     글꼴은 외부 웹폰트 없이, 기기에 기본으로 있는 부드러운 고딕 계열을 우선 사용합니다
+     (교실에 붙여도 딱딱하지 않게, 대신 가독성은 유지). */
+  /* 자리표 제목·글귀에 쓸 "학교 느낌" 글씨체. 외부 웹폰트를 새로 받지 않고,
+     학교 PC(한글 프로그램 설치)에 흔히 들어 있는 손글씨·둥근 고딕을 차례로 시도하고
+     없으면 기존의 부드러운 고딕으로 자연스럽게 내려갑니다. */
+  #rtSeatPrint,
+  #convenienceMod .rt-seat-memo-view {
+    --rt-print-hand: "나눔손글씨 펜", "Nanum Pen Script", "HY엽서M", "HY동녘M", "나눔바른펜",
+      "Gaegu", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Noto Sans KR", sans-serif;
+  }
+  #rtSeatPrint { display: none; }
+  @media print {
+    body.rt-seat-printing > * { display: none !important; }
+    body.rt-seat-printing > #rtSeatPrint {
+      display: flex !important; flex-direction: column; box-sizing: border-box;
+      min-height: 100vh; padding: 3mm 0;
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Noto Sans KR", "나눔고딕", sans-serif;
+      color: #1f2328; letter-spacing: -0.2pt;
+    }
+    #rtSeatPrint .rt-print-title {
+      text-align: center; font-size: 22pt; font-weight: 700; letter-spacing: 2pt;
+      margin: 0 0 7mm; color: #2f3a33; font-family: var(--rt-print-hand);
+    }
+    #rtSeatPrint .rt-print-grid {
+      display: grid; grid-template-columns: repeat(var(--seat-cols), 1fr); gap: 3mm;
+      margin: 0 auto; width: 100%; flex: 0 0 auto;
+    }
+    #rtSeatPrint .rt-print-seat {
+      border: 0.8pt solid #6b7280; border-radius: 4pt; min-height: 17mm; padding: 2mm 1mm;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1mm;
+      break-inside: avoid; page-break-inside: avoid;
+    }
+    /* 좌석이 많아질수록 글자를 조금씩 줄여 A4 한 장에 담기게 합니다(너무 작아지지는 않게). */
+    #rtSeatPrint .rt-print-seat .n {
+      font-size: clamp(8pt, calc(58pt / var(--seat-cols)), 12pt); font-weight: 600; color: #5b6560;
+    }
+    #rtSeatPrint .rt-print-seat .nm {
+      font-size: clamp(10pt, calc(78pt / var(--seat-cols)), 16pt); font-weight: 600; line-height: 1.25;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: center;
+    }
+    #rtSeatPrint .rt-print-seat.off { border-style: dashed; border-color: #b6bcc2; color: #9aa1a8; }
+    #rtSeatPrint .rt-print-podium {
+      border: 1pt solid #4b5563; border-radius: 4pt; text-align: center; font-weight: 700;
+      padding: 3mm 0; width: 52mm; margin: 7mm auto 0; letter-spacing: 4pt; color: #2f3a33;
+    }
+    #rtSeatPrint .rt-print-memo {
+      text-align: center; margin: 7mm auto 0; max-width: 200mm; font-size: 17pt; line-height: 1.65;
+      color: #3f4a45; white-space: pre-wrap; word-break: keep-all; overflow-wrap: break-word;
+      font-family: var(--rt-print-hand);
+    }
+    /* 남는 공간을 위아래로 똑같이 나눠 자리표가 종이 한가운데 오게 합니다.
+       (auto 여백은 남는 공간이 없으면 0이 되므로, 내용이 길어져도 위가 잘리지 않습니다.) */
+    body.rt-seat-printing > #rtSeatPrint > :first-child { margin-top: auto; }
+    body.rt-seat-printing > #rtSeatPrint > :last-child { margin-bottom: auto; }
   }
   #convenienceMod .rt-ladder-labels {
     display: grid;
@@ -704,13 +952,18 @@
       }
       return [...excluded].sort((a,b)=>a-b);
     }
-    function participants(start, end, raw, min=1, max=200) {
+    // 궐번을 뺀 '번호 자체'의 목록입니다. 자리뽑기처럼 번호로 계산해야 하는 곳에서 씁니다.
+    function studentNumbers(start, end, raw, min=1, max=200) {
       if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 1 || end > 10000 || start > end)
         throw Error('시작·끝 번호는 1~10,000의 정수로, 시작 번호가 끝 번호보다 작거나 같아야 합니다.');
       const skip = new Set(missing(raw, start, end));
       const count = end-start+1-skip.size;
       if (count < min || count > max) throw Error(`궐번을 제외한 인원은 ${count}명입니다. 이 도구는 ${min}~${max}명까지 사용할 수 있습니다.`);
-      return Array.from({length:end-start+1},(_,i)=>start+i).filter(n=>!skip.has(n)).map(n=>n+'번');
+      return Array.from({length:end-start+1},(_,i)=>start+i).filter(n=>!skip.has(n));
+    }
+    // 화면에 보여줄 '1번, 2번…' 형태의 목록입니다(룰렛·셔플 등 기존 도구용).
+    function participants(start, end, raw, min=1, max=200) {
+      return studentNumbers(start, end, raw, min, max).map(n=>n+'번');
     }
     function numbers(min, max, count, dup, omitted = '') {
       if (
@@ -797,7 +1050,13 @@
       propagate(b);
       return true;
     }
-    function seats(names, rows, cols, previous = [], pins = new Set()) {
+    // 자리배치 계산. 제외석(사용 안 함)과 지정석(번호 고정)을 지킨 채, 남은 학생만 섞어 채웁니다.
+    //  rows, cols   : 교실 자리 구조
+    //  disabled     : 사용하지 않는 좌석 번호(index) 목록
+    //  fixed        : [좌석 index, 학생 번호] 쌍 목록 (지정석)
+    //  students     : 궐번을 뺀 실제 학생 번호 목록
+    // 반환: 좌석 index 순서의 배열. 제외석은 null, 나머지는 학생 번호.
+    function seatPlan(rows, cols, disabled = [], fixed = [], students = []) {
       if (
         !Number.isInteger(rows) ||
         !Number.isInteger(cols) ||
@@ -807,36 +1066,45 @@
         cols > 12
       )
         throw Error("행과 열을 1~12 사이 정수로 입력해주세요.");
-      if (names.length > rows * cols)
-        throw Error(
-          `학생 ${names.length}명에 비해 좌석이 ${rows * cols}개로 부족합니다. 행·열을 늘려주세요.`,
-        );
-      const remaining = names.slice(),
-        out = Array(rows * cols).fill(null);
-      for (const i of pins) {
-        if (i >= out.length)
-          throw Error(
-            "고정 좌석이 있습니다. 고정을 해제한 뒤 크기를 바꿔주세요.",
-          );
-        const name = previous[i];
-        if (name != null) {
-          const at = remaining.indexOf(name);
-          if (at < 0)
-            throw Error(
-              "고정한 번호가 참가 목록에서 제외되었습니다. 먼저 고정을 해제해주세요.",
-            );
-          remaining.splice(at, 1);
-        }
-        out[i] = name;
+      const total = rows * cols;
+      const off = new Set();
+      for (const i of disabled) {
+        if (!Number.isInteger(i) || i < 0 || i >= total)
+          throw Error("제외한 좌석이 지금 자리 구조에 없습니다. 자리를 다시 만들어주세요.");
+        off.add(i);
       }
-      if (remaining.length > out.length - pins.size)
+      if (new Set(students).size !== students.length)
+        throw Error("학생 번호가 중복되었습니다. 번호 범위를 확인해주세요.");
+      const pool = new Set(students);
+      const fixedMap = new Map();
+      const taken = new Set();
+      for (const [seat, number] of fixed) {
+        if (!Number.isInteger(seat) || seat < 0 || seat >= total)
+          throw Error("지정석이 지금 자리 구조에 없습니다. 자리를 다시 만들어주세요.");
+        if (off.has(seat)) throw Error("사용하지 않는 좌석은 지정석으로 쓸 수 없습니다.");
+        if (taken.has(number)) throw Error(`${number}번이 두 자리에 지정되어 있습니다.`);
+        if (!pool.has(number))
+          throw Error(`지정석의 ${number}번이 학생 번호 범위에 없거나 궐번입니다.`);
+        taken.add(number);
+        fixedMap.set(seat, number);
+      }
+      const usable = total - off.size;
+      if (usable !== students.length) {
+        const gap = Math.abs(usable - students.length);
         throw Error(
-          "고정된 빈 좌석 때문에 자리가 부족합니다. 빈 좌석 고정을 해제해주세요.",
+          usable > students.length
+            ? `학생보다 자리가 ${gap}개 많습니다. 사용하지 않을 좌석 ${gap}개를 선택해주세요.`
+            : `자리보다 학생이 ${gap}명 많습니다. 자리를 늘리거나 제외한 좌석 ${gap}개를 해제해주세요.`,
         );
-      while (remaining.length < out.length - pins.size) remaining.push(null);
-      const pool = shuffle(remaining);
-      for (let i = 0; i < out.length; i++)
-        if (!pins.has(i)) out[i] = pool.pop();
+      }
+      // 지정석 학생은 랜덤 대상에서 자동으로 빠집니다.
+      const rest = shuffle(students.filter((n) => !taken.has(n)));
+      const out = Array(total).fill(null);
+      let k = 0;
+      for (let i = 0; i < total; i++) {
+        if (off.has(i)) continue;
+        out[i] = fixedMap.has(i) ? fixedMap.get(i) : rest[k++];
+      }
       return out;
     }
     function ladder(n) {
@@ -884,6 +1152,7 @@
     return {
       missing,
       participants,
+      studentNumbers,
       int,
       shuffle,
       list,
@@ -891,7 +1160,7 @@
       bracket,
       propagate,
       advance,
-      seats,
+      seatPlan,
       ladder,
       trace,
       rpsWinner,
@@ -952,7 +1221,7 @@
       seat: [
         "자리뽑기",
         "▦",
-        "자리를 누르면 고정됩니다. 빈 좌석도 고정할 수 있어요.",
+        "교실 자리를 만들고 제외석·지정석을 정한 뒤 배치하고, 이름까지 넣어 복사·인쇄할 수 있어요.",
         "#4c7246",
         "#e8f1e2",
         "자리 배치",
@@ -973,7 +1242,7 @@
     const field = (t, s) => $(id(t, s));
     const state = (t) => states[t];
     const missingInput = (t) => `<label>궐번 (선택)<input id="${id(t, 'missing')}" type="text" maxlength="2000" placeholder="예: 4, 8, 12-14"></label><p class="rt-small">없는 번호를 쉼표·공백으로 구분하세요. 연속 번호는 12-14로 입력해요.</p>`;
-    const participantInput = (t) => `<div class="rt-row">${num(t,'start','시작 번호',1,1,10000)}${num(t,'end','끝 번호',t==='ladder'?5:t==='seat'?24:30,1,10000)}</div>${missingInput(t)}<p class="rt-small" id="${id(t,'preview')}" aria-live="polite"></p>`;
+    const participantInput = (t) => `<div class="rt-row">${num(t,'start','시작 번호',1,1,10000)}${num(t,'end','끝 번호',t==='ladder'?5:30,1,10000)}</div>${missingInput(t)}<p class="rt-small" id="${id(t,'preview')}" aria-live="polite"></p>`;
     const num = (t, key, label, value, min, max) =>
       `<label>${label}<input id="${id(t, key)}" type="number" value="${value}" min="${min}" max="${max}" step="1"></label>`;
     const check = (t, key, label, checked = false) =>
@@ -993,10 +1262,6 @@
           '<p class="rt-small">번호 옆 ×를 누르면 궐번에 추가돼요.</p><div class="rt-chips" id="' +
           id(t, "chips") +
           '"></div>';
-      if (t === "seat")
-        html +=
-          `<div class="rt-row">${num(t, "rows", "행", 4, 1, 12)}${num(t, "cols", "열", 6, 1, 12)}</div>` +
-          button("unpin", "모든 고정 해제");
       if (t === "ladder")
         html += `<label>결과 (참가자와 같은 개수)<textarea id="${id(t, "ends")}" maxlength="1000" placeholder="발표, 기록&#10;정리"></textarea></label><p class="rt-small">결과의 위치도 함께 섞이며, 만든 뒤에는 고정돼요.</p>`;
       return html;
@@ -1005,6 +1270,12 @@
       if (states[t]) return;
       const c = configs[t];
       if (!c) return;
+      if (t === "seat") {
+        // 자리뽑기는 단계형 전용 화면을 씁니다(공용 '입력·설정 / 결과' 2단 구성 대신).
+        states[t] = { busy: false, pins: new Set(), history: [] };
+        initSeat();
+        return;
+      }
       states[t] = {
         busy: false,
         rotation: 0,
@@ -1034,8 +1305,11 @@
       root.oninput = () => updateParticipantPreview(t);
       updateParticipantPreview(t);
     }
-    function message(t, text) {
-      field(t, "message").textContent = text;
+    function message(t, text, tone) {
+      const el = field(t, "message");
+      el.textContent = text;
+      // 안내(성공) 문구는 초록, 그 밖(오류)은 기존 빨간 글씨 그대로입니다.
+      el.classList.toggle("is-ok", tone === "ok");
       if (text && state(t).focus) {
         state(t).focus = false;
         $(CONVENIENCE_TOOL_ELEMENT_ID[t]).classList.remove("rt-focus");
@@ -1181,17 +1455,25 @@
           message(t, "결과가 선택되었습니다. 복사할 수 있어요.");
           return;
         }
-        if (action === "unpin") {
-          state(t).pins.clear();
-          if (state(t).seats) renderSeats();
-          return;
-        }
-        if (action === "pin") {
-          const i = Number(b.dataset.index),
-            s = state(t);
-          s.pins.has(i) ? s.pins.delete(i) : s.pins.add(i);
-          renderSeats();
-          return;
+        if (t === "seat") {
+          if (action === "seat-help") {
+            const help = field(t, "help");
+            help.hidden = !help.hidden;
+            return;
+          }
+          if (action === "seat-build") return seatBuild();
+          if (action === "seat-cell") return seatSelect(Number(b.dataset.index));
+          if (action === "seat-cancel") return seatClearSel();
+          if (action === "seat-fix-apply") return seatFixApply();
+          if (action === "seat-fix-clear") return seatFixClear();
+          if (action === "seat-next") return seatNext();
+          if (action === "seat-prev") return seatShowStep(seatState().step - 1, -1);
+          if (action === "seat-goto") return seatGoto(Number(b.dataset.step));
+          if (action === "seat-assign" || action === "seat-reassign") return seatAssign();
+          if (action === "seat-edit") return seatEdit();
+          if (action === "seat-names-apply") return seatNamesApply();
+          if (action === "seat-copy") return seatCopy();
+          if (action === "seat-print") return seatPrint();
         }
         if (action === "winner") {
           const s = state(t);
@@ -1222,7 +1504,6 @@
             rps: rps,
             numberpick: numbers,
             bracket: bracket,
-            seat: seat,
             ladder: ladder,
           })[t]();
       } catch (e) {
@@ -1491,37 +1772,625 @@
           .join("\n\n"),
       );
     }
-    function seat() {
+    // ===== 자리뽑기: 단계형 자리배치 도구 =====
+    // STEP 1 자리 만들기 → 2 제외 좌석 → 3 지정석 → 4 학생 번호 → 5 배치·이름·출력
+    // 한 번에 한 단계만 보여 주고(종이 넘기듯 전환), 좌석은 '먼저 클릭 → 할 일 선택' 방식입니다.
+    // 학생 이름은 좌석이 아니라 '학생 번호'에 묶여 있어, 다시 배치해도 번호를 따라갑니다.
+    const SEAT_STEPS = [
+      "교실 자리 만들기",
+      "제외 좌석 선택",
+      "지정석 설정",
+      "학생 번호 · 궐번",
+      "자리 배치 · 출력",
+    ];
+    function seatState() {
+      const s = state("seat");
+      if (!s.disabled) {
+        s.rows = 4;
+        s.cols = 6;
+        s.built = false;
+        s.disabled = new Set();
+        s.fixed = new Map();
+        s.plan = null;
+        s.names = {};
+        s.students = null;
+        s.step = 1;
+        s.sel = null;
+        s.fixEditing = false;
+      }
+      return s;
+    }
+    function initSeat() {
       const t = "seat",
-        s = state(t),
+        c = configs[t],
+        root = $(CONVENIENCE_TOOL_ELEMENT_ID[t]);
+      root.className = "rt rt-seat-tool";
+      root.style.setProperty("--rt-accent", c[3]);
+      root.style.setProperty("--rt-soft", c[4]);
+      const gridBlock = (n) =>
+        `<div class="rt-seat-boardwrap"><div class="rt-seat-board"><div class="rt-seats" id="${id(t, "grid" + n)}"></div>` +
+        `<div class="rt-podium" aria-label="교탁"><span class="rt-podium-top"></span><span class="rt-podium-label">교탁</span></div>` +
+        (n === 5 ? `<p class="rt-seat-memo-view" id="${id(t, "memoview")}"></p>` : "") +
+        `</div><div class="rt-seat-poplayer" id="${id(t, "panel" + n)}" hidden></div></div>`;
+      const nav = (n) =>
+        `<div class="rt-seat-nav">` +
+        (n > 1 ? button("seat-prev", "← 이전 단계") : "<span></span>") +
+        (n < 5 ? button("seat-next", "다음 단계 →", 'class="rt-primary"') : "<span></span>") +
+        `</div>`;
+      root.innerHTML =
+        `<header class="convenience-step-head rt-seat-head">` +
+        `<button type="button" class="convenience-backlink" data-action="back"><i class="fas fa-chevron-left" aria-hidden="true"></i> 편의 기능</button>` +
+        `<span class="convenience-step-title-inline"><i class="fas fa-chair" aria-hidden="true" style="color:#4c7246;"></i> 자리뽑기</span>` +
+        `<button type="button" class="rt-seat-help-btn" data-action="seat-help"><i class="fas fa-circle-question" aria-hidden="true"></i><span>이용방법</span></button>` +
+        `</header>` +
+        `<div class="rt-seat-help" id="${id(t, "help")}" hidden><b>이렇게 사용하세요</b><ol>` +
+        `<li>교실 자리(행·열)를 만듭니다.</li><li>쓰지 않을 자리를 눌러 뺍니다(다시 누르면 되살아납니다).</li>` +
+        `<li>미리 정해 둘 자리를 눌러 앉을 번호를 적습니다.</li><li>학생 번호 범위와 궐번을 입력합니다.</li>` +
+        `<li>자리를 배치하고 이름을 넣어 복사·인쇄합니다.</li></ol></div>` +
+        `<ol class="rt-seat-progress" id="${id(t, "progress")}"></ol>` +
+        `<p class="rt-message" id="${id(t, "message")}" role="status" aria-live="polite"></p>` +
+        `<div class="rt-seat-stage" id="${id(t, "stage")}">` +
+        // STEP 1
+        `<section class="rt-seat-page" data-step="1"><div class="rt-seat-page-body">` +
+        `<div class="rt-row rt-seat-size">${num(t, "rows", "행", 4, 1, 12)}${num(t, "cols", "열", 6, 1, 12)}` +
+        `<div class="rt-seat-size-go">${button("seat-build", "자리 만들기", 'class="rt-primary"')}</div></div>` +
+        `<p class="rt-seat-note">행·열을 정하면 교실 자리가 만들어집니다. 나중에 다시 만들 수도 있어요.</p>` +
+        `</div>${nav(1)}</section>` +
+        // STEP 2
+        `<section class="rt-seat-page" data-step="2" hidden><div class="rt-seat-page-body">` +
+        `<p class="rt-seat-note" id="${id(t, "note2")}">쓰지 않을 자리를 눌러 주세요. 다시 누르면 되살아납니다.</p>${gridBlock(2)}` +
+        `</div>${nav(2)}</section>` +
+        // STEP 3
+        `<section class="rt-seat-page" data-step="3" hidden><div class="rt-seat-page-body">` +
+        `<p class="rt-seat-note" id="${id(t, "note3")}">미리 정해 둘 자리를 누르면 번호를 넣는 작은 창이 열립니다. 없으면 건너뛰어도 됩니다.</p>${gridBlock(3)}` +
+        `</div>${nav(3)}</section>` +
+        // STEP 4
+        `<section class="rt-seat-page" data-step="4" hidden><div class="rt-seat-page-body">` +
+        `<div class="rt-row">${num(t, "start", "시작 번호", 1, 1, 10000)}${num(t, "end", "끝 번호", 24, 1, 10000)}</div>` +
+        `<label>궐번 (선택)<input id="${id(t, "missing")}" type="text" maxlength="2000" placeholder="예: 4, 8, 12-14"></label>` +
+        `<p class="rt-small">없는 번호는 쉼표로 구분하고, 연속 번호는 12-14로 입력해요.</p>` +
+        `<div class="rt-seat-tally" id="${id(t, "summary")}" aria-live="polite"></div>` +
+        `</div>${nav(4)}</section>` +
+        // STEP 5
+        `<section class="rt-seat-page" data-step="5" hidden><div class="rt-seat-page-body">` +
+        `<div class="rt-seat-runbar" id="${id(t, "runbar")}"></div>` +
+        gridBlock(5) +
+        `<details class="rt-seat-fold" id="${id(t, "namesfold")}"><summary><i class="fas fa-user-pen" aria-hidden="true"></i> 학생 이름 넣기</summary>` +
+        `<p class="rt-small">비워 두면 번호만 나옵니다. Enter로 다음 칸, 여러 이름은 줄바꿈으로 붙여넣기.</p>` +
+        `<div class="rt-seat-names" id="${id(t, "names")}"></div>` +
+        `<div class="rt-actions">${button("seat-names-apply", "자리표에 이름 반영", 'class="rt-primary"')}</div></details>` +
+        `<details class="rt-seat-fold"><summary><i class="fas fa-pen-nib" aria-hidden="true"></i> 자리표 아래 글귀 넣기</summary>` +
+        `<textarea id="${id(t, "memo")}" maxlength="200" rows="2" placeholder="예: 우리 아이들의 예쁜 이름을 불러 주세요."></textarea></details>` +
+        `<div class="rt-seat-final">` +
+        button("seat-copy", '<i class="fas fa-copy" aria-hidden="true"></i> 자리표 복사', 'class="rt-util-copy"') +
+        button("seat-print", '<i class="fas fa-print" aria-hidden="true"></i> A4 인쇄', 'class="rt-util-print"') +
+        button("reset", '<i class="fas fa-rotate-left" aria-hidden="true"></i> 전체 초기화', 'class="rt-danger"') +
+        `</div>` +
+        `</div>${nav(5)}</section>` +
+        `</div>`;
+      root.onclick = (e) => {
+        const b = e.target.closest("button[data-action]");
+        if (b && !b.disabled) act(t, b.dataset.action, b);
+      };
+      root.oninput = (e) => {
+        if (
+          e.target === field(t, "start") ||
+          e.target === field(t, "end") ||
+          e.target === field(t, "missing")
+        )
+          seatSummary();
+        if (e.target === field(t, "memo")) seatMemoPreview();
+      };
+      seatState();
+      seatShowStep(1);
+    }
+    // ----- 단계 이동 -----
+    function seatShowStep(n, direction) {
+      const t = "seat",
+        s = seatState();
+      // 배치를 끝낸 뒤 앞 단계로 돌아오면 설정을 다시 만질 수 있게 배치를 비웁니다.
+      // (이름은 번호별로 남아 있으므로 다시 배치하면 그대로 따라옵니다.)
+      if (n < 5 && s.plan) {
+        s.plan = null;
+        message(t, "좌석 설정을 다시 바꿀 수 있습니다. 바꾼 뒤 마지막 단계에서 다시 배치해 주세요.", "ok");
+      }
+      s.step = n;
+      s.sel = null;
+      s.fixEditing = false;
+      const pages = $(CONVENIENCE_TOOL_ELEMENT_ID[t]).querySelectorAll(".rt-seat-page");
+      pages.forEach((p) => {
+        const on = Number(p.dataset.step) === n;
+        p.hidden = !on;
+        p.classList.remove("is-flip-next", "is-flip-prev");
+        if (on && direction) p.classList.add(direction > 0 ? "is-flip-next" : "is-flip-prev");
+      });
+      seatRenderProgress();
+      seatRenderStep();
+    }
+    // 앞 단계가 끝나야 다음으로 갑니다. 이미 지나온 단계로는 자유롭게 돌아갈 수 있습니다.
+    function seatNext() {
+      const s = seatState();
+      if (!s.built) throw Error("먼저 '자리 만들기'를 눌러 교실 자리를 만들어주세요.");
+      if (s.step === 4) {
+        const students = seatStudents(); // 숫자가 잘못되면 여기서 이유를 알려줍니다.
+        if (seatUsable() !== students.length) {
+          seatSummary();
+          throw Error(
+            seatUsable() > students.length
+              ? `자리가 ${seatUsable() - students.length}개 남습니다. 쓰지 않을 좌석을 더 빼주세요.`
+              : `학생이 ${students.length - seatUsable()}명 더 많습니다. 자리를 늘리거나 뺀 좌석을 되살려주세요.`,
+          );
+        }
+      }
+      seatShowStep(Math.min(5, s.step + 1), 1);
+    }
+    function seatGoto(n) {
+      const s = seatState();
+      if (n === s.step) return;
+      if (n > s.step) {
+        // 앞으로 갈 때는 한 단계씩만(중간 확인을 건너뛰지 않도록).
+        for (let k = s.step; k < n; k++) seatNext();
+        return;
+      }
+      seatShowStep(n, -1);
+    }
+    function seatRenderProgress() {
+      const t = "seat",
+        s = seatState(),
+        el = field(t, "progress");
+      el.innerHTML = SEAT_STEPS.map((label, i) => {
+        const n = i + 1,
+          cls = n === s.step ? "is-now" : n < s.step ? "is-done" : "";
+        return `<li class="${cls}">${button("seat-goto", `<b>${n}</b><span>${label}</span>`, `data-step="${n}" title="${n}단계 ${label}"`)}</li>`;
+      }).join("");
+    }
+    // 지금 단계에 필요한 것만 다시 그립니다(좌석표는 2·3·5단계에서 씁니다).
+    function seatRenderStep() {
+      const t = "seat",
+        s = seatState();
+      // 보이지 않는 단계의 좌석표는 비워 둡니다(옛 화면이 남아 헷갈리지 않도록).
+      [2, 3, 5].forEach((n) => {
+        if (n === s.step) return;
+        const g = field(t, "grid" + n),
+          p = field(t, "panel" + n);
+        if (g) g.innerHTML = "";
+        if (p) {
+          p.innerHTML = "";
+          p.hidden = true;
+        }
+      });
+      if (s.step === 2 || s.step === 3 || s.step === 5) {
+        seatRenderGrid(field(t, "grid" + s.step));
+        seatRenderPanel();
+      }
+      if (s.step === 4) seatSummary();
+      if (s.step === 5) {
+        // 배치 전에는 '자리 배치 시작', 배치 뒤에는 '다시 배치' 하나만 보여 줍니다.
+        field(t, "runbar").innerHTML = s.plan
+          ? button("seat-reassign", '<i class="fas fa-shuffle" aria-hidden="true"></i> 다시 배치')
+          : button("seat-assign", "자리 배치 시작", 'class="rt-primary"');
+        field(t, "namesfold").hidden = !s.plan;
+        seatMemoPreview();
+        const note = field(t, "note5");
+        if (note) note.textContent = "";
+      }
+    }
+    function seatRenderGrid(grid) {
+      const s = seatState();
+      if (!grid) return;
+      grid.style.setProperty("--seat-cols", s.cols);
+      grid.innerHTML = seatRows()
+        .reduce((all, row) => all.concat(row), [])
+        .map((cell) => {
+          const fixedNo = s.fixed.get(cell.index),
+            cls =
+              "rt-seat" +
+              (cell.off ? " is-off" : "") +
+              (fixedNo != null ? " is-fixed" : "") +
+              (s.sel === cell.index ? " is-sel" : "") +
+              (s.plan ? "" : " is-clickable");
+          const face = cell.off
+            ? `<span class="rt-seat-x">✕</span>`
+            : `<span class="rt-seat-number">${cell.number != null ? cell.number : fixedNo != null ? fixedNo : ""}</span>` +
+              (cell.name ? `<span class="rt-seat-name">${esc(cell.name)}</span>` : "") +
+              (fixedNo != null ? `<span class="rt-seat-pin" aria-label="지정석">📌</span>` : "");
+          return button(
+            "seat-cell",
+            `<span class="rt-seat-top">${face}</span><span class="rt-seat-leg"></span>`,
+            `class="${cls}" data-index="${cell.index}" data-row="${cell.row}" data-col="${cell.col}"` +
+              ` title="${cell.row}행 ${cell.col}열"${s.plan ? " disabled" : ""}`,
+          );
+        })
+        .join("");
+    }
+    // 좌석을 고르면 그 좌석 상태에 맞는 할 일만 보여 줍니다(제외/복구/지정/해제).
+    // 2단계는 누르는 즉시 빼고/되살리고, 3단계는 좌석 옆에 작은 창을 띄웁니다.
+    function seatRenderPanel() {
+      const t = "seat",
+        s = seatState(),
+        panel = field(t, "panel" + s.step);
+      if (!panel) return;
+      if (s.step !== 3 || s.sel == null || !s.fixEditing || s.plan) {
+        panel.hidden = true;
+        panel.innerHTML = "";
+        return;
+      }
+      const i = s.sel,
+        fixedNo = s.fixed.get(i),
+        where = `${Math.floor(i / s.cols) + 1}행 ${(i % s.cols) + 1}열`;
+      panel.innerHTML =
+        `<div class="rt-seat-pop" id="${id(t, "pop")}">` +
+        `<b>${where}</b>` +
+        `<label for="${id(t, "fixnumber")}">이 자리에 앉을 번호</label>` +
+        `<input id="${id(t, "fixnumber")}" type="number" min="1" max="10000" step="1" value="${fixedNo != null ? fixedNo : ""}">` +
+        `<div class="rt-seat-pop-btns">` +
+        button("seat-fix-apply", "지정", 'class="rt-primary"') +
+        (fixedNo != null ? button("seat-fix-clear", "해제") : "") +
+        button("seat-cancel", "취소") +
+        `</div></div>`;
+      panel.hidden = false;
+      seatPlacePop();
+      const input = field(t, "fixnumber");
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+    // 작은 창을 누른 좌석 바로 아래에 붙이고, 화면 밖으로 나가지 않게 안쪽으로 당깁니다.
+    function seatPlacePop() {
+      const t = "seat",
+        s = seatState(),
+        pop = field(t, "pop"),
+        grid = field(t, "grid" + s.step);
+      if (!pop || !grid) return;
+      const seat = grid.querySelector(`[data-index="${s.sel}"]`),
+        wrap = pop.parentElement && pop.parentElement.parentElement,
+        board = grid.parentElement;
+      if (!seat || !wrap || typeof seat.getBoundingClientRect !== "function") return;
+      const sb = seat.getBoundingClientRect(),
+        wb = wrap.getBoundingClientRect(),
+        pw = pop.offsetWidth || 210,
+        half = pw / 2,
+        limit = Math.max(half, wb.width - half);
+      let x = sb.left - wb.left + sb.width / 2;
+      if (x < half) x = half;
+      if (x > limit) x = limit;
+      pop.style.left = Math.round(x) + "px";
+      pop.style.top = Math.round(sb.bottom - wb.top + 6) + "px";
+      if (board && typeof board.scrollLeft === "number") pop.dataset.scroll = board.scrollLeft;
+    }
+    function seatSelect(index) {
+      const s = seatState();
+      if (s.plan) return; // 배치 결과를 보는 중에는 좌석 설정을 잠급니다.
+      if (s.step === 2) return seatToggleOff(index);
+      if (s.step === 3) return seatOpenFix(index);
+    }
+    // 2단계: 좌석을 누르면 바로 빠지고, 빠진 좌석을 다시 누르면 되살아납니다.
+    function seatToggleOff(index) {
+      const s = seatState();
+      if (s.fixed.has(index))
+        throw Error("지정석입니다. 3단계에서 지정을 해제한 뒤 빼주세요.");
+      const off = s.disabled.has(index);
+      if (off) s.disabled.delete(index);
+      else s.disabled.add(index);
+      s.sel = null;
+      s.fixEditing = false;
+      seatRenderGrid(field("seat", "grid2"));
+      seatRenderPanel();
+      message("seat", off ? "자리를 되살렸습니다." : "자리를 뺐습니다.", "ok");
+    }
+    // 3단계: 좌석을 누르면 번호를 넣는 작은 창이 열립니다(같은 자리를 다시 누르면 닫힘).
+    function seatOpenFix(index) {
+      const s = seatState();
+      if (s.disabled.has(index))
+        throw Error("뺀 자리예요. 2단계에서 자리를 되살린 뒤 지정해주세요.");
+      const same = s.sel === index && s.fixEditing;
+      s.sel = same ? null : index;
+      s.fixEditing = !same;
+      seatRenderGrid(field("seat", "grid3"));
+      seatRenderPanel();
+    }
+    function seatClearSel() {
+      const s = seatState();
+      s.sel = null;
+      s.fixEditing = false;
+      seatRenderGrid(field("seat", "grid" + s.step));
+      seatRenderPanel();
+    }
+    function seatFixApply() {
+      const t = "seat",
+        s = seatState();
+      if (s.sel == null) throw Error("먼저 자리를 골라주세요.");
+      const number = integer(t, "fixnumber");
+      for (const [seat, no] of s.fixed)
+        if (no === number && seat !== s.sel)
+          throw Error(`${number}번은 이미 다른 자리에 지정되어 있습니다.`);
+      s.fixed.set(s.sel, number);
+      seatClearSel();
+      message(t, `${number}번을 지정석으로 정했습니다.`, "ok");
+    }
+    function seatFixClear() {
+      const s = seatState();
+      if (s.sel == null) return;
+      s.fixed.delete(s.sel);
+      seatClearSel();
+      message("seat", "지정석을 해제했습니다.", "ok");
+    }
+    // ----- 학생 번호 -----
+    function seatStudents() {
+      const t = "seat";
+      return ClassroomRandom.studentNumbers(
+        integer(t, "start"),
+        integer(t, "end"),
+        field(t, "missing").value,
+        1,
+        144,
+      );
+    }
+    function seatUsable() {
+      const s = seatState();
+      return s.rows * s.cols - s.disabled.size;
+    }
+    function seatSummary() {
+      const t = "seat",
+        s = seatState(),
+        el = field(t, "summary");
+      if (!el || !s.built) return;
+      const usable = seatUsable();
+      let students;
+      try {
+        students = seatStudents();
+      } catch (e) {
+        el.className = "rt-seat-tally is-warn";
+        el.innerHTML = `<span>사용 좌석 <b>${usable}</b></span><span>${esc(e.message)}</span>`;
+        return;
+      }
+      const gap = Math.abs(usable - students.length);
+      const ok = usable === students.length;
+      el.className = "rt-seat-tally" + (ok ? " is-ok" : " is-warn");
+      el.innerHTML =
+        `<span>사용 좌석 <b>${usable}</b></span><span>유효 학생 <b>${students.length}</b></span>` +
+        `<span class="rt-seat-tally-say">${
+          ok
+            ? "배치 가능"
+            : usable > students.length
+              ? `자리가 ${gap}개 많아요 · 좌석을 ${gap}개 빼주세요`
+              : `학생이 ${gap}명 많아요 · 자리를 ${gap}개 늘려주세요`
+        }</span>`;
+    }
+    function seatBuild() {
+      const t = "seat",
+        s = seatState(),
         rows = integer(t, "rows"),
         cols = integer(t, "cols");
-      if (s.pins.size && (s.rows !== rows || s.cols !== cols))
-        throw Error("좌석 크기를 바꾸려면 먼저 모든 고정을 해제해주세요.");
-      const seats = ClassroomRandom.seats(
-        names(t),
-        rows,
-        cols,
-        s.seats,
-        s.pins,
-      );
-      s.seats = seats;
+      if (rows < 1 || cols < 1 || rows > 12 || cols > 12)
+        throw Error("행과 열을 1~12 사이 정수로 입력해주세요.");
       s.rows = rows;
       s.cols = cols;
-      renderSeats();
+      s.built = true;
+      s.disabled = new Set();
+      s.fixed = new Map();
+      s.plan = null;
+      message(t, `${rows}행 × ${cols}열 자리를 만들었습니다.`, "ok");
+      seatShowStep(2, 1); // 만들자마자 다음 단계로 넘어갑니다.
     }
-    function renderSeats() {
-      const s = state("seat");
-      output(
-        "seat",
-        `<div class="rt-scroll"><div class="rt-podium">교탁 / 칠판</div><div class="rt-seats" style="--seat-cols:${s.cols}">${s.seats.map((n, i) => button("pin", `<small>${Math.floor(i / s.cols) + 1}행 ${(i % s.cols) + 1}열${s.pins.has(i) ? " · 🔒 고정" : ""}</small><span>${esc(n == null ? "빈 좌석" : n)}</span>`, `class="rt-seat" data-index="${i}" aria-pressed="${s.pins.has(i)}" title="${esc(n == null ? "빈 좌석" : n)}"`)).join("")}</div></div>`,
-        Array.from({ length: s.rows }, (_, r) =>
-          s.seats
-            .slice(r * s.cols, (r + 1) * s.cols)
-            .map((n) => (n == null ? "(빈 좌석)" : n))
-            .join("\t"),
-        ).join("\n"),
+    function seatAssign() {
+      const t = "seat",
+        s = seatState();
+      const students = seatStudents();
+      s.plan = ClassroomRandom.seatPlan(
+        s.rows,
+        s.cols,
+        Array.from(s.disabled),
+        Array.from(s.fixed),
+        students,
       );
+      s.students = students;
+      s.sel = null;
+      seatRenderStep();
+      seatNamesRender();
+      message(t, "자리를 배치했습니다. 이름을 넣거나 바로 복사·인쇄할 수 있어요.", "ok");
+    }
+    function seatEdit() {
+      const s = seatState();
+      s.plan = null;
+      seatShowStep(2, -1);
+      message("seat", "좌석 설정을 다시 바꿀 수 있습니다.", "ok");
+    }
+    // ----- 학생 이름 -----
+    function seatNamesRender() {
+      const t = "seat",
+        s = seatState(),
+        wrap = field(t, "names");
+      wrap.innerHTML = (s.students || [])
+        .map(
+          (n) =>
+            `<label class="rt-seat-name-row"><span>${n}</span><input type="text" maxlength="20" data-number="${n}" value="${esc(s.names[n] || "")}" placeholder="이름"></label>`,
+        )
+        .join("");
+      wrap.oninput = (e) => {
+        const input = e.target.closest("input[data-number]");
+        if (input) s.names[Number(input.dataset.number)] = input.value.trim();
+      };
+      wrap.onkeydown = (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        const inputs = [...wrap.querySelectorAll("input[data-number]")];
+        const next = inputs[inputs.indexOf(e.target) + 1];
+        if (next) next.focus();
+        else seatNamesApply();
+      };
+      // 여러 이름을 줄바꿈으로 붙여넣으면 그 칸부터 번호 순서대로 채웁니다.
+      wrap.onpaste = (e) => {
+        const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+        const list = text
+          .split(/\r?\n/)
+          .map((v) => v.trim())
+          .filter(Boolean);
+        if (list.length < 2) return;
+        e.preventDefault();
+        const inputs = [...wrap.querySelectorAll("input[data-number]")];
+        let at = inputs.indexOf(e.target);
+        if (at < 0) at = 0;
+        let filled = 0;
+        list.forEach((name, k) => {
+          const input = inputs[at + k];
+          if (!input) return;
+          input.value = name.slice(0, 20);
+          s.names[Number(input.dataset.number)] = input.value;
+          filled++;
+        });
+        message("seat", `이름 ${filled}명을 채웠습니다. '자리표에 이름 반영'을 눌러주세요.`, "ok");
+      };
+    }
+    function seatNamesApply() {
+      seatRenderGrid(field("seat", "grid5"));
+      message("seat", "자리표에 이름을 반영했습니다.", "ok");
+    }
+    // ----- 자리표 데이터(화면·복사·인쇄 공통) -----
+    // 순서는 '교사가 교탁 앞에서 보는 기준'입니다: 뒷줄이 맨 위, 앞줄(1행)이 맨 아래(교탁 바로 위).
+    // 좌우는 뒤집지 않습니다. 교탁 쪽에서 교실을 바라볼 때의 왼쪽·오른쪽과 그대로 일치합니다.
+    function seatRows() {
+      const s = seatState();
+      const rows = [];
+      for (let r = s.rows - 1; r >= 0; r--) {
+        const row = [];
+        for (let c = 0; c < s.cols; c++) {
+          const i = r * s.cols + c;
+          if (s.disabled.has(i)) {
+            row.push({ off: true, index: i, row: r + 1, col: c + 1 });
+            continue;
+          }
+          const number = s.plan ? s.plan[i] : null;
+          row.push({
+            off: false,
+            index: i,
+            row: r + 1,
+            col: c + 1,
+            number,
+            name: number != null ? s.names[number] || "" : "",
+          });
+        }
+        rows.push(row);
+      }
+      return rows;
+    }
+    function seatMemo() {
+      const el = field("seat", "memo");
+      return el ? el.value.trim() : "";
+    }
+    function seatMemoPreview() {
+      const memo = seatMemo(),
+        view = field("seat", "memoview");
+      if (!view) return;
+      view.textContent = memo;
+      view.style.display = memo ? "block" : "none";
+    }
+    function seatChartHtml() {
+      const body = seatRows()
+        .map(
+          (row) =>
+            "<tr>" +
+            row
+              .map((cell) =>
+                cell.off
+                  ? '<td style="border:1px solid #888;padding:6px;text-align:center;color:#888;">사용 안함</td>'
+                  : `<td style="border:1px solid #333;padding:6px;text-align:center;">${cell.number != null ? cell.number + "번" : ""}${cell.name ? "<br>" + esc(cell.name) : ""}</td>`,
+              )
+              .join("") +
+            "</tr>",
+        )
+        .join("");
+      // 교탁은 표 아래(교사 쪽)에 두고, 글귀가 있으면 그 아래에 덧붙입니다.
+      const memo = seatMemo();
+      return (
+        `<table style="border-collapse:collapse;margin:0 auto;">${body}</table>` +
+        `<p style="text-align:center;font-weight:bold;margin:8px 0 0;">교탁</p>` +
+        (memo ? `<p style="text-align:center;margin:6px 0 0;color:#444;">${esc(memo)}</p>` : "")
+      );
+    }
+    function seatChartText() {
+      const memo = seatMemo();
+      return (
+        seatRows()
+          .map((row) =>
+            row
+              .map((cell) =>
+                cell.off
+                  ? "사용 안함"
+                  : (cell.number != null ? cell.number + "번" : "") +
+                    (cell.name ? " " + cell.name : ""),
+              )
+              .join(" | "),
+          )
+          .join("\n") +
+        "\n\n[교탁]" +
+        (memo ? "\n\n" + memo : "")
+      );
+    }
+    async function seatCopy() {
+      const t = "seat",
+        html = seatChartHtml(),
+        text = seatChartText();
+      try {
+        // 한글(HWP)에 표 그대로 붙여넣을 수 있도록 HTML 형식을 우선 넣고, 텍스트도 함께 담습니다.
+        if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              "text/html": new Blob([html], { type: "text/html" }),
+              "text/plain": new Blob([text], { type: "text/plain" }),
+            }),
+          ]);
+        } else {
+          await navigator.clipboard.writeText(text);
+        }
+        message(t, "자리표를 복사했습니다.", "ok");
+      } catch (e) {
+        try {
+          await navigator.clipboard.writeText(text);
+          message(t, "자리표를 글자 형태로 복사했습니다.", "ok");
+        } catch (e2) {
+          message(t, "자동 복사가 제한되었습니다. 인쇄를 이용하거나 화면에서 직접 선택해 복사해주세요.");
+        }
+      }
+    }
+    // 완성된 자리표만 A4(가로)로 인쇄합니다. 주간계획서 본문 인쇄 규칙과 섞이지 않도록,
+    // 인쇄할 때만 전용 영역과 @page 규칙을 만들고 끝나면 지웁니다.
+    function seatPrint() {
+      const s = seatState();
+      const memo = seatMemo();
+      const mount = document.createElement("div");
+      mount.id = "rtSeatPrint";
+      // 교사가 교탁 앞에 두고 보는 기준: 제목 → 학생 자리 → 교탁 → 글귀 순서로 놓습니다.
+      mount.innerHTML =
+        `<p class="rt-print-title">자리 배치표</p>` +
+        `<div class="rt-print-grid" style="--seat-cols:${s.cols}">` +
+        seatRows()
+          .reduce((all, row) => all.concat(row), [])
+          .map((cell) =>
+            cell.off
+              ? '<div class="rt-print-seat off"><span class="n">사용 안함</span></div>'
+              : `<div class="rt-print-seat"><span class="n">${cell.number != null ? cell.number + "번" : ""}</span>${cell.name ? `<span class="nm">${esc(cell.name)}</span>` : ""}</div>`,
+          )
+          .join("") +
+        `</div>` +
+        `<div class="rt-print-podium">교탁</div>` +
+        (memo ? `<p class="rt-print-memo">${esc(memo)}</p>` : "");
+      const page = document.createElement("style");
+      page.id = "rtSeatPrintPage";
+      page.textContent = "@page { size: A4 landscape; margin: 10mm; }";
+      document.head.appendChild(page);
+      document.body.appendChild(mount);
+      document.body.classList.add("rt-seat-printing");
+      const cleanup = () => {
+        document.body.classList.remove("rt-seat-printing");
+        mount.remove();
+        page.remove();
+        window.removeEventListener("afterprint", cleanup);
+      };
+      window.addEventListener("afterprint", cleanup);
+      window.print();
+      setTimeout(cleanup, 1000); // afterprint 이벤트를 주지 않는 환경 대비
     }
     function ladder(confirmed = false) {
       const t = "ladder",

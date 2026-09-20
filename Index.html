@@ -130,6 +130,23 @@
 
     </div>
 
+    <!-- 모바일 전용: 오늘 날짜의 부서별 일정만 모아 한눈에 보여주는 요약 카드.
+         연·월(주차) 표시 영역 바로 위에 두어, 스크롤 없이 오늘 일정부터 바로 확인할 수 있게 합니다.
+         PC에서는 CSS로 숨기며(#mobileTodayCard 기본 display:none), 데이터는 새 서버 호출 없이
+         모바일 조회(getCombinedData) 결과를 그대로 재사용합니다. -->
+    <div id="mobileTodayCard" class="mobile-today-card">
+      <div class="mobile-today-head">
+        <span class="mobile-today-title"><i class="fas fa-calendar-day" aria-hidden="true"></i>오늘의 일정</span>
+        <span class="mobile-today-date" id="mobileTodayDate"></span>
+      </div>
+      <div class="mobile-today-body" id="mobileTodayBody">
+        <div class="mobile-today-row mobile-today-skeleton" aria-hidden="true">
+          <span class="mobile-today-skel-badge"></span>
+          <span class="mobile-today-skel-text"></span>
+        </div>
+      </div>
+    </div>
+
     <!-- 시청각실 주간 시간표 및 예약 시스템 모듈: [LAZY] 2차로 지연 로딩 전환(openAudiWeekly() 참고). -->
 
     <!-- 상단: (윗줄) 학년 필터 + 조회 컨트롤 한 줄, (아랫줄 오른쪽) 오늘 급식 카드 2개 -->

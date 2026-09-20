@@ -285,9 +285,11 @@
     const elId = CONVENIENCE_TOOL_ELEMENT_ID[tool];
     if (!elId) return;
     document.getElementById(elId).style.display = 'block';
+    const device = document.querySelector('#convenienceMod .convenience-device');
+    if (device) device.classList.toggle('is-seat-wide', tool === 'seat'); // 자리뽑기만 화면을 넓게 씁니다.
     if (window.ClassroomTools && ClassroomTools.supports(tool)) {
       document.querySelector('#convenienceMod .convenience-screen').scrollTop = 0;
-      document.querySelector('#convenienceMod .convenience-device').scrollTop = 0;
+      if (device) device.scrollTop = 0;
     }
   }
   function backToConvenienceList() {
@@ -295,6 +297,8 @@
     CONVENIENCE_TOOL_STEPS.forEach(id => { document.getElementById(id).style.display = 'none'; });
     document.getElementById('convenienceStep1').style.display = 'flex';
     document.getElementById('convenienceHeader').style.display = '';
+    const device = document.querySelector('#convenienceMod .convenience-device');
+    if (device) device.classList.remove('is-seat-wide'); // 자리뽑기에서 넓혔던 화면을 되돌립니다.
   }
 
   // ===== QR코드 만들기 (기존 기능 그대로 — 이번 리디자인에서 로직은 한 줄도 바뀌지 않았습니다) =====
