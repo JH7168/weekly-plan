@@ -140,5 +140,42 @@ ok(roundTripEdit('평문 전달사항입니다.') === '평문 전달사항입니
   ok(colorItemCount === 16, '글자색 드롭다운: 일반8 + 파스텔8 = 16개 스와치가 모두 생성됨');
 }
 
+// ---- 9. 회귀: 기존 여러 줄 내용을 편집기에서 다시 편집(Enter)하면 실제 크롬이 만드는 DOM이
+//        줄마다 빈 줄을 하나씩 늘리던 버그. 크롬은 flat(<br>로만 나뉜) 내용에서 Enter를 치면
+//        "그 지점부터 끝까지"를 새 <div>로 감싸면서, 원래 그 줄을 나누던 <br>까지 그 div의 맨 앞
+//        자식으로 함께 끌고 들어온다(재현: 실제 브라우저에서 execCommand('insertParagraph')로
+//        확인, linkedom엔 그 API가 없어 여기서는 결과 DOM 구조를 직접 만들어 검증). 직렬화 쪽에서
+//        div 경계 줄바꿈과 그 안의 맨 앞 <br>를 이중으로 세지 않아야 한다. ----
+{
+  const { ctx } = freshEnv();
+  vm.runInContext(`initNoticeEditor_('singleEditNotice');`, ctx);
+  // 크롬이 "2. 장소: 시청각실" 줄 끝에서 Enter를 두 번(서로 다른 줄에서) 쳤을 때 실제로 만드는 구조.
+  vm.runInContext(
+    `document.getElementById('singleEditNotice').innerHTML = ` +
+      `'1. 일시: 3교시~4교시<br>2. 장소: 시청각실<div><br>3. 대상: 1학년</div><div><br>4. 담당: 김선생</div>';`,
+    ctx,
+  );
+  const out = vm.runInContext(`getNoticeEditorValue_('singleEditNotice')`, ctx);
+  const expected = '1. 일시: 3교시~4교시\n2. 장소: 시청각실\n3. 대상: 1학년\n4. 담당: 김선생';
+  ok(out === expected, '회귀: 크롬의 "맨 앞 <br> 딸린 div" 구조를 다시 저장해도 빈 줄이 늘지 않음', { out, expected });
+}
+
+// ---- 10. 9번과 같은 수정 과정에서도, 원래 있던 '진짜' 빈 줄(전달사항 구분 등)은 그대로 유지되어야
+//         함(9번 수정이 실제 빈 줄까지 지워버리는 과잉 교정이 아닌지 확인) ----
+{
+  const { ctx } = freshEnv();
+  vm.runInContext(`initNoticeEditor_('singleEditNotice');`, ctx);
+  // "2. 장소" 줄 끝에서 Enter로 새 줄을 추가했지만, 그 뒤에는 원래부터 있던 빈 줄(연속 <br><br>)이
+  // div 안쪽(맨 앞이 아닌 위치)에 그대로 남아 있는 구조.
+  vm.runInContext(
+    `document.getElementById('singleEditNotice').innerHTML = ` +
+      `'1. 일시: 3교시~4교시<br>2. 장소: 시청각실<div>2.5. 담당: 김선생<br><br>【전달사항】<br>필기구 지참 바랍니다</div>';`,
+    ctx,
+  );
+  const out = vm.runInContext(`getNoticeEditorValue_('singleEditNotice')`, ctx);
+  const expected = '1. 일시: 3교시~4교시\n2. 장소: 시청각실\n2.5. 담당: 김선생\n\n【전달사항】\n필기구 지참 바랍니다';
+  ok(out === expected, '회귀: 진짜 빈 줄(전달사항 구분)은 9번 수정 이후에도 그대로 보존됨', { out, expected });
+}
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exitCode = fail ? 1 : 0;

@@ -431,14 +431,27 @@
       }
       if (node.nodeType !== 1) return;
       if (node.tagName === 'BR') { runs.push({ type: 'br' }); return; }
-      if (/^(DIV|P)$/.test(node.tagName) && runs.length) runs.push({ type: 'br' });
+      const isBlock = /^(DIV|P)$/.test(node.tagName);
+      const addedBoundaryBreak = isBlock && runs.length > 0;
+      if (addedBoundaryBreak) runs.push({ type: 'br' });
       const next = Object.assign({}, ctx);
       if (noticeIsBold_(node)) next.bold = true;
       if (noticeIsItalic_(node)) next.italic = true;
       if (noticeIsUnderline_(node)) next.underline = true;
       const c = noticeColorOf_(node); if (c) next.color = c;
       const s = noticeSizeOf_(node); if (s) next.fontSize = s;
-      Array.from(node.childNodes).forEach(child => walk(child, next));
+      let kids = Array.from(node.childNodes);
+      // 이미 서식 없이 flat하게(줄마다 div로 감싸지 않고) 저장해 둔 기존 내용을 이어서 편집하다가
+      // Enter를 치면, 크롬은 "다음 줄부터 끝까지"를 새 <div>로 통째로 감싸면서 그 전에 줄을 나누던
+      // <br>까지 그 div의 맨 앞 자식으로 함께 끌고 들어옵니다. 그러면 방금 위에서 div 경계로 이미
+      // 줄바꿈 하나를 셌는데, 그 안의 맨 앞 <br>가 같은 줄바꿈을 또 한 번 세어 버려 저장할 때마다
+      // 편집한 줄 사이에 빈 줄이 하나씩 늘어납니다(다시 열어 그 빈 줄을 지우고 저장하면 원래대로
+      // 돌아오는 것도 이 때문). 이 중복되는 맨 앞 <br>만 건너뛰어 실제로 입력한 줄바꿈 수만큼만
+      // 저장되게 합니다.
+      if (addedBoundaryBreak && kids.length && kids[0].nodeType === 1 && kids[0].tagName === 'BR') {
+        kids = kids.slice(1);
+      }
+      kids.forEach(child => walk(child, next));
     }
     Array.from(root.childNodes).forEach(child => walk(child, { bold: false, italic: false, underline: false, color: null, fontSize: null }));
     return runs;
